@@ -1,0 +1,69 @@
+name: Deploy FURSA Frontend to VPS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy via rsync
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_VERSION: '20'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build production
+        run: npm run build
+        env:
+          VITE_API_BASE: ${{ secrets.VITE_API_BASE || 'https://api.fursa.seed-innov.com' }}
+          VITE_APP_NAME: Fursa
+          VITE_DEFAULT_CURRENCY: EUR
+          VITE_DEFAULT_LOCALE: fr-FR
+
+      - name: Setup SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Deploy via rsync
+        run: |
+          rsync -avz --delete \
+            -e "ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no" \
+            dist/ \
+            ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/var/www/fursa-frontend/
+
+      - name: Verify frontend is up
+        run: |
+          echo "Checking https://fursa.seed-innov.com/ ..."
+          for i in $(seq 1 6); do
+            code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 \
+              https://fursa.seed-innov.com/ || echo "000")
+            if [ "$code" = "200" ]; then
+              echo "Frontend is up (HTTP 200 after ${i} attempt(s))"
+              exit 0
+            fi
+            echo "Attempt $i/6: HTTP $code, retrying in 5s..."
+            sleep 5
+          done
+          echo "Frontend did not respond 200 within 30s"
+          exit 1
