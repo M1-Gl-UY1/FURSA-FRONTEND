@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { extractApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/AuthContext'
+import { isAdminHost } from '@/lib/hosts'
 
 const loginSchema = z.object({
   email: z.string().min(1, 'Email requis').email('Email invalide'),
@@ -30,7 +31,9 @@ export function LoginPage() {
   const [searchParams] = useSearchParams()
   const { login, isAuthenticated } = useAuth()
 
-  const redirect = searchParams.get('redirect') ?? '/dashboard'
+  // Sur admin.fursa.seed-innov.com, on redirige par défaut vers /admin/dashboard
+  const defaultDest = isAdminHost() ? '/admin/dashboard' : '/dashboard'
+  const redirect = searchParams.get('redirect') ?? defaultDest
   const expired = searchParams.get('expired') === 'true'
   const justRegistered = searchParams.get('registered') === 'true'
 
