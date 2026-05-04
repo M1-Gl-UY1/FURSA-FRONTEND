@@ -24,6 +24,8 @@ import { useAcheterParts } from '@/lib/api/marche-primaire'
 import { usePropriete } from '@/lib/api/proprietes'
 import type { AchatResponse, ProprieteResponse } from '@/lib/api/types'
 import { extractApiError } from '@/lib/api/errors'
+import { useAuth } from '@/lib/auth/AuthContext'
+import { ShieldAlert } from 'lucide-react'
 
 const STEPS = ['Sélection', 'Confirmation', 'Succès']
 
@@ -36,6 +38,7 @@ export function AcheterPartsPage() {
   }
 
   const { data: propriete, isLoading, isError } = usePropriete(id)
+  const { isAdmin } = useAuth()
   const [step, setStep] = useState<0 | 1 | 2>(0)
   const [parts, setParts] = useState<number>(1)
   const [cgvAccepted, setCgvAccepted] = useState(false)
@@ -66,6 +69,27 @@ export function AcheterPartsPage() {
         </h2>
         <Button asChild>
           <Link to="/opportunites">Retour aux opportunités</Link>
+        </Button>
+      </div>
+    )
+  }
+
+  // Garde-fou : un admin ne peut pas acheter de parts
+  // (conflit d'intérêt + délit d'initié — séparation rôles opérateur/investisseur)
+  if (isAdmin) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 text-center">
+        <ShieldAlert className="w-12 h-12 text-warning mx-auto mb-4" strokeWidth={1.5} />
+        <h2 className="font-display font-bold text-earth text-xl mb-2">
+          Achat indisponible pour les administrateurs
+        </h2>
+        <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
+          Pour préserver la neutralité de la plateforme, les comptes administrateurs
+          ne peuvent pas investir dans les biens. Connectez-vous avec un compte
+          investisseur pour acheter des parts.
+        </p>
+        <Button asChild>
+          <Link to={`/opportunites/${propriete.id}`}>Retour à la propriété</Link>
         </Button>
       </div>
     )

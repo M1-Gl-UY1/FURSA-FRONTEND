@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Repeat,
+  ShieldAlert,
   ShoppingCart,
   TrendingUp,
   User as UserIcon,
@@ -185,7 +186,19 @@ export function AnnonceDetailPage() {
               </Row>
             </dl>
 
-            {isOwn ? (
+            {user?.role === 'ADMIN' ? (
+              <div className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
+                <div>
+                  <p className="font-body font-semibold text-earth text-sm mb-1">
+                    Achat indisponible pour les administrateurs
+                  </p>
+                  <p className="font-body text-earth-600 text-xs leading-relaxed">
+                    Pour préserver la neutralité de la plateforme.
+                  </p>
+                </div>
+              </div>
+            ) : isOwn ? (
               <div className="bg-ocean/8 rounded-md p-4 text-center">
                 <p className="font-body text-ocean text-sm font-medium mb-3">
                   C'est votre annonce.

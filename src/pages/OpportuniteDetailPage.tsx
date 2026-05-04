@@ -9,6 +9,7 @@ import {
   FileText,
   Share2,
   AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -19,6 +20,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
+import { useAuth } from '@/lib/auth/AuthContext'
 
 export function OpportuniteDetailPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -29,6 +31,7 @@ export function OpportuniteDetailPage() {
   }
 
   const { data: propriete, isLoading, isError } = usePropriete(id)
+  const { isAdmin } = useAuth()
 
   if (isLoading) return <DetailSkeleton />
 
@@ -180,22 +183,36 @@ export function OpportuniteDetailPage() {
               <ProgressBar value={pourcentage} />
             </div>
 
-            {/* CTA */}
-            <Button
-              size="lg"
-              className="w-full"
-              disabled={!isPubliee || sansParts}
-              asChild={isPubliee && !sansParts}
-            >
-              {isPubliee && !sansParts ? (
-                <Link to={`/opportunites/${propriete.id}/acheter`}>
-                  Acheter des parts
-                  <ArrowRight className="ml-1" strokeWidth={2} />
-                </Link>
-              ) : (
-                <span>{sansParts ? 'Plus de parts disponibles' : 'Indisponible'}</span>
-              )}
-            </Button>
+            {/* CTA — masqué pour les admins (conflit d'intérêt + délit d'initié) */}
+            {isAdmin ? (
+              <div className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-start gap-3">
+                <ShieldAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
+                <div>
+                  <p className="font-body font-semibold text-earth text-sm mb-1">
+                    Achat indisponible pour les administrateurs
+                  </p>
+                  <p className="font-body text-earth-600 text-xs leading-relaxed">
+                    Pour préserver la neutralité de la plateforme, les comptes admin ne peuvent pas investir.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <Button
+                size="lg"
+                className="w-full"
+                disabled={!isPubliee || sansParts}
+                asChild={isPubliee && !sansParts}
+              >
+                {isPubliee && !sansParts ? (
+                  <Link to={`/opportunites/${propriete.id}/acheter`}>
+                    Acheter des parts
+                    <ArrowRight className="ml-1" strokeWidth={2} />
+                  </Link>
+                ) : (
+                  <span>{sansParts ? 'Plus de parts disponibles' : 'Indisponible'}</span>
+                )}
+              </Button>
+            )}
 
             <Button
               variant="ghost"
