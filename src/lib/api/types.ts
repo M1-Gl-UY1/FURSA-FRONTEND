@@ -45,7 +45,14 @@ export type RegisterRequest = {
 
 export type AuthResponse = {
   token: string
+  refreshToken: string
   type: string
+  /** Duree de vie de l'access token en secondes. */
+  expiresIn: number
+}
+
+export type RefreshRequest = {
+  refreshToken: string
 }
 
 export type RegisterResponse = {

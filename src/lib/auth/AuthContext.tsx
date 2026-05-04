@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { api } from '@/lib/api/client'
 import type { AuthResponse, CurrentUser, LoginRequest, RegisterRequest } from '@/lib/api/types'
-import { clearToken, getToken, setToken } from '@/lib/auth/token'
+import { clearToken, getRefreshToken, getToken, setTokens } from '@/lib/auth/token'
 
 type AuthContextValue = {
   user: CurrentUser | null
@@ -11,7 +11,7 @@ type AuthContextValue = {
   isLoading: boolean
   login: (credentials: LoginRequest) => Promise<void>
   register: (payload: RegisterRequest) => Promise<CurrentUser>
-  logout: () => void
+  logout: () => Promise<void>
   refresh: () => Promise<void>
 }
 
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(
     async (credentials: LoginRequest) => {
       const { data } = await api.post<AuthResponse>('/api/user/auth/login', credentials)
-      setToken(data.token)
+      setTokens(data.token, data.refreshToken)
       await fetchMe()
     },
     [fetchMe]
@@ -53,7 +53,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return data
   }, [])
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    const refreshToken = getRefreshToken()
+    if (refreshToken) {
+      try {
+        await api.post('/api/user/auth/logout', { refreshToken })
+      } catch {
+        // Logout serveur best-effort : on nettoie le client meme si le serveur echoue.
+      }
+    }
     clearToken()
     setUser(null)
   }, [])
