@@ -90,7 +90,7 @@ function TransactionsTab() {
       key: 'nombreParts',
       label: 'Parts',
       align: 'right',
-      render: (t) => <span className="font-mono font-semibold tabular-nums">{t.nombreParts.toLocaleString('fr-FR')}</span>,
+      render: (t) => <span className="font-mono font-semibold tabular-nums">{(t.nombreParts ?? 0).toLocaleString('fr-FR')}</span>,
     },
     {
       key: 'montant',
@@ -155,10 +155,10 @@ function PaiementsTab() {
     },
     { key: 'type', label: 'Méthode', render: (p) => p.type },
     {
-      key: 'nombre_parts',
+      key: 'nombreParts',
       label: 'Parts',
       align: 'right',
-      render: (p) => <span className="font-mono font-semibold tabular-nums">{p.nombre_parts.toLocaleString('fr-FR')}</span>,
+      render: (p) => <span className="font-mono font-semibold tabular-nums">{(p.nombreParts ?? 0).toLocaleString('fr-FR')}</span>,
     },
     {
       key: 'montant',

@@ -165,7 +165,7 @@ export type PaiementResponse = {
   montant: number
   type: string
   statut: string
-  nombre_parts: number
+  nombreParts: number
   proprieteNom: string
   date: string
 }

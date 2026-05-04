@@ -110,7 +110,7 @@ function TransactionsTab() {
       align: 'right',
       render: (t) => (
         <span className="font-mono font-semibold tabular-nums">
-          {t.nombreParts.toLocaleString('fr-FR')}
+          {(t.nombreParts ?? 0).toLocaleString('fr-FR')}
         </span>
       ),
     },
@@ -184,12 +184,12 @@ function PaiementsTab() {
       render: (p) => p.type,
     },
     {
-      key: 'nombre_parts',
+      key: 'nombreParts',
       label: 'Parts',
       align: 'right',
       render: (p) => (
         <span className="font-mono font-semibold tabular-nums">
-          {p.nombre_parts.toLocaleString('fr-FR')}
+          {(p.nombreParts ?? 0).toLocaleString('fr-FR')}
         </span>
       ),
     },
