@@ -178,37 +178,45 @@ export type AnnonceResponse = {
   vendeurNom: string
   proprieteId: number
   proprieteNom: string
+  /** Optionnel : alias frontend si fourni séparément, sinon on utilise un placeholder */
   proprieteImage?: string
-  partsAVendre: number
+  /** Backend : "nombreDePartsAVendre" */
+  nombreDePartsAVendre: number
   prixUnitaireDemande: number
   statut: StatutAnnonce
-  createdAt: string
+  /** Optionnel : pas exposé par le DTO actuel */
+  createdAt?: string
 }
 
 export type AnnonceRequest = {
   proprieteId: number
-  partsAVendre: number
+  nombreDePartsAVendre: number
   prixUnitaireDemande: number
 }
 
 export type AnnonceUpdateRequest = {
-  partsAVendre?: number
+  nombreDePartsAVendre?: number
   prixUnitaireDemande?: number
 }
 
 export type AchatAnnonceRequest = {
-  partsAchetees: number
+  /** Backend : "nombreDeParts" */
+  nombreDeParts: number
 }
 
 export type AchatAnnonceResponse = {
   annonceId: number
+  transactionId?: number
+  paiementId?: number
   acheteurId: number
   vendeurId: number
-  partsAchetees: number
+  proprieteId?: number
+  /** Backend : "nombreDePartsAchetees" */
+  nombreDePartsAchetees: number
   montantTotal: number
   hashTransaction: string
-  dateTransaction: string
-  statutAnnonceFinal: StatutAnnonce
+  /** Backend : "statutAnnonce" (string) */
+  statutAnnonce?: string
 }
 
 // --- Dividendes & revenus ---

@@ -47,7 +47,7 @@ VITE_DEFAULT_LOCALE=fr-FR
 
 `.env.production` contient les valeurs utilisées par `npm run build` (incluses dans le repo).
 `.env.local` est gitignoré (override personnel pour le dev).
-
+ 
 ---
 
 ## Comptes de test (backend prod)

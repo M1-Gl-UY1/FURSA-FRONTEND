@@ -159,7 +159,7 @@ export function MarcheSecondairePage() {
 }
 
 function AnnonceCard({ annonce }: { annonce: AnnonceResponse }) {
-  const total = annonce.partsAVendre * annonce.prixUnitaireDemande
+  const total = annonce.nombreDePartsAVendre * annonce.prixUnitaireDemande
   const image = annonce.proprieteImage ?? '/images/villa-falaise.jpg'
 
   return (
@@ -202,7 +202,7 @@ function AnnonceCard({ annonce }: { annonce: AnnonceResponse }) {
               Parts
             </p>
             <p className="font-mono font-semibold text-earth text-sm tabular-nums">
-              {annonce.partsAVendre.toLocaleString('fr-FR')}
+              {annonce.nombreDePartsAVendre.toLocaleString('fr-FR')}
             </p>
           </div>
           <div>

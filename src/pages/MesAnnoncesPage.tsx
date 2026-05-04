@@ -38,8 +38,8 @@ export function MesAnnoncesPage() {
     {
       key: 'createdAt',
       label: 'Date',
-      sortAccessor: (a) => new Date(a.createdAt),
-      render: (a) => formatDate(a.createdAt),
+      sortAccessor: (a) => (a.createdAt ? new Date(a.createdAt) : new Date(0)),
+      render: (a) => (a.createdAt ? formatDate(a.createdAt) : '—'),
       width: 'w-32',
     },
     {
@@ -55,12 +55,12 @@ export function MesAnnoncesPage() {
       ),
     },
     {
-      key: 'partsAVendre',
+      key: 'nombreDePartsAVendre',
       label: 'Parts',
       align: 'right',
       render: (a) => (
         <span className="font-mono font-semibold tabular-nums">
-          {a.partsAVendre.toLocaleString('fr-FR')}
+          {a.nombreDePartsAVendre.toLocaleString('fr-FR')}
         </span>
       ),
     },
@@ -73,11 +73,11 @@ export function MesAnnoncesPage() {
     {
       key: 'total',
       label: 'Total',
-      sortAccessor: (a) => a.partsAVendre * a.prixUnitaireDemande,
+      sortAccessor: (a) => a.nombreDePartsAVendre * a.prixUnitaireDemande,
       align: 'right',
       render: (a) => (
         <Money
-          amount={a.partsAVendre * a.prixUnitaireDemande}
+          amount={a.nombreDePartsAVendre * a.prixUnitaireDemande}
           mono={false}
           className="font-bold text-terra"
         />
@@ -188,16 +188,16 @@ export function MesAnnoncesPage() {
 
 function EditModal({ annonce, onClose }: { annonce: AnnonceResponse; onClose: () => void }) {
   const modifier = useModifierAnnonce()
-  const [parts, setParts] = useState(annonce.partsAVendre)
+  const [parts, setParts] = useState(annonce.nombreDePartsAVendre)
   const [prix, setPrix] = useState(annonce.prixUnitaireDemande)
 
-  const dirty = parts !== annonce.partsAVendre || prix !== annonce.prixUnitaireDemande
+  const dirty = parts !== annonce.nombreDePartsAVendre || prix !== annonce.prixUnitaireDemande
 
   function save() {
     modifier.mutate(
       {
         id: annonce.id,
-        payload: { partsAVendre: parts, prixUnitaireDemande: prix },
+        payload: { nombreDePartsAVendre: parts, prixUnitaireDemande: prix },
       },
       {
         onSuccess: () => {
@@ -290,7 +290,7 @@ function CancelModal({ annonce, onClose }: { annonce: AnnonceResponse; onClose: 
           </DialogTitle>
           <DialogDescription className="font-body text-earth-600 text-sm">
             <span className="font-semibold text-earth">{annonce.proprieteNom}</span> —{' '}
-            <span className="font-mono">{annonce.partsAVendre.toLocaleString('fr-FR')}</span> parts à{' '}
+            <span className="font-mono">{annonce.nombreDePartsAVendre.toLocaleString('fr-FR')}</span> parts à{' '}
             <Money amount={annonce.prixUnitaireDemande} mono={false} className="font-mono" /> par part.
             <br />
             Vous pourrez recréer une annonce à tout moment, mais celle-ci ne sera plus visible des autres investisseurs.

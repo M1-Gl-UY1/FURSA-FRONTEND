@@ -44,7 +44,7 @@ export function NouvelleAnnoncePage() {
     return possessions.map((p: PossessionResponse) => {
       const partsEnAnnonces = annoncesActives
         .filter((a) => a.proprieteNom === p.proprieteNom)
-        .reduce((s, a) => s + a.partsAVendre, 0)
+        .reduce((s, a) => s + a.nombreDePartsAVendre, 0)
       return {
         ...p,
         partsDisponiblesAVente: Math.max(0, p.nombreDeParts - partsEnAnnonces),
@@ -81,7 +81,7 @@ export function NouvelleAnnoncePage() {
     creer.mutate(
       {
         proprieteId: propId,
-        partsAVendre: parts,
+        nombreDePartsAVendre: parts,
         prixUnitaireDemande: prix,
       },
       {
@@ -295,7 +295,7 @@ export function NouvelleAnnoncePage() {
             Annonce publiée !
           </h1>
           <p className="font-body text-earth-600 text-sm sm:text-base mb-8 max-w-md mx-auto">
-            Vos {created.partsAVendre} parts de{' '}
+            Vos {created.nombreDePartsAVendre} parts de{' '}
             <span className="font-semibold text-earth">{created.proprieteNom}</span> sont
             désormais visibles sur le marché secondaire.
           </p>

@@ -69,7 +69,7 @@ export function AnnonceDetailPage() {
   const isOwn = user?.id === annonce.vendeurId
   const isOpen = annonce.statut === 'OUVERTE'
   const total = parts * annonce.prixUnitaireDemande
-  const totalAnnonce = annonce.partsAVendre * annonce.prixUnitaireDemande
+  const totalAnnonce = annonce.nombreDePartsAVendre * annonce.prixUnitaireDemande
 
   function startBuy() {
     setParts(1)
@@ -78,12 +78,12 @@ export function AnnonceDetailPage() {
 
   function confirmBuy() {
     acheter.mutate(
-      { annonceId: annonce!.id, payload: { partsAchetees: parts } },
+      { annonceId: annonce!.id, payload: { nombreDeParts: parts } },
       {
         onSuccess: (res) => {
           setOpen(false)
           toast.success(
-            `${res.partsAchetees} parts achetées pour ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(res.montantTotal)}.`
+            `${res.nombreDePartsAchetees} parts achetées pour ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(res.montantTotal)}.`
           )
           navigate('/portefeuille')
         },
@@ -142,7 +142,7 @@ export function AnnonceDetailPage() {
             <p className="font-body text-earth-700 text-sm leading-relaxed">
               Cet investisseur vend{' '}
               <span className="font-mono font-semibold text-earth">
-                {annonce.partsAVendre}
+                {annonce.nombreDePartsAVendre}
               </span>{' '}
               parts de cette propriété au prix unitaire de{' '}
               <Money
@@ -170,7 +170,7 @@ export function AnnonceDetailPage() {
             <dl className="space-y-3 mb-6 pb-5 border-b border-earth/8">
               <Row label="Parts à vendre">
                 <span className="font-mono font-semibold text-earth">
-                  {annonce.partsAVendre.toLocaleString('fr-FR')}
+                  {annonce.nombreDePartsAVendre.toLocaleString('fr-FR')}
                 </span>
               </Row>
               <Row label="Prix unitaire" accent>
@@ -233,12 +233,12 @@ export function AnnonceDetailPage() {
                   id="parts-buy"
                   type="number"
                   min={1}
-                  max={annonce.partsAVendre}
+                  max={annonce.nombreDePartsAVendre}
                   value={parts}
                   onChange={(e) => {
                     const n = parseInt(e.target.value, 10)
                     if (!Number.isNaN(n)) {
-                      setParts(Math.max(1, Math.min(annonce.partsAVendre, n)))
+                      setParts(Math.max(1, Math.min(annonce.nombreDePartsAVendre, n)))
                     }
                   }}
                   className="w-24 h-10 text-right font-mono font-semibold"
@@ -247,13 +247,13 @@ export function AnnonceDetailPage() {
               <Slider
                 value={[parts]}
                 min={1}
-                max={annonce.partsAVendre}
+                max={annonce.nombreDePartsAVendre}
                 step={1}
                 onValueChange={([v]) => setParts(v)}
               />
               <div className="flex justify-between text-xs font-mono text-earth-500 mt-2">
                 <span>1</span>
-                <span>{annonce.partsAVendre.toLocaleString('fr-FR')}</span>
+                <span>{annonce.nombreDePartsAVendre.toLocaleString('fr-FR')}</span>
               </div>
             </div>
 
