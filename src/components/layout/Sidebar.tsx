@@ -72,11 +72,14 @@ type SidebarProps = {
 
 export function Sidebar({ hasProprietesProposees = false, onNavigate }: SidebarProps) {
   const { user, logout } = useAuth()
+  const isAdmin = user?.role === 'ADMIN'
 
+  // Les admins ne peuvent ni acheter ni proposer (conflit d'intérêt)
+  // → on masque les sections Investir + Propriétaire pour eux.
   const groups = [
-    investirGroup,
+    ...(isAdmin ? [] : [investirGroup]),
     activiteGroup,
-    ...(hasProprietesProposees ? [proprietaireGroup] : []),
+    ...(!isAdmin && hasProprietesProposees ? [proprietaireGroup] : []),
     compteGroup,
   ]
 
@@ -132,8 +135,9 @@ export function Sidebar({ hasProprietesProposees = false, onNavigate }: SidebarP
           </div>
         ))}
 
-        {/* Proposer un bien (toujours visible, accroche pour les nouveaux propriétaires) */}
-        {!hasProprietesProposees && (
+        {/* Proposer un bien (toujours visible, accroche pour les nouveaux propriétaires)
+            — masqué pour les admins (conflit d'intérêt) */}
+        {!isAdmin && !hasProprietesProposees && (
           <div>
             <p className="px-3 mb-2 font-body text-[11px] font-semibold uppercase tracking-wider text-earth-400">
               Propriétaire
