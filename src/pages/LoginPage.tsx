@@ -74,10 +74,12 @@ export function LoginPage() {
     <AuthLayout banner={banner}>
       <div className="text-center mb-7">
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-2">
-          Content de vous revoir !
+          {isAdminHost() ? 'Connexion administrateur' : 'Content de vous revoir !'}
         </h1>
         <p className="font-body text-earth-600 text-sm">
-          Connectez-vous pour accéder à votre espace.
+          {isAdminHost()
+            ? 'Accédez au back-office Fursa.'
+            : 'Connectez-vous pour accéder à votre espace.'}
         </p>
       </div>
 
@@ -145,15 +147,24 @@ export function LoginPage() {
         </Button>
       </form>
 
-      <div className="mt-6 text-center text-sm font-body text-earth-600">
-        Pas encore de compte ?{' '}
-        <Link
-          to={`/register${redirect !== '/dashboard' ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
-          className="text-ocean font-semibold hover:underline"
-        >
-          Créer un compte
-        </Link>
-      </div>
+      {/* Lien "Créer un compte" : masqué sur le sous-domaine admin (pas d'inscription publique côté back-office) */}
+      {!isAdminHost() && (
+        <div className="mt-6 text-center text-sm font-body text-earth-600">
+          Pas encore de compte ?{' '}
+          <Link
+            to={`/register${redirect !== '/dashboard' ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
+            className="text-ocean font-semibold hover:underline"
+          >
+            Créer un compte
+          </Link>
+        </div>
+      )}
+
+      {isAdminHost() && (
+        <div className="mt-6 text-center text-xs font-body text-earth-500">
+          Espace réservé aux administrateurs.
+        </div>
+      )}
     </AuthLayout>
   )
 }
