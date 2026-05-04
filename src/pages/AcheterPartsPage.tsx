@@ -418,7 +418,7 @@ function Step3Success({ result }: { result: AchatResponse }) {
       <div className="bg-white rounded-lg border border-earth/8 p-5 mb-8 max-w-md mx-auto text-left">
         <Row label="Parts achetées" mono>
           <span className="font-mono font-semibold text-earth">
-            {result.nombreParts.toLocaleString('fr-FR')}
+            {(result.nombreParts ?? 0).toLocaleString('fr-FR')}
           </span>
         </Row>
         <Row label="Montant" mono>

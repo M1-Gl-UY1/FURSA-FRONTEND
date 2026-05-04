@@ -139,7 +139,7 @@ export function DashboardPage() {
                       <Money amount={p.valeurTotale} mono={false} />
                     </p>
                     <p className="font-mono text-earth-500 text-xs tabular-nums">
-                      {p.nombreDeParts.toLocaleString('fr-FR')} parts
+                      {(p.nombreDeParts ?? 0).toLocaleString('fr-FR')} parts
                     </p>
                   </div>
                 </li>
@@ -210,7 +210,7 @@ export function DashboardPage() {
       {dashboard && (
         <section className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
           <MiniStat label="Propriétés détenues" value={dashboard.nombreProprietes} />
-          <MiniStat label="Total parts" value={dashboard.totalParts.toLocaleString('fr-FR')} />
+          <MiniStat label="Total parts" value={(dashboard.totalParts ?? 0).toLocaleString('fr-FR')} />
           <MiniStat label="Annonces ouvertes" value={dashboard.annoncesOuvertes} />
           <MiniStat label="Notifs non lues" value={dashboard.notificationsNonLues} />
         </section>

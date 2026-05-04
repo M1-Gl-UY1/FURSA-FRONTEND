@@ -114,7 +114,7 @@ export function PortefeuillePage() {
                   <dl className="space-y-2.5 pb-4 mb-4 border-b border-earth/8">
                     <Row label="Parts détenues">
                       <span className="font-mono font-semibold text-earth text-sm">
-                        {p.nombreDeParts.toLocaleString('fr-FR')}
+                        {(p.nombreDeParts ?? 0).toLocaleString('fr-FR')}
                       </span>
                     </Row>
                     <Row label="Prix unitaire">

@@ -74,8 +74,8 @@ export function PropertySelector({ options, selectedId, onSelect }: PropertySele
               {/* Stats à droite */}
               <div className="text-right shrink-0">
                 <p className="font-mono font-semibold text-earth text-sm">
-                  {opt.partsDisponiblesAVente.toLocaleString('fr-FR')}
-                  <span className="text-earth-400 text-xs"> / {opt.nombreDeParts.toLocaleString('fr-FR')}</span>
+                  {(opt.partsDisponiblesAVente ?? 0).toLocaleString('fr-FR')}
+                  <span className="text-earth-400 text-xs"> / {(opt.nombreDeParts ?? 0).toLocaleString('fr-FR')}</span>
                 </p>
                 <p className="font-body text-[10px] text-earth-500">parts à vendre</p>
                 <p className="font-mono text-[11px] text-earth-500 mt-0.5">
