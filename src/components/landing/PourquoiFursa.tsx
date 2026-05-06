@@ -1,5 +1,3 @@
-import { Image as ImageIcon } from 'lucide-react'
-
 export function PourquoiFursa() {
   return (
     <section id="pourquoi" className="bg-earth py-16 sm:py-20 lg:py-24">
