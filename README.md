@@ -18,7 +18,7 @@ Plateforme d'investissement immobilier fractionné en Afrique — interface web.
 | State serveur | TanStack Query v5 |
 | Forms | React Hook Form + Zod |
 | HTTP | Axios |
-| Auth | JWT en localStorage + Context + interceptor axios |
+| Auth | Access JWT (1h) + Refresh token (7j) en localStorage, intercepteur axios avec retry-on-401 + queue (Facebook-style) |
 | Toasts | Sonner |
 | Icons | Lucide React (+ SVG inline pour marques) |
 
@@ -167,5 +167,6 @@ Nginx config : `/etc/nginx/sites-available/fursa.seed-innov.com`
 ## Référence d'architecture
 
 - `ARCHITECTURE_UI_FURSA.md` (à la racine du projet) — design des flows + structure
-- `ROADMAP_UI_FURSA.md` — historique des phases livrées (10 phases, 90% complète)
+- `ROADMAP_UI_FURSA.md` — historique des phases livrées (11 phases, refresh token V2 inclus)
 - `DESIGN_SYSTEM_FURSA.md` — palette / typographie / composants
+- `GUIDE_UTILISATION_FURSA.md` — guide utilisateur final (investisseur / propriétaire / admin)
