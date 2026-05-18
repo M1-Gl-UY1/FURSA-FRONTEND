@@ -1,5 +1,3 @@
-import { Image as ImageIcon } from 'lucide-react'
-
 export function PourquoiFursa() {
   return (
     <section id="pourquoi" className="bg-earth py-16 sm:py-20 lg:py-24">
@@ -21,9 +19,11 @@ export function PourquoiFursa() {
           {/* Visuel placeholder (mockup app à intégrer plus tard) */}
           <div className="lg:col-span-6">
             <div className="aspect-[4/3] w-full rounded-xl bg-earth-600/40 border border-white/5 flex items-center justify-center">
-              <ImageIcon
-                className="w-16 h-16 text-white/30"
-                strokeWidth={1.25}
+              <img 
+                src="https://img.freepik.com/free-photo/dark-businesswoman-shaking-hands-with-male-colleague_74855-1763.jpg?semt=ais_hybrid&w=740&q=80" 
+                alt="" 
+                className="w-full h-full object-cover rounded-3xl"
+                loading="lazy"
               />
             </div>
           </div>
