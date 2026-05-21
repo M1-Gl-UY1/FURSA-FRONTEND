@@ -2,8 +2,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from './client'
 import type {
+  AdminPaymentSessionResponse,
   CurrentUser,
   DashboardAdminResponse,
+  DeviseRate,
   DividendeResponse,
   PaiementResponse,
   ProprieteResponse,
@@ -226,6 +228,66 @@ export function useAdminDividendes() {
     queryFn: async () => {
       const { data } = await api.get<DividendeResponse[]>('/api/dividendes')
       return data
+    },
+  })
+}
+
+// =============================================================================
+// Admin paiements (sessions PSP)
+// =============================================================================
+
+export function useAdminPaymentSessions(statut: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'FAILED' = 'FAILED') {
+  return useQuery({
+    queryKey: ['admin', 'payment-sessions', statut],
+    queryFn: async () => {
+      const { data } = await api.get<AdminPaymentSessionResponse[]>(
+        `/api/admin/paiements?statut=${statut}`
+      )
+      return data
+    },
+  })
+}
+
+export function useRetryOnChain() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (sessionId: number) => {
+      const { data } = await api.post<{ sessionId: number; status: string }>(
+        `/api/admin/paiements/${sessionId}/retry-on-chain`
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'payment-sessions'] })
+    },
+  })
+}
+
+// =============================================================================
+// Admin taux de devises (fiat -> USDC)
+// =============================================================================
+
+export function useAdminDeviseRates() {
+  return useQuery({
+    queryKey: ['admin', 'devise-rates'],
+    queryFn: async () => {
+      const { data } = await api.get<DeviseRate[]>('/api/admin/devise-rate')
+      return data
+    },
+  })
+}
+
+export function useUpsertDeviseRate() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ code, tauxVersUsdc }: { code: string; tauxVersUsdc: number }) => {
+      const { data } = await api.put<DeviseRate>(`/api/admin/devise-rate/${code}`, {
+        tauxVersUsdc,
+      })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'devise-rates'] })
     },
   })
 }

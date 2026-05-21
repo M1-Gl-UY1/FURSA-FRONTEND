@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import {
   ArrowLeftRight,
   Coins,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Building2,
@@ -44,6 +45,7 @@ const groups: NavGroup[] = [
     label: 'Audit',
     items: [
       { label: 'Transactions', to: '/admin/transactions', icon: ArrowLeftRight },
+      { label: 'Paiements PSP', to: '/admin/paiements', icon: CreditCard },
       { label: 'Dividendes', to: '/admin/dividendes', icon: Coins },
     ],
   },

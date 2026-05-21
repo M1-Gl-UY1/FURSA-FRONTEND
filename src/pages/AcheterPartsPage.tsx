@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -9,6 +9,9 @@ import {
   AlertTriangle,
   ShieldCheck,
   Copy,
+  Loader2,
+  ExternalLink,
+  XCircle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -20,14 +23,18 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
-import { useAcheterParts } from '@/lib/api/marche-primaire'
+import { useInitierPaiement, useSessionStatus } from '@/lib/api/paiements'
 import { usePropriete } from '@/lib/api/proprietes'
-import type { AchatResponse, ProprieteResponse } from '@/lib/api/types'
+import type {
+  PaymentInitResponse,
+  PaymentSessionStatusResponse,
+  ProprieteResponse,
+} from '@/lib/api/types'
 import { extractApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { ShieldAlert } from 'lucide-react'
 
-const STEPS = ['Sélection', 'Confirmation', 'Succès']
+const STEPS = ['Sélection', 'Confirmation', 'Paiement', 'Succès']
 
 export function AcheterPartsPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -39,16 +46,29 @@ export function AcheterPartsPage() {
 
   const { data: propriete, isLoading, isError } = usePropriete(id)
   const { isAdmin } = useAuth()
-  const [step, setStep] = useState<0 | 1 | 2>(0)
+  const [step, setStep] = useState<0 | 1 | 2 | 3>(0)
   const [parts, setParts] = useState<number>(1)
   const [cgvAccepted, setCgvAccepted] = useState(false)
-  const [result, setResult] = useState<AchatResponse | null>(null)
-  const mutation = useAcheterParts()
+  const [session, setSession] = useState<PaymentInitResponse | null>(null)
+  const mutation = useInitierPaiement()
 
-  // Init des parts à 1 dès qu'on a la propriété
+  // Polling du statut de la session une fois qu'elle existe
+  const { data: sessionStatus } = useSessionStatus(session?.sessionId ?? null)
+
+  // Transition step 2 -> 3 quand la session est CONFIRMED
+  useEffect(() => {
+    if (sessionStatus?.statut === 'CONFIRMED' && step === 2) {
+      setStep(3)
+      toast.success('Paiement confirmé !')
+    }
+  }, [sessionStatus?.statut, step])
+
   useEffect(() => {
     if (propriete) setParts(1)
   }, [propriete?.id])
+
+  // Idempotency-Key genere une fois par tentative d'achat (anti double-clic, anti retry)
+  const idempotencyKey = useMemo(() => crypto.randomUUID(), [step === 1])
 
   if (isLoading) {
     return (
@@ -74,8 +94,6 @@ export function AcheterPartsPage() {
     )
   }
 
-  // Garde-fou : un admin ne peut pas acheter de parts
-  // (conflit d'intérêt + délit d'initié — séparation rôles opérateur/investisseur)
   if (isAdmin) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center">
@@ -117,18 +135,17 @@ export function AcheterPartsPage() {
     )
   }
 
-  function confirmAchat() {
+  function lancerPaiement() {
     if (!propriete) return
     mutation.mutate(
-      { proprieteId: propriete.id, nombreParts: parts },
+      { payload: { proprieteId: propriete.id, nombreParts: parts }, idempotencyKey },
       {
         onSuccess: (res) => {
-          setResult(res)
+          setSession(res)
           setStep(2)
-          toast.success('Achat confirmé !')
         },
         onError: (err) => {
-          toast.error(extractApiError(err, 'Achat impossible.'))
+          toast.error(extractApiError(err, 'Paiement impossible.'))
         },
       }
     )
@@ -136,7 +153,6 @@ export function AcheterPartsPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* Back link */}
       <Link
         to={`/opportunites/${propriete.id}`}
         className="inline-flex items-center gap-1.5 text-earth-600 hover:text-earth text-sm font-body mb-6 transition-colors"
@@ -145,12 +161,10 @@ export function AcheterPartsPage() {
         Retour à la propriété
       </Link>
 
-      {/* Stepper */}
       <div className="mb-10">
         <WizardStepper steps={STEPS} current={step} />
       </div>
 
-      {/* Etapes */}
       {step === 0 && (
         <Step1Selection
           propriete={propriete}
@@ -168,12 +182,25 @@ export function AcheterPartsPage() {
           cgvAccepted={cgvAccepted}
           onCgvChange={setCgvAccepted}
           onBack={() => setStep(0)}
-          onConfirm={confirmAchat}
+          onConfirm={lancerPaiement}
           isPending={mutation.isPending}
         />
       )}
 
-      {step === 2 && result && <Step3Success result={result} />}
+      {step === 2 && session && (
+        <Step3Waiting
+          session={session}
+          status={sessionStatus ?? null}
+          onCancel={() => {
+            setSession(null)
+            setStep(1)
+          }}
+        />
+      )}
+
+      {step === 3 && session && sessionStatus && (
+        <Step4Success session={session} status={sessionStatus} />
+      )}
     </div>
   )
 }
@@ -212,7 +239,6 @@ function Step1Selection({ propriete, parts, partsMax, onPartsChange, onContinue 
         <span className="font-semibold text-earth">{propriete.nom}</span>.
       </p>
 
-      {/* Mini infos sur la propriété */}
       <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-body text-earth-600 mb-8 pb-6 border-b border-earth/8">
         <span>
           Prix / part : <Money amount={prix} mono={false} className="font-mono font-semibold text-earth" />
@@ -229,7 +255,6 @@ function Step1Selection({ propriete, parts, partsMax, onPartsChange, onContinue 
         </span>
       </div>
 
-      {/* Slider + input */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <Label htmlFor="parts">Nombre de parts</Label>
@@ -257,7 +282,6 @@ function Step1Selection({ propriete, parts, partsMax, onPartsChange, onContinue 
         </div>
       </div>
 
-      {/* Récap calculé */}
       <div className="bg-white rounded-lg border border-earth/8 p-5 mb-8 space-y-3">
         <Row label="Montant total" mono>
           <Money amount={total} mono={false} className="text-base font-bold text-earth" />
@@ -316,7 +340,6 @@ function Step2Confirmation({
         Vérifiez les détails avant de finaliser votre achat.
       </p>
 
-      {/* Récap */}
       <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 space-y-3">
         <Row label="Propriété">
           <span className="font-body font-semibold text-earth">{propriete.nom}</span>
@@ -350,20 +373,18 @@ function Step2Confirmation({
         </div>
       </div>
 
-      {/* Méthode paiement (V1 : crypto simulé) */}
       <div className="bg-white rounded-lg border border-earth/8 p-4 mb-6 flex items-center gap-3">
         <div className="w-10 h-10 rounded-md bg-ocean/10 flex items-center justify-center">
           <Wallet className="w-5 h-5 text-ocean" strokeWidth={1.75} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-body font-semibold text-earth text-sm">Crypto-monnaie</p>
+          <p className="font-body font-semibold text-earth text-sm">Paiement par USDC (stable-coin)</p>
           <p className="font-body text-earth-500 text-xs">
-            Simulation V1 — autres méthodes bientôt
+            Conversion automatique depuis votre devise locale. Mode démo actif.
           </p>
         </div>
       </div>
 
-      {/* CGV */}
       <label className="flex items-start gap-3 mb-7 cursor-pointer">
         <Checkbox
           id="cgv"
@@ -387,7 +408,6 @@ function Step2Confirmation({
         </span>
       </label>
 
-      {/* Actions */}
       <div className="flex flex-col-reverse sm:flex-row gap-3">
         <Button variant="outline" size="lg" className="sm:flex-1" onClick={onBack} disabled={isPending}>
           <ArrowLeft strokeWidth={2} />
@@ -399,7 +419,7 @@ function Step2Confirmation({
           onClick={onConfirm}
           disabled={!cgvAccepted || isPending}
         >
-          {isPending ? 'Traitement...' : 'Confirmer l\'achat'}
+          {isPending ? 'Initialisation...' : 'Payer maintenant'}
         </Button>
       </div>
     </div>
@@ -407,21 +427,105 @@ function Step2Confirmation({
 }
 
 // ============================================================================
-// Étape 3 — Succès
+// Étape 3 — En attente du paiement (polling)
 // ============================================================================
 
-function Step3Success({ result }: { result: AchatResponse }) {
-  const navigate = useNavigate()
+type Step3WaitingProps = {
+  session: PaymentInitResponse
+  status: PaymentSessionStatusResponse | null
+  onCancel: () => void
+}
 
-  function copyHash() {
-    navigator.clipboard.writeText(result.hashTransaction).then(() =>
-      toast.success('Hash copié !')
+function Step3Waiting({ session, status, onCancel }: Step3WaitingProps) {
+  const statut = status?.statut ?? session.statut
+  const isFailed = statut === 'FAILED' || statut === 'EXPIRED'
+
+  if (isFailed) {
+    return (
+      <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-10 text-center">
+        <XCircle className="w-16 h-16 text-warning mx-auto mb-6" strokeWidth={1.5} />
+        <h1 className="font-display font-bold text-earth text-2xl mb-2">
+          {statut === 'EXPIRED' ? 'Session expirée' : 'Paiement échoué'}
+        </h1>
+        <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
+          {status?.errorMessage ??
+            (statut === 'EXPIRED'
+              ? 'Le délai de paiement est dépassé. Veuillez recommencer.'
+              : 'Le paiement n\'a pas pu être validé. Vous pouvez réessayer.')}
+        </p>
+        <Button onClick={onCancel} size="lg">
+          Réessayer
+        </Button>
+      </div>
     )
   }
 
   return (
     <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-10 text-center">
-      {/* Animation de succès */}
+      <Loader2 className="w-16 h-16 text-ocean mx-auto mb-6 animate-spin" strokeWidth={1.5} />
+      <h1 className="font-display font-bold text-earth text-2xl mb-2">
+        Paiement en cours...
+      </h1>
+      <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
+        En attente de confirmation du paiement. Cela prend généralement quelques secondes.
+        Ne fermez pas cette page.
+      </p>
+
+      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 max-w-md mx-auto text-left space-y-3">
+        <Row label="Montant à payer" mono>
+          <Money
+            amount={session.montantFiat}
+            mono={false}
+            className="font-mono font-bold text-earth"
+          />
+        </Row>
+        <Row label="En USDC" mono>
+          <span className="font-mono text-earth">{session.montantUsdc.toFixed(2)} USDC</span>
+        </Row>
+        <Row label="Provider">
+          <span className="font-body text-earth">{session.providerName}</span>
+        </Row>
+      </div>
+
+      {session.widgetUrl && session.providerName !== 'MOCK' && (
+        <a
+          href={session.widgetUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-ocean text-sm font-semibold hover:underline mb-4"
+        >
+          Ouvrir le portail de paiement
+          <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
+        </a>
+      )}
+
+      <Button variant="outline" onClick={onCancel} className="mt-2">
+        Annuler
+      </Button>
+    </div>
+  )
+}
+
+// ============================================================================
+// Étape 4 — Succès
+// ============================================================================
+
+type Step4SuccessProps = {
+  session: PaymentInitResponse
+  status: PaymentSessionStatusResponse
+}
+
+function Step4Success({ session, status }: Step4SuccessProps) {
+  const navigate = useNavigate()
+  const txHash = status.txHash
+
+  function copyHash() {
+    if (!txHash) return
+    navigator.clipboard.writeText(txHash).then(() => toast.success('Hash copié !'))
+  }
+
+  return (
+    <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-10 text-center">
       <div className="relative w-20 h-20 mx-auto mb-6">
         <div className="absolute inset-0 rounded-full bg-success/15 animate-ping opacity-75" />
         <div className="relative w-20 h-20 rounded-full bg-success flex items-center justify-center shadow-card-hover">
@@ -433,46 +537,54 @@ function Step3Success({ result }: { result: AchatResponse }) {
         Achat confirmé !
       </h1>
       <p className="font-body text-earth-600 text-sm sm:text-base mb-8 max-w-md mx-auto">
-        Vos {result.nombreParts} parts de{' '}
-        <span className="font-semibold text-earth">{result.proprieteNom}</span> ont
-        été ajoutées à votre portefeuille.
+        Vos parts ont été ajoutées à votre portefeuille.
       </p>
 
-      {/* Détails transaction */}
-      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-8 max-w-md mx-auto text-left">
-        <Row label="Parts achetées" mono>
-          <span className="font-mono font-semibold text-earth">
-            {(result.nombreParts ?? 0).toLocaleString('fr-FR')}
-          </span>
-        </Row>
+      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-8 max-w-md mx-auto text-left space-y-3">
         <Row label="Montant" mono>
-          <Money amount={result.montant} mono={false} className="font-mono font-semibold text-earth" />
+          <Money
+            amount={session.montantFiat}
+            mono={false}
+            className="font-mono font-semibold text-earth"
+          />
         </Row>
         <Row label="Statut">
           <span className="inline-flex items-center gap-1 text-success text-xs font-semibold">
             <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2} />
-            {result.statut}
+            {status.statut}
           </span>
         </Row>
-        <div className="pt-3 mt-3 border-t border-earth/8">
-          <p className="font-body text-xs text-earth-500 mb-1">Hash transaction</p>
-          <button
-            type="button"
-            onClick={copyHash}
-            className="group flex items-center gap-2 w-full text-left"
-          >
-            <code className="font-mono text-[11px] text-earth break-all flex-1 leading-tight">
-              {result.hashTransaction}
-            </code>
-            <Copy
-              className="w-4 h-4 text-earth-400 group-hover:text-ocean shrink-0 transition-colors"
-              strokeWidth={1.75}
-            />
-          </button>
-        </div>
+        {txHash && (
+          <div className="pt-3 mt-3 border-t border-earth/8">
+            <p className="font-body text-xs text-earth-500 mb-1">Hash transaction</p>
+            <button
+              type="button"
+              onClick={copyHash}
+              className="group flex items-center gap-2 w-full text-left"
+            >
+              <code className="font-mono text-[11px] text-earth break-all flex-1 leading-tight">
+                {txHash}
+              </code>
+              <Copy
+                className="w-4 h-4 text-earth-400 group-hover:text-ocean shrink-0 transition-colors"
+                strokeWidth={1.75}
+              />
+            </button>
+            {status.etherscanUrl && (
+              <a
+                href={status.etherscanUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 mt-2 text-ocean text-xs font-semibold hover:underline"
+              >
+                Voir sur Etherscan
+                <ExternalLink className="w-3 h-3" strokeWidth={2} />
+              </a>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* CTAs */}
       <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-md mx-auto">
         <Button variant="outline" size="lg" className="sm:flex-1" onClick={() => navigate('/opportunites')}>
           Continuer à investir

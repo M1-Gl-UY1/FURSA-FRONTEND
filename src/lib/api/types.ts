@@ -145,6 +145,59 @@ export type AchatResponse = {
   dateTransaction: string
 }
 
+// --- Paiements asynchrones via PSP (Yellow Card / Mock) ---
+
+export type PaymentInitResponse = {
+  sessionId: number
+  externalId: string
+  widgetUrl: string | null
+  expiresAt: string
+  montantFiat: number
+  deviseFiat: string
+  montantUsdc: number
+  providerName: string
+  statut: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'FAILED'
+}
+
+export type PaymentSessionStatusResponse = {
+  sessionId: number
+  externalId: string
+  statut: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'FAILED'
+  txHash: string | null
+  etherscanUrl: string | null
+  errorMessage: string | null
+  expiresAt: string
+  confirmedAt: string | null
+}
+
+export type AdminPaymentSessionResponse = {
+  sessionId: number
+  externalId: string
+  investisseurId: number
+  investisseurEmail: string
+  proprieteId: number
+  proprieteNom: string
+  nombreParts: number
+  montantFiat: number
+  deviseFiat: string
+  montantUsdc: number
+  providerName: string
+  statut: 'PENDING' | 'CONFIRMED' | 'EXPIRED' | 'FAILED'
+  errorMessage: string | null
+  createdAt: string
+  expiresAt: string
+  confirmedAt: string | null
+  paiementId: number | null
+  transactionId: number | null
+  possessionId: number | null
+}
+
+export type DeviseRate = {
+  codeDevise: string
+  tauxVersUsdc: number
+  updatedAt: string
+}
+
 export type PossessionResponse = {
   id: number
   proprieteId?: number

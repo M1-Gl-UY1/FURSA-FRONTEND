@@ -10,6 +10,7 @@ import { RequireAuth } from '@/lib/auth/RequireAuth'
 import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
+import { AdminPaiementSessionsPage } from '@/pages/admin/AdminPaiementSessionsPage'
 import { AdminProprieteDetailPage } from '@/pages/admin/AdminProprieteDetailPage'
 import { AdminProprietesPage } from '@/pages/admin/AdminProprietesPage'
 import { AdminRevenusPage } from '@/pages/admin/AdminRevenusPage'
@@ -83,6 +84,7 @@ function App() {
                 <Route path="/admin/revenus" element={<AdminRevenusPage />} />
                 <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
                 <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
+                <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
                 <Route path="/admin/dividendes" element={<AdminDividendesPage />} />
               </Route>
             </Route>
