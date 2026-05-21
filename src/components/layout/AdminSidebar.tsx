@@ -3,6 +3,7 @@ import {
   ArrowLeftRight,
   Coins,
   CreditCard,
+  DollarSign,
   LayoutDashboard,
   LogOut,
   Building2,
@@ -46,6 +47,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Transactions', to: '/admin/transactions', icon: ArrowLeftRight },
       { label: 'Paiements PSP', to: '/admin/paiements', icon: CreditCard },
+      { label: 'Taux change', to: '/admin/devise-rate', icon: DollarSign },
       { label: 'Dividendes', to: '/admin/dividendes', icon: Coins },
     ],
   },

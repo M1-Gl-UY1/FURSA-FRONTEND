@@ -9,6 +9,7 @@ import { RequireAdmin } from '@/lib/auth/RequireAdmin'
 import { RequireAuth } from '@/lib/auth/RequireAuth'
 import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
+import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
 import { AdminPaiementSessionsPage } from '@/pages/admin/AdminPaiementSessionsPage'
 import { AdminProprieteDetailPage } from '@/pages/admin/AdminProprieteDetailPage'
@@ -85,6 +86,7 @@ function App() {
                 <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
                 <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
                 <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
+                <Route path="/admin/devise-rate" element={<AdminDeviseRatesPage />} />
                 <Route path="/admin/dividendes" element={<AdminDividendesPage />} />
               </Route>
             </Route>
