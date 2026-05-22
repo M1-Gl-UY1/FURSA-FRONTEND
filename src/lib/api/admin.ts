@@ -252,6 +252,23 @@ export function useRefuserRevenu() {
   })
 }
 
+export function useMarquerArgentRecu() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, argentRecu }: { id: number; argentRecu: boolean }) => {
+      const { data } = await api.post<RevenuResponse>(
+        `/api/revenus/admin/${id}/argent-recu`,
+        { argentRecu }
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'revenus'] })
+      qc.invalidateQueries({ queryKey: ['mes-revenus'] })
+    },
+  })
+}
+
 export function useDistribuerRevenu() {
   const qc = useQueryClient()
   return useMutation({
@@ -332,6 +349,29 @@ export function useAdminDividendes() {
     queryFn: async () => {
       const { data } = await api.get<DividendeResponse[]>('/api/dividendes')
       return data
+    },
+  })
+}
+
+export type MarquerPayePayload = {
+  id: number
+  methodePaiement: string
+  preuvePaiement: string
+}
+
+export function useMarquerDividendePaye() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, methodePaiement, preuvePaiement }: MarquerPayePayload) => {
+      const { data } = await api.post<DividendeResponse>(
+        `/api/dividendes/${id}/marquer-paye`,
+        { methodePaiement, preuvePaiement }
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'dividendes'] })
+      qc.invalidateQueries({ queryKey: ['mes-dividendes'] })
     },
   })
 }

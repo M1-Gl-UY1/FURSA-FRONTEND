@@ -1,4 +1,4 @@
-import { Coins, TrendingUp } from 'lucide-react'
+import { Clock, Coins, ExternalLink, TrendingUp, Wallet } from 'lucide-react'
 
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -6,14 +6,13 @@ import { Money } from '@/components/shared/Money'
 import { StatCard } from '@/components/shared/StatCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useMesDividendes } from '@/lib/api/dividendes'
+import { useMaBalanceDividendes, useMesDividendes } from '@/lib/api/dividendes'
 import type { DividendeResponse } from '@/lib/api/types'
 
 export function DividendesPage() {
   const { data, isLoading } = useMesDividendes()
+  const { data: balance, isLoading: balanceLoading } = useMaBalanceDividendes()
 
-  const total = data?.reduce((s, d) => s + (d.montant ?? 0), 0) ?? 0
-  const nbDistributions = data?.length ?? 0
   const nbProprietes = new Set(data?.map((d) => d.proprieteNom) ?? []).size
 
   const columns: Column<DividendeResponse>[] = [
@@ -33,13 +32,17 @@ export function DividendesPage() {
     },
     {
       key: 'montant',
-      label: 'Montant reçu',
+      label: 'Montant',
       align: 'right',
       render: (d) => (
         <Money
           amount={d.montant}
           mono={false}
-          className="font-semibold text-success"
+          className={
+            d.statut === 'PAYE'
+              ? 'font-semibold text-success'
+              : 'font-semibold text-warning'
+          }
         />
       ),
     },
@@ -50,15 +53,48 @@ export function DividendesPage() {
       align: 'center',
     },
     {
-      key: 'hashTransaction',
-      label: 'Hash',
+      key: 'datePaiementEffectif',
+      label: 'Versé le',
       hideOnMobile: true,
-      render: (d) => (
-        <code className="font-mono text-[10px] text-earth-500 truncate block max-w-[140px]">
-          {d.hashTransaction}
-        </code>
-      ),
+      sortAccessor: (d) => (d.datePaiementEffectif ? new Date(d.datePaiementEffectif) : new Date(0)),
+      render: (d) =>
+        d.datePaiementEffectif ? (
+          <span className="font-body text-xs text-earth-600">
+            {formatDate(d.datePaiementEffectif)}
+            {d.methodePaiement && (
+              <span className="block font-mono text-[10px] text-earth-500">
+                {d.methodePaiement}
+              </span>
+            )}
+          </span>
+        ) : (
+          <span className="font-body text-xs text-earth-400 italic">En attente</span>
+        ),
+    },
+    {
+      key: 'preuvePaiement',
+      label: 'Preuve',
+      hideOnMobile: true,
       noSort: true,
+      render: (d) =>
+        d.preuvePaiement ? (
+          d.preuvePaiement.startsWith('http') ? (
+            <a
+              href={d.preuvePaiement}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-ocean text-xs hover:underline"
+            >
+              <ExternalLink className="w-3 h-3" strokeWidth={1.75} /> Voir
+            </a>
+          ) : (
+            <code className="font-mono text-[10px] text-earth-600 truncate block max-w-[140px]">
+              {d.preuvePaiement}
+            </code>
+          )
+        ) : (
+          <span className="text-earth-300 text-xs">—</span>
+        ),
     },
   ]
 
@@ -70,34 +106,60 @@ export function DividendesPage() {
         </h1>
         <p className="font-body text-earth-600 text-sm">
           Revenus distribués par les propriétés dans lesquelles vous détenez des parts.
+          Le solde <strong>à retirer</strong> sera versé par l'admin (Mobile Money, virement
+          ou crypto) dès qu'un montant suffisant sera atteint.
         </p>
       </header>
 
-      {/* KPIs */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {isLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
+      {/* KPIs balance */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {balanceLoading || isLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-32 rounded-xl bg-sand-300" />
           ))
         ) : (
           <>
             <StatCard
-              label="Total perçu"
-              value={<Money amount={total} mono={false} />}
+              label="À retirer"
+              value={<Money amount={balance?.aRetirer ?? 0} mono={false} />}
+              icon={Wallet}
+              iconBg="bg-warning/15"
+              iconColor="text-warning"
+              trendLabel={
+                balance?.nbARetirer
+                  ? `${balance.nbARetirer} dividende${balance.nbARetirer > 1 ? 's' : ''} en attente`
+                  : 'Aucun en attente'
+              }
+              trend={balance?.nbARetirer ? 0 : null}
+            />
+            <StatCard
+              label="Déjà reçu"
+              value={<Money amount={balance?.dejaRecu ?? 0} mono={false} />}
               icon={Coins}
+              iconBg="bg-success/10"
+              iconColor="text-success"
+              trendLabel={
+                balance?.nbDejaRecu
+                  ? `${balance.nbDejaRecu} versement${balance.nbDejaRecu > 1 ? 's' : ''}`
+                  : 'Aucun versement'
+              }
+              trend={balance?.nbDejaRecu ? 0 : null}
+            />
+            <StatCard
+              label="Total cumulé"
+              value={<Money amount={balance?.total ?? 0} mono={false} />}
+              icon={TrendingUp}
               iconBg="bg-gold/15"
               iconColor="text-gold-600"
             />
             <StatCard
-              label="Distributions reçues"
-              value={nbDistributions}
-              icon={TrendingUp}
-              iconBg="bg-success/10"
-              iconColor="text-success"
-            />
-            <StatCard
-              label="Propriétés génératrices"
+              label="Propriétés"
               value={nbProprietes}
+              icon={Clock}
+              iconBg="bg-ocean/10"
+              iconColor="text-ocean"
+              trendLabel="génératrices de revenu"
+              trend={nbProprietes ? 0 : null}
             />
           </>
         )}

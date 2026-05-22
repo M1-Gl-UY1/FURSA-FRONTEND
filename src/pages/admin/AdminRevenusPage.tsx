@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Banknote, CheckCircle2, Coins, Send, XCircle } from 'lucide-react'
+import {
+  Banknote,
+  CheckCircle2,
+  Coins,
+  ExternalLink,
+  FileText,
+  Send,
+  Wallet,
+  XCircle,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { DataTable, type Column } from '@/components/shared/DataTable'
@@ -8,6 +17,7 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -22,11 +32,19 @@ import {
   useAdminRevenus,
   useApprouverRevenu,
   useDistribuerRevenu,
+  useMarquerArgentRecu,
   useRefuserRevenu,
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import type { RevenuResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
+
+function resolveFileUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  const base = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+  return base ? `${base}${url.startsWith('/') ? '' : '/'}${url}` : url
+}
 
 type Tab = 'a-valider' | 'valides' | 'distribues' | 'tous'
 
@@ -44,6 +62,7 @@ export function AdminRevenusPage() {
   const approuver = useApprouverRevenu()
   const refuser = useRefuserRevenu()
   const distribuer = useDistribuerRevenu()
+  const argentRecu = useMarquerArgentRecu()
   const [refusTarget, setRefusTarget] = useState<RevenuResponse | null>(null)
   const [distribTarget, setDistribTarget] = useState<RevenuResponse | null>(null)
 
@@ -90,6 +109,22 @@ export function AdminRevenusPage() {
     )
   }
 
+  function toggleArgentRecu(r: RevenuResponse) {
+    const next = !r.argentRecuParFursa
+    argentRecu.mutate(
+      { id: r.id, argentRecu: next },
+      {
+        onSuccess: () =>
+          toast.success(
+            next
+              ? `Argent confirmé reçu — vous pouvez distribuer #${r.id}.`
+              : `Confirmation annulée pour #${r.id}.`
+          ),
+        onError: (e) => toast.error(extractApiError(e, 'Mise à jour impossible.')),
+      }
+    )
+  }
+
   const columns: Column<RevenuResponse>[] = [
     {
       key: 'id',
@@ -129,6 +164,66 @@ export function AdminRevenusPage() {
       render: (r) => r.statut ? <StatusBadge status={r.statut} /> : '—',
     },
     {
+      key: 'justificatif',
+      label: 'Justif.',
+      align: 'center',
+      hideOnMobile: true,
+      noSort: true,
+      render: (r) => {
+        const url = resolveFileUrl(r.justificatifUrl)
+        return url ? (
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-ocean text-xs hover:underline"
+            title="Voir le justificatif"
+          >
+            <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />
+            <ExternalLink className="w-3 h-3" strokeWidth={1.75} />
+          </a>
+        ) : (
+          <span className="text-earth-300 text-xs">—</span>
+        )
+      },
+    },
+    {
+      key: 'argentRecu',
+      label: 'Argent reçu',
+      align: 'center',
+      hideOnMobile: true,
+      sortAccessor: (r) => (r.argentRecuParFursa ? 1 : 0),
+      render: (r) =>
+        r.statut === 'VALIDE' ? (
+          <label
+            className={cn(
+              'inline-flex items-center gap-2 cursor-pointer',
+              argentRecu.isPending && 'opacity-50 pointer-events-none'
+            )}
+          >
+            <Checkbox
+              checked={!!r.argentRecuParFursa}
+              onCheckedChange={() => toggleArgentRecu(r)}
+              aria-label="Marquer argent reçu par FURSA"
+            />
+            <span
+              className={cn(
+                'font-body text-[11px] font-semibold',
+                r.argentRecuParFursa ? 'text-success' : 'text-warning'
+              )}
+            >
+              {r.argentRecuParFursa ? 'Reçu' : 'En attente'}
+            </span>
+          </label>
+        ) : r.statut === 'DISTRIBUE' ? (
+          <span className="inline-flex items-center gap-1 text-success text-xs">
+            <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={1.75} /> Reçu
+          </span>
+        ) : (
+          <span className="text-earth-300 text-xs">—</span>
+        ),
+    },
+    {
       key: 'actions',
       label: 'Actions',
       noSort: true,
@@ -163,8 +258,21 @@ export function AdminRevenusPage() {
               variant="ghost"
               size="icon-sm"
               onClick={() => setDistribTarget(r)}
-              aria-label="Distribuer"
-              className="text-terra hover:bg-terra/10 hover:text-terra"
+              aria-label={
+                r.argentRecuParFursa
+                  ? 'Distribuer'
+                  : "Cochez 'Argent reçu' avant de distribuer"
+              }
+              disabled={!r.argentRecuParFursa}
+              title={
+                r.argentRecuParFursa
+                  ? 'Distribuer aux investisseurs'
+                  : "Cochez d'abord 'Argent reçu par FURSA' pour pouvoir distribuer."
+              }
+              className={cn(
+                'text-terra hover:bg-terra/10 hover:text-terra',
+                !r.argentRecuParFursa && 'opacity-40 cursor-not-allowed'
+              )}
             >
               <Send strokeWidth={1.75} />
             </Button>
@@ -244,6 +352,10 @@ export function AdminRevenusPage() {
               <br />
               Les dividendes seront calculés au prorata des parts détenues et chaque
               investisseur sera notifié. Action irréversible.
+              <span className="block mt-3 inline-flex items-center gap-1.5 text-success text-xs font-semibold">
+                <Wallet className="w-3.5 h-3.5" strokeWidth={1.75} />
+                Argent confirmé reçu par FURSA
+              </span>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">

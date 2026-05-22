@@ -367,6 +367,18 @@ export type DividendeResponse = {
   hashTransaction: string
   statut: string
   dateDistribution: string
+  // Phase 9 : tracabilite du payout effectif
+  datePaiementEffectif?: string | null
+  preuvePaiement?: string | null
+  methodePaiement?: string | null
+}
+
+export type DividendesBalance = {
+  aRetirer: number
+  dejaRecu: number
+  total: number
+  nbARetirer: number
+  nbDejaRecu: number
 }
 
 export type RevenuResponse = {
@@ -382,6 +394,9 @@ export type RevenuResponse = {
   motifRefus?: string | null
   periodeDebut?: string | null
   periodeFin?: string | null
+  // Phase 9 : justificatif + flag argent recu
+  justificatifUrl?: string | null
+  argentRecuParFursa?: boolean | null
 }
 
 /** Création directe par admin */

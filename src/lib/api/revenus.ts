@@ -43,3 +43,54 @@ export function useDeclarerRevenu() {
     },
   })
 }
+
+export type DeclarerRevenuMultipartPayload = SubmissionRevenuRequest & {
+  justificatif?: File | null
+}
+
+/** Variante multipart : ajoute le justificatif PDF/image à la soumission. */
+export function useDeclarerRevenuMultipart() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: DeclarerRevenuMultipartPayload) => {
+      const fd = new FormData()
+      fd.append('proprieteId', String(payload.proprieteId))
+      fd.append('montantTotal', String(payload.montantTotal))
+      if (payload.periodeDebut) fd.append('periodeDebut', payload.periodeDebut)
+      if (payload.periodeFin) fd.append('periodeFin', payload.periodeFin)
+      if (payload.justificatif) fd.append('justificatif', payload.justificatif)
+
+      const { data } = await api.post<RevenuResponse>(
+        '/api/revenus/submissions/multipart',
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      return data
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['mes-revenus'] })
+      qc.invalidateQueries({ queryKey: ['revenus-propriete', vars.proprieteId] })
+      qc.invalidateQueries({ queryKey: ['mes-notifications'] })
+    },
+  })
+}
+
+export function useUploadJustificatifRevenu() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ revenuId, file }: { revenuId: number; file: File }) => {
+      const fd = new FormData()
+      fd.append('file', file)
+      const { data } = await api.post<RevenuResponse>(
+        `/api/revenus/${revenuId}/justificatif`,
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['mes-revenus'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'revenus'] })
+    },
+  })
+}
