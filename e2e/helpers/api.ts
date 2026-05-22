@@ -74,6 +74,26 @@ export async function createAndLoginUser(prefix: string = 'e2e'): Promise<TestUs
   return user
 }
 
+/**
+ * Bypass KYC pour les tests E2E : utilise l'endpoint admin `POST /api/user/{id}/valider`
+ * qui set isVerified=true. Permet aux tests d'achat de fonctionner sans soumettre un dossier KYC complet.
+ */
+export async function forceVerifyUser(userId: number): Promise<void> {
+  const api = await getApi()
+  const adminToken = await loginAdmin()
+  const res = await api.post(`/api/user/${userId}/valider`, {
+    headers: { Authorization: `Bearer ${adminToken}` },
+  })
+  if (!res.ok()) throw new Error(`Force verify failed (${res.status()}): ${await res.text()}`)
+}
+
+/** Cree un user investisseur + le verifie immediatement (skip KYC pour les tests d'achat). */
+export async function createVerifiedUser(prefix: string = 'e2e'): Promise<TestUser> {
+  const user = await createAndLoginUser(prefix)
+  await forceVerifyUser(user.id!)
+  return user
+}
+
 /** Recupere la liste publique des proprietes (statut=PUBLIEE, parts > 0). */
 export async function getAvailableProperties(token: string) {
   const api = await getApi()

@@ -1,12 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { createAndLoginUser, getAvailableProperties, TestUser } from './helpers/api'
+import { createAndLoginUser, createVerifiedUser, getAvailableProperties, TestUser } from './helpers/api'
 import { loginInvestisseur } from './helpers/ui'
 
 test.describe('Marche primaire - Achat de parts (paiement async)', () => {
   let user: TestUser
 
   test.beforeAll(async () => {
-    user = await createAndLoginUser('e2e-mp')
+    // Cree un user + le verifie (bypass KYC) pour que la garde isVerified ne bloque pas l'achat
+    user = await createVerifiedUser('e2e-mp')
   })
 
   test('Achat de 2 parts : 4 etapes (Selection -> Confirmation -> Paiement -> Succes)', async ({ page }) => {
