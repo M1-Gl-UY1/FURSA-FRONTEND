@@ -19,6 +19,7 @@ import { AdminProprieteDetailPage } from '@/pages/admin/AdminProprieteDetailPage
 import { AdminProprietesPage } from '@/pages/admin/AdminProprietesPage'
 import { AdminRevenusPage } from '@/pages/admin/AdminRevenusPage'
 import { AdminTransactionsPage } from '@/pages/admin/AdminTransactionsPage'
+import { AdminUserDetailPage } from '@/pages/admin/AdminUserDetailPage'
 import { AdminUtilisateursPage } from '@/pages/admin/AdminUtilisateursPage'
 import { AcheterPartsPage } from '@/pages/AcheterPartsPage'
 import { AnnonceDetailPage } from '@/pages/AnnonceDetailPage'
@@ -141,6 +142,7 @@ function AdminRoutes() {
           <Route path="/admin/proprietes/:id" element={<AdminProprieteDetailPage />} />
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
+          <Route path="/admin/utilisateurs/:id" element={<AdminUserDetailPage />} />
           <Route path="/admin/kyc" element={<AdminKycPage />} />
           <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
           <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />

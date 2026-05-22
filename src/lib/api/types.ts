@@ -63,7 +63,8 @@ export type RegisterResponse = {
   telephone: string
   role: Role
   isVerified: boolean
-  walletAddress?: string
+  walletAddress?: string | null
+  deletedAt?: string | null
 }
 
 export type CurrentUser = RegisterResponse

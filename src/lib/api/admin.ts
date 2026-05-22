@@ -54,6 +54,92 @@ export function useValiderUser() {
   })
 }
 
+/** Soft delete : set `deleted_at = now()`. L'user ne peut plus se logger. Reversible via restore. */
+export function useDeleteUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.delete(`/api/user/delete/${id}`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
+    },
+  })
+}
+
+/** Restaure un user soft-deleted (set `deleted_at = null`). */
+export function useRestoreUser() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      await api.post(`/api/user/${id}/restore`)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
+    },
+  })
+}
+
+/** Recupere le profil complet d'un user (admin). */
+export function useAdminUserById(id: number | null) {
+  return useQuery({
+    queryKey: ['admin', 'user', id],
+    enabled: id !== null,
+    queryFn: async () => {
+      const { data } = await api.get<CurrentUser>(`/api/user/${id}`)
+      return data
+    },
+  })
+}
+
+/** Possessions d'un investisseur (admin). */
+export function useAdminPossessionsByUser(investisseurId: number | null) {
+  return useQuery({
+    queryKey: ['admin', 'possessions', investisseurId],
+    enabled: investisseurId !== null,
+    queryFn: async () => {
+      const { data } = await api.get(`/api/marche-primaire/possessions/${investisseurId}`)
+      return data as Array<{
+        possessionId: number
+        proprieteNom: string
+        proprieteLocalisation: string
+        nombreParts: number
+        prixUnitairePart: number
+        valeurTotale: number
+        rentabilitePrevue: number
+      }>
+    },
+  })
+}
+
+/** Transactions blockchain d'un investisseur (admin). */
+export function useAdminTransactionsByUser(investisseurId: number | null) {
+  return useQuery({
+    queryKey: ['admin', 'transactions', investisseurId],
+    enabled: investisseurId !== null,
+    queryFn: async () => {
+      const { data } = await api.get<TransactionResponse[]>(
+        `/api/marche-primaire/transactions/${investisseurId}`
+      )
+      return data
+    },
+  })
+}
+
+/** Paiements d'un investisseur (admin). */
+export function useAdminPaiementsByUser(investisseurId: number | null) {
+  return useQuery({
+    queryKey: ['admin', 'paiements', investisseurId],
+    enabled: investisseurId !== null,
+    queryFn: async () => {
+      const { data } = await api.get<PaiementResponse[]>(
+        `/api/marche-primaire/paiements/${investisseurId}`
+      )
+      return data
+    },
+  })
+}
+
 // =============================================================================
 // Propriétés (admin) — workflow soumission
 // =============================================================================
