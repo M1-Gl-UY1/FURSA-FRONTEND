@@ -1,5 +1,5 @@
-import { Eye, ShieldCheck, ShieldX, Trash2, Users } from 'lucide-react'
-import { useState } from 'react'
+import { Eye, Search, ShieldCheck, ShieldX, Trash2, Users, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { toast } from 'sonner'
 
@@ -14,15 +14,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAdminUsers, useDeleteUser, useValiderUser } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import type { CurrentUser } from '@/lib/api/types'
+import { cn } from '@/lib/utils'
+
+type RoleFilter = 'ALL' | 'INVESTISSEUR' | 'ADMIN'
+type KycFilter = 'ALL' | 'VERIFIED' | 'PENDING'
 
 export function AdminUtilisateursPage() {
   const { data, isLoading } = useAdminUsers()
   const valider = useValiderUser()
   const deleteUser = useDeleteUser()
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('ALL')
+  const [kycFilter, setKycFilter] = useState<KycFilter>('ALL')
   const [toDelete, setToDelete] = useState<CurrentUser | null>(null)
 
   function approveKyc(id: number) {
@@ -43,7 +51,25 @@ export function AdminUtilisateursPage() {
     })
   }
 
-  const users = data ?? []
+  // Filtres : search (email/nom/prenom/telephone) + role + KYC
+  const users = useMemo(() => {
+    const all = data ?? []
+    const q = search.trim().toLowerCase()
+    return all.filter((u) => {
+      if (q) {
+        const hay = `${u.email} ${u.nom} ${u.prenom} ${u.telephone}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+      if (roleFilter !== 'ALL' && u.role !== roleFilter) return false
+      if (kycFilter === 'VERIFIED' && !u.isVerified) return false
+      if (kycFilter === 'PENDING' && u.isVerified) return false
+      return true
+    })
+  }, [data, search, roleFilter, kycFilter])
+
+  const totalUsers = data?.length ?? 0
+  const verifiedCount = data?.filter((u) => u.isVerified).length ?? 0
+  const hasActiveFilter = search.trim() !== '' || roleFilter !== 'ALL' || kycFilter !== 'ALL'
 
   const columns: Column<CurrentUser>[] = [
     {
@@ -150,11 +176,73 @@ export function AdminUtilisateursPage() {
           Utilisateurs
         </h1>
         <p className="font-body text-earth-600 text-sm">
-          {users.length} investisseur{users.length > 1 ? 's' : ''} inscrit{users.length > 1 ? 's' : ''} ·
-          {' '}
-          {users.filter((u) => u.isVerified).length} vérifié{users.filter((u) => u.isVerified).length > 1 ? 's' : ''}
+          {totalUsers} inscrit{totalUsers > 1 ? 's' : ''} · {verifiedCount} vérifié{verifiedCount > 1 ? 's' : ''}
+          {hasActiveFilter && (
+            <span className="ml-2 text-earth-500">
+              · <strong>{users.length}</strong> resultat{users.length > 1 ? 's' : ''} apres filtre
+            </span>
+          )}
         </p>
       </header>
+
+      {/* Barre de recherche + filtres */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1">
+          <Search
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none"
+            strokeWidth={1.75}
+          />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Rechercher par email, nom, prenom, telephone..."
+            className="pl-9 pr-9"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-earth-400 hover:text-earth"
+              aria-label="Effacer la recherche"
+            >
+              <X className="w-4 h-4" strokeWidth={1.75} />
+            </button>
+          )}
+        </div>
+        <FilterSelect
+          value={roleFilter}
+          onChange={(v) => setRoleFilter(v as RoleFilter)}
+          ariaLabel="Filtrer par role"
+          options={[
+            { value: 'ALL', label: 'Tous les rôles' },
+            { value: 'INVESTISSEUR', label: 'Investisseurs' },
+            { value: 'ADMIN', label: 'Admins' },
+          ]}
+        />
+        <FilterSelect
+          value={kycFilter}
+          onChange={(v) => setKycFilter(v as KycFilter)}
+          ariaLabel="Filtrer par statut KYC"
+          options={[
+            { value: 'ALL', label: 'Tous KYC' },
+            { value: 'VERIFIED', label: 'KYC vérifié' },
+            { value: 'PENDING', label: 'KYC en attente' },
+          ]}
+        />
+        {hasActiveFilter && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearch('')
+              setRoleFilter('ALL')
+              setKycFilter('ALL')
+            }}
+          >
+            Reinitialiser
+          </Button>
+        )}
+      </div>
 
       {isLoading ? (
         <Skeleton className="h-64 rounded-xl bg-sand-300" />
@@ -210,5 +298,35 @@ export function AdminUtilisateursPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+function FilterSelect({
+  value,
+  onChange,
+  options,
+  ariaLabel,
+}: {
+  value: string
+  onChange: (v: string) => void
+  options: { value: string; label: string }[]
+  ariaLabel: string
+}) {
+  return (
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      aria-label={ariaLabel}
+      className={cn(
+        'h-11 px-3 rounded-md border-[1.5px] border-sand-400 bg-white text-sm font-body text-earth',
+        'focus:outline-none focus:border-ocean focus:ring-2 focus:ring-ocean/15'
+      )}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
   )
 }
