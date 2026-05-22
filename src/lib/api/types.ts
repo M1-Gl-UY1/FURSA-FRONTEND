@@ -23,6 +23,24 @@ export type StatutAnnonce = 'OUVERTE' | 'COMPLETEE' | 'ANNULEE'
 export type StatutDividende = 'EN_ATTENTE' | 'VALIDE' | 'ANNULE'
 export type StatutRevenu = 'EN_REVIEW' | 'VALIDE' | 'REFUSE' | 'DISTRIBUE'
 
+export type DistributionPreviewItem = {
+  investisseurId: number | null
+  email: string | null
+  nom: string | null
+  prenom: string | null
+  nombreParts: number
+  totalPartsPropriete: number
+  pourcentage: number
+  montantAttendu: number
+}
+
+export type DistributionPreview = {
+  revenuId: number
+  items: DistributionPreviewItem[]
+  totalInvestisseurs: number
+  totalAttendu: number
+}
+
 export type TypePaiement = 'CRYPTO' | 'MOBILE_MONEY' | 'CARTE' | 'VIREMENT'
 export type TypeOperation = 'ACHAT' | 'REVENTE' | 'DIVIDENDE'
 export type TypeMessage = 'AVERTISSEMENT' | 'ANNONCE' | 'INFO' | 'ALERTE' | 'TRANSACTION'

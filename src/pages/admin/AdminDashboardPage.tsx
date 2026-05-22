@@ -5,6 +5,8 @@ import {
   Banknote,
   Building2,
   Coins,
+  CreditCard,
+  IdCard,
   PiggyBank,
   TrendingUp,
   Users,
@@ -13,7 +15,8 @@ import {
 import { Money } from '@/components/shared/Money'
 import { StatCard } from '@/components/shared/StatCard'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useAdminDashboard, useAdminRevenus } from '@/lib/api/admin'
+import { useAdminDashboard, useAdminPaymentSessions, useAdminRevenus } from '@/lib/api/admin'
+import { useAdminKycStats } from '@/lib/api/kyc'
 import { useProprietes } from '@/lib/api/proprietes'
 import { useAuth } from '@/lib/auth/AuthContext'
 
@@ -22,9 +25,13 @@ export function AdminDashboardPage() {
   const { data: dash, isLoading } = useAdminDashboard()
   const { data: proprietes } = useProprietes()
   const { data: revenus } = useAdminRevenus()
+  const { data: kycStats } = useAdminKycStats()
+  const { data: failedPayments } = useAdminPaymentSessions('FAILED')
 
   const enReview = (proprietes ?? []).filter((p) => p.statut === 'EN_REVIEW').length
   const revenusEnReview = (revenus ?? []).filter((r) => r.statut === 'EN_REVIEW').length
+  const kycPending = (kycStats?.pending ?? 0) + (kycStats?.inReview ?? 0)
+  const paymentsFailed = failedPayments?.length ?? 0
 
   return (
     <div className="space-y-6 sm:space-y-8">
@@ -37,42 +44,44 @@ export function AdminDashboardPage() {
         </p>
       </header>
 
-      {/* Alerts */}
-      {(enReview > 0 || revenusEnReview > 0) && (
+      {/* Alerts - actions a prendre par l'admin */}
+      {(enReview > 0 || revenusEnReview > 0 || kycPending > 0 || paymentsFailed > 0) && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {kycPending > 0 && (
+            <AlertCard
+              to="/admin/kyc"
+              icon={IdCard}
+              count={kycPending}
+              label={`Dossier${kycPending > 1 ? 's' : ''} KYC à examiner`}
+              tone="warning"
+            />
+          )}
           {enReview > 0 && (
-            <Link
+            <AlertCard
               to="/admin/proprietes?onglet=a-valider"
-              className="bg-warning/10 border border-warning/30 rounded-xl p-5 hover:bg-warning/15 transition-colors flex items-center gap-4 group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-warning/20 flex items-center justify-center shrink-0">
-                <Building2 className="w-6 h-6 text-warning" strokeWidth={1.75} />
-              </div>
-              <div className="flex-1">
-                <p className="font-mono font-bold text-warning text-2xl">{enReview}</p>
-                <p className="font-body text-earth text-sm font-semibold">
-                  Propriété{enReview > 1 ? 's' : ''} à valider
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-warning group-hover:translate-x-1 transition-transform" strokeWidth={1.75} />
-            </Link>
+              icon={Building2}
+              count={enReview}
+              label={`Propriété${enReview > 1 ? 's' : ''} à valider`}
+              tone="warning"
+            />
           )}
           {revenusEnReview > 0 && (
-            <Link
+            <AlertCard
               to="/admin/revenus?onglet=a-valider"
-              className="bg-warning/10 border border-warning/30 rounded-xl p-5 hover:bg-warning/15 transition-colors flex items-center gap-4 group"
-            >
-              <div className="w-12 h-12 rounded-lg bg-warning/20 flex items-center justify-center shrink-0">
-                <Banknote className="w-6 h-6 text-warning" strokeWidth={1.75} />
-              </div>
-              <div className="flex-1">
-                <p className="font-mono font-bold text-warning text-2xl">{revenusEnReview}</p>
-                <p className="font-body text-earth text-sm font-semibold">
-                  Revenu{revenusEnReview > 1 ? 's' : ''} à valider
-                </p>
-              </div>
-              <ArrowRight className="w-5 h-5 text-warning group-hover:translate-x-1 transition-transform" strokeWidth={1.75} />
-            </Link>
+              icon={Banknote}
+              count={revenusEnReview}
+              label={`Revenu${revenusEnReview > 1 ? 's' : ''} à valider`}
+              tone="warning"
+            />
+          )}
+          {paymentsFailed > 0 && (
+            <AlertCard
+              to="/admin/paiements"
+              icon={CreditCard}
+              count={paymentsFailed}
+              label={`Paiement${paymentsFailed > 1 ? 's' : ''} en échec`}
+              tone="error"
+            />
           )}
         </div>
       )}
@@ -192,6 +201,39 @@ function ActionCard({
         className="w-4 h-4 text-earth-400 group-hover:translate-x-1 group-hover:text-earth transition-all shrink-0 mt-1"
         strokeWidth={1.75}
       />
+    </Link>
+  )
+}
+
+function AlertCard({
+  to,
+  icon: Icon,
+  count,
+  label,
+  tone,
+}: {
+  to: string
+  icon: typeof Building2
+  count: number
+  label: string
+  tone: 'warning' | 'error'
+}) {
+  const cls = tone === 'error'
+    ? 'bg-error/10 border-error/30 hover:bg-error/15 [&_.icon-bg]:bg-error/20 [&_.icon]:text-error [&_.count]:text-error [&_.arrow]:text-error'
+    : 'bg-warning/10 border-warning/30 hover:bg-warning/15 [&_.icon-bg]:bg-warning/20 [&_.icon]:text-warning [&_.count]:text-warning [&_.arrow]:text-warning'
+  return (
+    <Link
+      to={to}
+      className={`${cls} border rounded-xl p-5 transition-colors flex items-center gap-4 group`}
+    >
+      <div className="icon-bg w-12 h-12 rounded-lg flex items-center justify-center shrink-0">
+        <Icon className="icon w-6 h-6" strokeWidth={1.75} />
+      </div>
+      <div className="flex-1">
+        <p className="count font-mono font-bold text-2xl">{count}</p>
+        <p className="font-body text-earth text-sm font-semibold">{label}</p>
+      </div>
+      <ArrowRight className="arrow w-5 h-5 group-hover:translate-x-1 transition-transform" strokeWidth={1.75} />
     </Link>
   )
 }

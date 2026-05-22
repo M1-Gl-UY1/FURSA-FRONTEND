@@ -12,6 +12,7 @@ import { adminOrigin, investisseurOrigin, isAdminHost } from '@/lib/hosts'
 import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
+import { AdminDistributionPage } from '@/pages/admin/AdminDistributionPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
 import { AdminKycPage } from '@/pages/admin/AdminKycPage'
 import { AdminPaiementSessionsPage } from '@/pages/admin/AdminPaiementSessionsPage'
@@ -147,6 +148,7 @@ function AdminRoutes() {
           <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
           <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
           <Route path="/admin/devise-rate" element={<AdminDeviseRatesPage />} />
+          <Route path="/admin/distribution" element={<AdminDistributionPage />} />
           <Route path="/admin/dividendes" element={<AdminDividendesPage />} />
         </Route>
       </Route>

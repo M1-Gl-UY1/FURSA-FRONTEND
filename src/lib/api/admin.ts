@@ -266,6 +266,24 @@ export function useDistribuerRevenu() {
       qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
       qc.invalidateQueries({ queryKey: ['mes-revenus'] })
       qc.invalidateQueries({ queryKey: ['mes-dividendes'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'distribution', 'preview'] })
+    },
+  })
+}
+
+/**
+ * GET /api/distribution/{revenuId}/preview - calcule la repartition prevue sans persister.
+ * Utile pour montrer a l'admin "voici ce qui va se passer" avant de cliquer "Distribuer".
+ */
+export function useDistributionPreview(revenuId: number | null) {
+  return useQuery({
+    queryKey: ['admin', 'distribution', 'preview', revenuId],
+    enabled: revenuId !== null,
+    queryFn: async () => {
+      const { data } = await api.get<import('./types').DistributionPreview>(
+        `/api/distribution/${revenuId}/preview`
+      )
+      return data
     },
   })
 }
