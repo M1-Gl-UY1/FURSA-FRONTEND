@@ -13,6 +13,7 @@ import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
+import { AdminKycPage } from '@/pages/admin/AdminKycPage'
 import { AdminPaiementSessionsPage } from '@/pages/admin/AdminPaiementSessionsPage'
 import { AdminProprieteDetailPage } from '@/pages/admin/AdminProprieteDetailPage'
 import { AdminProprietesPage } from '@/pages/admin/AdminProprietesPage'
@@ -25,6 +26,7 @@ import { ComptePage } from '@/pages/ComptePage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { DeclarerRevenuPage } from '@/pages/DeclarerRevenuPage'
 import { DividendesPage } from '@/pages/DividendesPage'
+import { KycPage } from '@/pages/KycPage'
 import { MaProprieteDetailPage } from '@/pages/MaProprieteDetailPage'
 import { MarcheSecondairePage } from '@/pages/MarcheSecondairePage'
 import { MesAnnoncesPage } from '@/pages/MesAnnoncesPage'
@@ -91,6 +93,7 @@ function InvestisseurRoutes() {
           <Route path="/opportunites/:id" element={<OpportuniteDetailPage />} />
           <Route path="/opportunites/:id/acheter" element={<AcheterPartsPage />} />
           <Route path="/compte" element={<ComptePage />} />
+          <Route path="/compte/kyc" element={<KycPage />} />
           <Route path="/portefeuille" element={<PortefeuillePage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/dividendes" element={<DividendesPage />} />
@@ -138,6 +141,7 @@ function AdminRoutes() {
           <Route path="/admin/proprietes/:id" element={<AdminProprieteDetailPage />} />
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
+          <Route path="/admin/kyc" element={<AdminKycPage />} />
           <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
           <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
           <Route path="/admin/devise-rate" element={<AdminDeviseRatesPage />} />

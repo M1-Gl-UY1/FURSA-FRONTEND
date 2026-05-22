@@ -198,6 +198,64 @@ export type DeviseRate = {
   updatedAt: string
 }
 
+// --- KYC ---
+
+export type StatutKyc = 'NONE' | 'PENDING' | 'IN_REVIEW' | 'APPROVED' | 'REJECTED' | 'EXPIRED'
+
+export type SourceFonds = 'SALAIRE' | 'EPARGNE' | 'HERITAGE' | 'BUSINESS' | 'VENTE_BIEN' | 'AUTRE'
+
+export type KycSubmissionResponse = {
+  id: number
+  statut: Exclude<StatutKyc, 'NONE'>
+  nationalite: string | null
+  dateNaissance: string | null
+  paysResidence: string | null
+  adresse: string | null
+  documentIdentiteUrl: string | null
+  documentDomicileUrl: string | null
+  selfieUrl: string | null
+  sourceFonds: SourceFonds | null
+  isPep: boolean | null
+  submittedAt: string
+  reviewedAt: string | null
+  motifRefus: string | null
+  nombreReSubmissions: number
+}
+
+export type KycMeResponse = {
+  statut: StatutKyc
+  submission: KycSubmissionResponse | null
+}
+
+export type KycAdminResponse = KycSubmissionResponse & {
+  investisseurId: number
+  investisseurEmail: string
+  investisseurNom: string
+  investisseurPrenom: string
+  investisseurTelephone: string
+  investisseurIsVerified: boolean
+  declarationSurHonneur: boolean | null
+  reviewedByAdminId: number | null
+}
+
+export type KycSubmitData = {
+  nationalite: string
+  dateNaissance: string  // ISO date
+  paysResidence: string
+  adresse: string
+  sourceFonds: SourceFonds
+  isPep: boolean
+  declarationSurHonneur: boolean
+}
+
+export type KycStats = {
+  pending: number
+  inReview: number
+  approved: number
+  rejected: number
+  expired: number
+}
+
 export type PossessionResponse = {
   id: number
   proprieteId?: number

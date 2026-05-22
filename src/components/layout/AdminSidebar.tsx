@@ -4,6 +4,7 @@ import {
   Coins,
   CreditCard,
   DollarSign,
+  IdCard,
   LayoutDashboard,
   LogOut,
   Building2,
@@ -40,6 +41,7 @@ const groups: NavGroup[] = [
       { label: 'Propriétés', to: '/admin/proprietes', icon: Building2 },
       { label: 'Revenus', to: '/admin/revenus', icon: Banknote },
       { label: 'Utilisateurs', to: '/admin/utilisateurs', icon: Users },
+      { label: 'KYC', to: '/admin/kyc', icon: IdCard },
     ],
   },
   {

@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -103,9 +104,12 @@ export function ComptePage() {
                     <ShieldCheck className="w-4 h-4" strokeWidth={1.75} /> Vérifié
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-warning text-xs font-semibold">
-                    <ShieldAlert className="w-4 h-4" strokeWidth={1.75} /> En attente
-                  </span>
+                  <Link
+                    to="/compte/kyc"
+                    className="inline-flex items-center gap-1 text-warning text-xs font-semibold hover:underline"
+                  >
+                    <ShieldAlert className="w-4 h-4" strokeWidth={1.75} /> Verifier mon identite →
+                  </Link>
                 )}
               </div>
             </div>
