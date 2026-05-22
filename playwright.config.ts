@@ -6,7 +6,8 @@ import { defineConfig, devices } from '@playwright/test'
  * Cible : prod (api.fursa.seed-innov.com + fursa.seed-innov.com).
  *
  * Variables d'env utiles :
- *   FURSA_BASE_URL          override l'URL du front (defaut : https://fursa.seed-innov.com)
+ *   FURSA_BASE_URL          override l'URL du front investisseur (defaut : https://fursa.seed-innov.com)
+ *   FURSA_ADMIN_URL         override l'URL du backoffice admin (defaut : https://admin.fursa.seed-innov.com)
  *   FURSA_API_URL           override l'URL de l'API (defaut : https://api.fursa.seed-innov.com)
  *   FURSA_ADMIN_EMAIL       defaut : tiomelajorel@gmail.com
  *   FURSA_ADMIN_PASSWORD    defaut : jorel2026

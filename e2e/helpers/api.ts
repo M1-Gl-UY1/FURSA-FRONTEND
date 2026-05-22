@@ -6,6 +6,8 @@
 import { APIRequestContext, request } from '@playwright/test'
 
 export const API_URL = process.env.FURSA_API_URL ?? 'https://api.fursa.seed-innov.com'
+export const BASE_URL = process.env.FURSA_BASE_URL ?? 'https://fursa.seed-innov.com'
+export const ADMIN_URL = process.env.FURSA_ADMIN_URL ?? 'https://admin.fursa.seed-innov.com'
 export const ADMIN_EMAIL = process.env.FURSA_ADMIN_EMAIL ?? 'tiomelajorel@gmail.com'
 export const ADMIN_PASSWORD = process.env.FURSA_ADMIN_PASSWORD ?? 'jorel2026'
 

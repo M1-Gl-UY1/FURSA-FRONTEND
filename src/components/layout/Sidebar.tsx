@@ -15,6 +15,7 @@ import {
 import type { LucideIcon } from 'lucide-react'
 
 import { useAuth } from '@/lib/auth/AuthContext'
+import { adminOrigin } from '@/lib/hosts'
 import { cn } from '@/lib/utils'
 
 type NavItem = {
@@ -168,13 +169,14 @@ export function Sidebar({ hasProprietesProposees = false, onNavigate }: SidebarP
       {/* Footer : user + logout */}
       <div className="border-t border-earth/8 p-3">
         {user?.role === 'ADMIN' && (
-          <Link
-            to="/admin/dashboard"
-            onClick={onNavigate}
+          // Lien externe : le backoffice est sur un sous-domaine separe (admin.fursa.seed-innov.com).
+          // Cf App.tsx pour le routing par hostname.
+          <a
+            href={adminOrigin() + '/admin/dashboard'}
             className="flex items-center gap-2 px-3 py-2 rounded-md text-xs font-body font-semibold text-terra bg-terra/10 hover:bg-terra/15 transition-colors mb-2"
           >
             <span>→ Aller au back-office admin</span>
-          </Link>
+          </a>
         )}
         <div className="flex items-center gap-3 px-2 py-2">
           <div className="w-9 h-9 rounded-full bg-terra/15 flex items-center justify-center shrink-0">

@@ -35,18 +35,25 @@ test.describe('Authentification', () => {
     await expect(page.getByRole('link', { name: /dashboard/i }).first()).toBeVisible()
   })
 
-  test('Login admin -> page /admin/dashboard', async ({ page }) => {
+  /**
+   * Login admin doit se faire sur le sous-domaine admin (architecture domaines stricte).
+   * Ce test verifie qu'on peut se logger ET acceder a /admin/dashboard depuis admin.fursa.seed-innov.com.
+   */
+  test('Login admin sur sous-domaine admin', async ({ page, context }) => {
     const adminEmail = process.env.FURSA_ADMIN_EMAIL ?? 'tiomelajorel@gmail.com'
     const adminPassword = process.env.FURSA_ADMIN_PASSWORD ?? 'jorel2026'
+    const adminUrl = process.env.FURSA_ADMIN_URL ?? 'https://admin.fursa.seed-innov.com'
 
-    await page.goto('/login')
-    await page.locator('#email').fill(adminEmail)
-    await page.locator('#password').fill(adminPassword)
-    await page.getByRole('button', { name: /se connecter/i }).click()
-    // L'admin sur hostname normal est redirige vers /dashboard par defaut.
-    // On navigue explicitement vers /admin/dashboard pour valider l'acces admin.
-    await page.waitForURL(/\/dashboard/, { timeout: 15_000 })
-    await page.goto('/admin/dashboard')
+    // Re-utilise le storageState du global setup (deja logge admin)
+    await context.addCookies([])  // no-op, clarifie qu'on bascule de host
+    await page.goto(`${adminUrl}/admin/dashboard`)
+    // Si pas authentifie sur ce sous-domaine, RequireAdmin redirige vers /login
+    if (/\/login/.test(page.url())) {
+      await page.locator('#email').fill(adminEmail)
+      await page.locator('#password').fill(adminPassword)
+      await page.getByRole('button', { name: /se connecter/i }).click()
+      await page.waitForURL(/\/admin/, { timeout: 15_000 })
+    }
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 10_000 })
   })
 })
