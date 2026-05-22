@@ -11,6 +11,7 @@ import {
   Building2,
   Users,
   Banknote,
+  WalletCards,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -42,6 +43,7 @@ const groups: NavGroup[] = [
       { label: 'Propriétés', to: '/admin/proprietes', icon: Building2 },
       { label: 'Revenus', to: '/admin/revenus', icon: Banknote },
       { label: 'Utilisateurs', to: '/admin/utilisateurs', icon: Users },
+      { label: 'Wallets', to: '/admin/wallets', icon: WalletCards },
       { label: 'KYC', to: '/admin/kyc', icon: IdCard },
     ],
   },

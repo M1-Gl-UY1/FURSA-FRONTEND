@@ -22,6 +22,7 @@ import { AdminRevenusPage } from '@/pages/admin/AdminRevenusPage'
 import { AdminTransactionsPage } from '@/pages/admin/AdminTransactionsPage'
 import { AdminUserDetailPage } from '@/pages/admin/AdminUserDetailPage'
 import { AdminUtilisateursPage } from '@/pages/admin/AdminUtilisateursPage'
+import { AdminWalletsPage } from '@/pages/admin/AdminWalletsPage'
 import { AcheterPartsPage } from '@/pages/AcheterPartsPage'
 import { AnnonceDetailPage } from '@/pages/AnnonceDetailPage'
 import { ComptePage } from '@/pages/ComptePage'
@@ -44,6 +45,7 @@ import { OpportunitesPage } from '@/pages/OpportunitesPage'
 import { PortefeuillePage } from '@/pages/PortefeuillePage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
+import { WalletPage } from '@/pages/WalletPage'
 
 /**
  * Le routing est isole par hostname :
@@ -96,6 +98,7 @@ function InvestisseurRoutes() {
           <Route path="/opportunites/:id/acheter" element={<AcheterPartsPage />} />
           <Route path="/compte" element={<ComptePage />} />
           <Route path="/compte/kyc" element={<KycPage />} />
+          <Route path="/wallet" element={<WalletPage />} />
           <Route path="/portefeuille" element={<PortefeuillePage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/dividendes" element={<DividendesPage />} />
@@ -144,6 +147,7 @@ function AdminRoutes() {
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
           <Route path="/admin/utilisateurs/:id" element={<AdminUserDetailPage />} />
+          <Route path="/admin/wallets" element={<AdminWalletsPage />} />
           <Route path="/admin/kyc" element={<AdminKycPage />} />
           <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
           <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
@@ -161,6 +165,7 @@ function AdminRoutes() {
       <Route path="/portefeuille" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/transactions" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/dividendes" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/wallet" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/notifications" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/marche/*" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/proposer-un-bien" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />

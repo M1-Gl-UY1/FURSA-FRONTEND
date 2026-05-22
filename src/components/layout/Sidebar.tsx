@@ -3,6 +3,7 @@ import {
   Home,
   Compass,
   Wallet,
+  WalletCards,
   ArrowLeftRight,
   Coins,
   Repeat,
@@ -42,6 +43,7 @@ const activiteGroup: NavGroup = {
   label: 'Mon activité',
   items: [
     { label: 'Dashboard', to: '/dashboard', icon: Home, end: true },
+    { label: 'Mon wallet', to: '/wallet', icon: WalletCards },
     { label: 'Portefeuille', to: '/portefeuille', icon: Wallet },
     { label: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
     { label: 'Dividendes', to: '/dividendes', icon: Coins },

@@ -456,6 +456,60 @@ export type NotificationResponse = {
   metadata?: Record<string, unknown>
 }
 
+// --- Wallet (Phase 10a) ---
+
+export type TypeWalletTransaction =
+  | 'TOPUP'
+  | 'DEBIT_ACHAT_PARTS'
+  | 'DEBIT_ACHAT_REVENTE'
+  | 'CREDIT_DIVIDENDE'
+  | 'CREDIT_VENTE_PARTS'
+  | 'CREDIT_REVENTE'
+  | 'CREDIT_REFUND_ACHAT'
+  | 'DEBIT_WITHDRAW'
+  | 'AJUSTEMENT_ADMIN'
+
+export type WalletResponse = {
+  id: number
+  userId: number | null
+  userEmail: string | null
+  userNom: string | null
+  userPrenom: string | null
+  solde: number
+  devise: string
+  createdAt: string
+  updatedAt: string
+}
+
+export type WalletTransactionResponse = {
+  id: number
+  walletId: number
+  type: TypeWalletTransaction
+  /** Signe : positif = credit, negatif = debit */
+  montant: number
+  soldeApres: number
+  libelle: string | null
+  refTable: string | null
+  refId: number | null
+  metadata: string | null
+  createdAt: string
+}
+
+export type WalletStats = {
+  solde: number
+  devise: string
+  totalCredite: number
+  totalDebite: number
+  nbMouvements: number
+  dernierMouvement: string
+}
+
+export type AjustementWalletRequest = {
+  /** Montant signe : positif = credit, negatif = debit */
+  montant: number
+  motif: string
+}
+
 // --- Erreurs API ---
 
 export type ApiErrorBody = {
