@@ -81,3 +81,25 @@ export function useAdminEscrows() {
     },
   })
 }
+
+// =============================================================================
+// Phase 10c bis : annulation manuelle admin
+// =============================================================================
+
+export function useAnnulerCollecte() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ proprieteId, motif }: { proprieteId: number; motif: string }) => {
+      const { data } = await api.post<EscrowProprieteResponse>(
+        `/api/escrow/propriete/${proprieteId}/annuler`,
+        { motif }
+      )
+      return data
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'escrows'] })
+      qc.invalidateQueries({ queryKey: ['escrow', vars.proprieteId] })
+      qc.invalidateQueries({ queryKey: ['admin', 'wallets'] })
+    },
+  })
+}

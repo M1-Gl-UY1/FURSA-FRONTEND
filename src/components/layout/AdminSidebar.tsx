@@ -10,6 +10,7 @@ import {
   LayoutDashboard,
   LogOut,
   Building2,
+  Lock,
   Users,
   Banknote,
   WalletCards,
@@ -52,6 +53,7 @@ const groups: NavGroup[] = [
   {
     label: 'Audit',
     items: [
+      { label: 'Escrows', to: '/admin/escrows', icon: Lock },
       { label: 'Transactions', to: '/admin/transactions', icon: ArrowLeftRight },
       { label: 'Paiements PSP', to: '/admin/paiements', icon: CreditCard },
       { label: 'Taux change', to: '/admin/devise-rate', icon: DollarSign },
