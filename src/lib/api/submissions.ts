@@ -1,7 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from './client'
-import type { ProprieteResponse, SubmissionRequest } from './types'
+import type {
+  ProprieteResponse,
+  SectionPhoto,
+  SubmissionRequest,
+} from './types'
+
+// =============================================================================
+// Listing mes proprietes proposees
+// =============================================================================
 
 export function useMesProprietesProposees() {
   return useQuery({
@@ -15,33 +23,71 @@ export function useMesProprietesProposees() {
 
 export function useMaProprieteProposee(id: number | undefined) {
   return useQuery({
-    queryKey: ['ma-propriete-proposee', id],
+    queryKey: ['mes-proprietes-proposees', id],
+    enabled: id != null,
     queryFn: async () => {
       const { data } = await api.get<ProprieteResponse>(`/api/proprietes/me/${id}`)
       return data
     },
-    enabled: id != null,
   })
+}
+
+// =============================================================================
+// Soumission nouveau bien (refonte Hugh 22/05/2026)
+// =============================================================================
+
+export type PhotoStructuree = {
+  file: File
+  section: SectionPhoto
+}
+
+export type SoumissionPayload = {
+  submission: SubmissionRequest
+  /** Photos structurees par section (Facade, Salon, Chambre, ...). */
+  photos?: PhotoStructuree[]
+  /** Video de visite guidee (max 100 MB). */
+  video?: File | null
+  /** Documents legaux (PDFs). Etape de certification post-creation. */
+  documents?: File[]
 }
 
 export function useSoumettreBien() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: async (vars: { submission: SubmissionRequest; files: File[] }) => {
+    mutationFn: async (vars: SoumissionPayload) => {
       const formData = new FormData()
 
-      // La partie "submission" doit être envoyée en JSON avec content-type application/json
+      // 1. JSON principal (content-type application/json)
       formData.append(
         'submission',
         new Blob([JSON.stringify(vars.submission)], { type: 'application/json' })
       )
 
-      vars.files.forEach((f) => formData.append('files', f))
+      // 2. Video (1 fichier max)
+      if (vars.video) {
+        formData.append('video', vars.video)
+      }
 
+      // 3. Photos structurees : on envoie en parallele "photos" (files)
+      //    et "photoSections" (string array). Backend zip les deux par index.
+      if (vars.photos && vars.photos.length > 0) {
+        vars.photos.forEach((p) => {
+          formData.append('photos', p.file)
+          formData.append('photoSections', p.section)
+        })
+      }
+
+      // 4. Documents legaux
+      if (vars.documents && vars.documents.length > 0) {
+        vars.documents.forEach((d) => formData.append('documents', d))
+      }
+
+      // IMPORTANT : Content-Type undefined pour que axios calcule le boundary.
+      // Cf bug "Soumission impossible" rapporte par Hugh le 22/05/2026.
       const { data } = await api.post<ProprieteResponse>(
         '/api/proprietes/submissions',
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { 'Content-Type': undefined as unknown as string } }
       )
       return data
     },

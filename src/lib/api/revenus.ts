@@ -67,7 +67,7 @@ export function useDeclarerRevenuMultipart() {
       const { data } = await api.post<RevenuResponse>(
         '/api/revenus/submissions/multipart',
         fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { 'Content-Type': undefined as unknown as string } }
       )
       return data
     },
@@ -123,7 +123,7 @@ export function useUploadJustificatifRevenu() {
       const { data } = await api.post<RevenuResponse>(
         `/api/revenus/${revenuId}/justificatif`,
         fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
+        { headers: { 'Content-Type': undefined as unknown as string } }
       )
       return data
     },

@@ -49,8 +49,9 @@ export function useKycSubmit() {
       form.append('documentDomicile', input.documentDomicile)
       form.append('selfie', input.selfie)
       const { data } = await api.post<KycSubmissionResponse>('/api/kyc/submit', form, {
-        // Important : laisser axios setter le multipart boundary lui-meme
-        headers: { 'Content-Type': 'multipart/form-data' },
+        // Bug fix : passer undefined pour que axios calcule le boundary du FormData.
+        // Forcer "multipart/form-data" sans boundary casse le parsing cote backend.
+        headers: { 'Content-Type': undefined as unknown as string },
       })
       return data
     },

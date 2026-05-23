@@ -123,11 +123,61 @@ export type ProprieteResponse = {
   soumiseLe?: string | null
 }
 
-/** Soumission par un investisseur (multipart) */
+// P1 (Hugh 22/05/2026)
+export type TypeBien =
+  | 'VILLA'
+  | 'APPARTEMENT'
+  | 'STUDIO'
+  | 'PENTHOUSE'
+  | 'DUPLEX'
+  | 'IMMEUBLE'
+  | 'CHAMBRE'
+
+export type StatutExploitation = 'NEUF' | 'DEJA_RENTABLE'
+
+export type SourceRevenu = 'BAIL' | 'AIRBNB' | 'AUTRE'
+
+export type SectionPhoto =
+  | 'FACADE'
+  | 'SALON'
+  | 'CUISINE'
+  | 'CHAMBRE'
+  | 'SALLE_DE_BAIN'
+  | 'PISCINE'
+  | 'EXTERIEUR'
+  | 'VUE'
+  | 'AUTRE'
+
+export type PaysInfo = {
+  code: string
+  nom: string
+  devise: string
+}
+
+/** Soumission par un investisseur (multipart) — refonte Hugh 22/05/2026 */
 export type SubmissionRequest = {
   nom: string
-  localisation: string
+  pays: string
+  ville: string
+  adressePrecise?: string
+  localisation?: string
   description?: string
+  typeBien: TypeBien
+  nombrePieces?: number | null
+  nombreChambres?: number | null
+  superficieM2?: number | null
+  hasPiscine?: boolean
+  hasClimatisation?: boolean
+  hasParking?: boolean
+  hasAscenseur?: boolean
+  hasJardin?: boolean
+  hasVueMer?: boolean
+  statutExploitation: StatutExploitation
+  revenuMensuelActuel?: number | null
+  sourceRevenu?: SourceRevenu | null
+  prixVenteTotal: number
+  deviseLocale: string
+  fractionVenduePct: number
   nombreTotalPart: number
   prixUnitairePart: number
   rentabilitePrevue: number
