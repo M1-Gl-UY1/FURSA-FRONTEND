@@ -364,7 +364,7 @@ function RechargerTab() {
 }
 
 // =============================================================================
-// Tab : Retirer (placeholder — sera plein en Phase 10e)
+// Tab : Retirer — Phase 10e LIVRÉ
 // =============================================================================
 
 function RetirerTab() {
@@ -382,34 +382,30 @@ function RetirerTab() {
   }
 
   return (
-    <section className="rounded-xl border border-dashed border-earth/15 bg-sand-50 p-8 sm:p-12 text-center">
-      <div className="w-14 h-14 rounded-full bg-warning/15 flex items-center justify-center mx-auto mb-4">
-        <Construction className="w-6 h-6 text-warning" strokeWidth={1.75} />
+    <section className="rounded-xl border border-success/30 bg-success/5 p-6 sm:p-8 text-center">
+      <div className="w-14 h-14 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-4">
+        <ArrowUpFromLine className="w-6 h-6 text-success" strokeWidth={1.75} />
       </div>
       <h2 className="font-display font-bold text-earth text-xl mb-2">
-        Retrait — bientôt disponible
+        Retirer votre solde
       </h2>
-      <p className="font-body text-earth-600 text-sm max-w-md mx-auto mb-6">
-        Les demandes de retrait vers Mobile Money, virement bancaire et wallet crypto
-        externe seront disponibles dans la prochaine mise à jour.
-        Vos fonds restent à <strong>100% disponibles</strong> sur votre wallet en
-        attendant.
+      <p className="font-body text-earth-600 text-sm max-w-md mx-auto mb-4">
+        Transférez votre solde vers <strong>Mobile Money</strong>, virement bancaire
+        ou wallet crypto. Validation admin requise, commission FURSA 5%.
       </p>
-      <div className="inline-flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-white border border-earth/10 rounded-lg px-4 py-3 text-left">
+      <div className="inline-flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-white border border-earth/10 rounded-lg px-4 py-3 text-left mb-5">
         <PlusCircle className="w-4 h-4 text-success flex-shrink-0" strokeWidth={1.75} />
         <p className="font-body text-earth-700 text-xs">
           <strong>Solde disponible :</strong>{' '}
           <Money amount={solde} mono={false} className="font-bold" />
         </p>
       </div>
-      <div className="mt-6">
-        <Link
-          to="/marche/secondaire"
-          className="font-body text-ocean text-xs hover:underline"
-        >
-          → Continuer à investir sur le marché secondaire
+      <Button asChild size="lg">
+        <Link to="/retraits">
+          <ArrowUpFromLine strokeWidth={2} />
+          Aller à mes retraits
         </Link>
-      </div>
+      </Button>
     </section>
   )
 }

@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import {
   ArrowLeftRight,
+  ArrowUpFromLine,
   CalendarClock,
   Coins,
   CreditCard,
@@ -54,6 +55,7 @@ const groups: NavGroup[] = [
     label: 'Audit',
     items: [
       { label: 'Escrows', to: '/admin/escrows', icon: Lock },
+      { label: 'Retraits', to: '/admin/retraits', icon: ArrowUpFromLine },
       { label: 'Transactions', to: '/admin/transactions', icon: ArrowLeftRight },
       { label: 'Paiements PSP', to: '/admin/paiements', icon: CreditCard },
       { label: 'Taux change', to: '/admin/devise-rate', icon: DollarSign },

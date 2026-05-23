@@ -1,17 +1,18 @@
 import { Link, NavLink } from 'react-router-dom'
 import {
-  Home,
+  ArrowLeftRight,
+  ArrowUpFromLine,
+  Bell,
+  Building2,
+  Coins,
   Compass,
+  Home,
+  LogOut,
+  Plus,
+  Repeat,
+  User,
   Wallet,
   WalletCards,
-  ArrowLeftRight,
-  Coins,
-  Repeat,
-  Building2,
-  Plus,
-  Bell,
-  User,
-  LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -44,6 +45,7 @@ const activiteGroup: NavGroup = {
   items: [
     { label: 'Dashboard', to: '/dashboard', icon: Home, end: true },
     { label: 'Mon wallet', to: '/wallet', icon: WalletCards },
+    { label: 'Mes retraits', to: '/retraits', icon: ArrowUpFromLine },
     { label: 'Portefeuille', to: '/portefeuille', icon: Wallet },
     { label: 'Transactions', to: '/transactions', icon: ArrowLeftRight },
     { label: 'Dividendes', to: '/dividendes', icon: Coins },

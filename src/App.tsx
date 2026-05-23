@@ -13,6 +13,7 @@ import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { AdminDeclarationsStatutPage } from '@/pages/admin/AdminDeclarationsStatutPage'
 import { AdminEscrowsPage } from '@/pages/admin/AdminEscrowsPage'
+import { AdminRetraitsPage } from '@/pages/admin/AdminRetraitsPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
 import { AdminDistributionPage } from '@/pages/admin/AdminDistributionPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
@@ -47,6 +48,7 @@ import { OpportunitesPage } from '@/pages/OpportunitesPage'
 import { PortefeuillePage } from '@/pages/PortefeuillePage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
+import { RetraitsPage } from '@/pages/RetraitsPage'
 import { WalletPage } from '@/pages/WalletPage'
 
 /**
@@ -101,6 +103,7 @@ function InvestisseurRoutes() {
           <Route path="/compte" element={<ComptePage />} />
           <Route path="/compte/kyc" element={<KycPage />} />
           <Route path="/wallet" element={<WalletPage />} />
+          <Route path="/retraits" element={<RetraitsPage />} />
           <Route path="/portefeuille" element={<PortefeuillePage />} />
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/dividendes" element={<DividendesPage />} />
@@ -149,6 +152,7 @@ function AdminRoutes() {
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
           <Route path="/admin/declarations" element={<AdminDeclarationsStatutPage />} />
           <Route path="/admin/escrows" element={<AdminEscrowsPage />} />
+          <Route path="/admin/retraits" element={<AdminRetraitsPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
           <Route path="/admin/utilisateurs/:id" element={<AdminUserDetailPage />} />
           <Route path="/admin/wallets" element={<AdminWalletsPage />} />
@@ -169,6 +173,7 @@ function AdminRoutes() {
       <Route path="/portefeuille" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/transactions" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/dividendes" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/retraits" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/wallet" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/notifications" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/marche/*" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />

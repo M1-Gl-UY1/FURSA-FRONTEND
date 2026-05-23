@@ -652,6 +652,45 @@ export type AjustementWalletRequest = {
   motif: string
 }
 
+// --- Phase 10e : Retraits ---
+
+export type SourceRetrait = 'WALLET' | 'ESCROW_PROPRIETE'
+
+export type MethodeRetrait = 'MOBILE_MONEY' | 'VIREMENT' | 'CRYPTO' | 'WALLET_INTERNE'
+
+export type StatutDemandeRetrait = 'PENDING' | 'APPROVED' | 'COMPLETED' | 'REFUSED'
+
+export type DemandeRetraitRequest = {
+  source: SourceRetrait
+  /** Pour ESCROW_PROPRIETE : id de la propriété. Pour WALLET : ignoré. */
+  sourceId?: number | null
+  montant: number
+  methode: MethodeRetrait
+  referenceCible?: string
+}
+
+export type DemandeRetraitResponse = {
+  id: number
+  userId: number | null
+  userEmail: string | null
+  userNomComplet: string | null
+  source: SourceRetrait
+  sourceId: number
+  sourceLibelle: string | null
+  montantDemande: number
+  commissionFursa: number | null
+  montantFinal: number | null
+  methode: MethodeRetrait
+  referenceCible: string | null
+  statut: StatutDemandeRetrait
+  motifRefus: string | null
+  preuvePaiement: string | null
+  createdAt: string
+  valideeLe: string | null
+  completeeLe: string | null
+  valideeParAdminId: number | null
+}
+
 // --- Erreurs API ---
 
 export type ApiErrorBody = {
