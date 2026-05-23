@@ -1,16 +1,23 @@
+import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   AlertTriangle,
   ArrowLeft,
   CalendarDays,
+  CheckCircle2,
   Clock,
   Coins,
   FileText,
   ImageIcon,
+  Loader2,
   MapPin,
   Plus,
+  ShieldCheck,
+  Upload,
   TrendingUp,
+  X,
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
@@ -18,9 +25,16 @@ import { StatCard } from '@/components/shared/StatCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  useSoumettreCertification,
+  useUploadDocsCertification,
+} from '@/lib/api/certification'
 import { useMesRevenus, useStatutDeclaration } from '@/lib/api/revenus'
 import { useMaProprieteProposee } from '@/lib/api/submissions'
 import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
+import { extractApiError } from '@/lib/api/errors'
+import type { ProprieteResponse } from '@/lib/api/types'
+import { cn } from '@/lib/utils'
 
 export function MaProprieteDetailPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -169,6 +183,11 @@ export function MaProprieteDetailPage() {
             {p.description}
           </p>
         </section>
+      )}
+
+      {/* Phase Certification : section uploads + soumission */}
+      {(p.statut === 'PUBLIEE' || p.statut === 'ACCEPTEE') && (
+        <CertificationSection propriete={p} proprieteId={id} />
       )}
 
       {/* Revenus déclarés (uniquement si propriété PUBLIEE) */}
@@ -338,6 +357,237 @@ function DeclarationBadgeForPropriete({ proprieteId }: { proprieteId: number }) 
   const { data } = useStatutDeclaration(proprieteId)
   if (!data) return null
   return <StatutDeclarationBadge statut={data} />
+}
+
+/**
+ * Phase Certification (Hugh 22/05/2026) : section certification cote proprio.
+ * Upload des documents legaux + bouton "Soumettre pour certification".
+ */
+function CertificationSection({
+  propriete,
+  proprieteId,
+}: {
+  propriete: ProprieteResponse
+  proprieteId: number
+}) {
+  const [files, setFiles] = useState<File[]>([])
+  const upload = useUploadDocsCertification()
+  const soumettre = useSoumettreCertification()
+
+  const statut = propriete.statutCertif ?? 'NON_CERTIFIE'
+  const certifie = statut === 'CERTIFIE'
+  const enReview = statut === 'EN_REVIEW'
+  const refusee = statut === 'REFUSEE'
+
+  // Documents légaux uploadés = Document type=PDF + sectionPhoto=null
+  const docsLegaux = (propriete.documents ?? []).filter(
+    (d) => (d.type === 'PDF' || !d.type) && !(d as { sectionPhoto?: string }).sectionPhoto
+  )
+
+  function handleFileChange(list: FileList | null) {
+    if (!list) return
+    const arr = Array.from(list).filter((f) => {
+      if (f.size > 10 * 1024 * 1024) {
+        toast.error(`${f.name} : trop volumineux (max 10 MB)`)
+        return false
+      }
+      return true
+    })
+    setFiles((prev) => [...prev, ...arr])
+  }
+
+  function doUpload() {
+    if (files.length === 0) return
+    upload.mutate(
+      { proprieteId, documents: files },
+      {
+        onSuccess: () => {
+          toast.success(`${files.length} document(s) uploadé(s).`)
+          setFiles([])
+        },
+        onError: (e) => toast.error(extractApiError(e, 'Upload impossible.')),
+      }
+    )
+  }
+
+  function doSoumettre() {
+    soumettre.mutate(proprieteId, {
+      onSuccess: () =>
+        toast.success("Demande de certification soumise. L'admin va l'examiner."),
+      onError: (e) => toast.error(extractApiError(e, 'Soumission impossible.')),
+    })
+  }
+
+  return (
+    <section
+      className={cn(
+        'rounded-xl border-[1.5px] p-5 sm:p-6',
+        certifie
+          ? 'border-success/40 bg-success/5'
+          : enReview
+            ? 'border-ocean/30 bg-ocean/5'
+            : refusee
+              ? 'border-error/30 bg-error/5'
+              : 'border-warning/30 bg-warning/5'
+      )}
+    >
+      <header className="flex items-start gap-3 mb-4">
+        <div
+          className={cn(
+            'w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0',
+            certifie
+              ? 'bg-success/15 text-success'
+              : enReview
+                ? 'bg-ocean/15 text-ocean'
+                : refusee
+                  ? 'bg-error/15 text-error'
+                  : 'bg-warning/15 text-warning'
+          )}
+        >
+          <ShieldCheck className="w-5 h-5" strokeWidth={1.75} />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-display font-semibold text-earth text-lg">
+            Certification
+          </h2>
+          <p className="font-body text-earth-600 text-sm mt-0.5">
+            {certifie && '✓ Votre bien est certifié — les investisseurs peuvent acheter.'}
+            {enReview && '⏳ Demande en cours d\'examen par l\'admin.'}
+            {refusee && '✗ Certification refusée. Re-uploadez les documents corrigés et resoumettez.'}
+            {statut === 'NON_CERTIFIE' && (
+              <>
+                Uploadez les documents légaux (titre foncier, contrat de propriété…)
+                puis soumettez pour certification. <strong>Sans certification, les
+                investisseurs ne peuvent pas acheter de parts.</strong>
+              </>
+            )}
+          </p>
+          {refusee && propriete.certifMotifRefus && (
+            <p className="mt-2 inline-block bg-white/80 border border-error/30 rounded-md px-3 py-1.5 text-xs font-body text-error">
+              <strong>Motif :</strong> {propriete.certifMotifRefus}
+            </p>
+          )}
+        </div>
+      </header>
+
+      {/* Liste des docs uploadés */}
+      {docsLegaux.length > 0 && (
+        <div className="bg-white border border-earth/8 rounded-md p-3 mb-4">
+          <p className="font-body font-semibold text-earth text-xs mb-2 inline-flex items-center gap-1">
+            <FileText className="w-3.5 h-3.5" strokeWidth={1.75} />
+            {docsLegaux.length} document(s) déjà uploadé(s)
+          </p>
+          <ul className="space-y-1">
+            {docsLegaux.map((d) => (
+              <li key={d.id} className="font-body text-xs text-earth-600 flex items-center gap-1.5">
+                <FileText className="w-3 h-3 text-earth-400" strokeWidth={1.75} />
+                <span className="truncate">{d.nom ?? d.fileName ?? '—'}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Upload zone (sauf si CERTIFIE) */}
+      {!certifie && (
+        <>
+          <label
+            htmlFor="certif-upload"
+            className="flex items-center justify-center gap-2 h-14 rounded-md border-2 border-dashed border-sand-400 cursor-pointer hover:border-terra/40 hover:bg-white/40 transition-colors mb-3"
+          >
+            <Upload className="w-4 h-4 text-earth-500" strokeWidth={1.75} />
+            <span className="font-body text-sm text-earth-700">
+              Ajouter un document légal (PDF, max 10 MB)
+            </span>
+            <input
+              id="certif-upload"
+              type="file"
+              accept="application/pdf,image/*"
+              multiple
+              className="hidden"
+              onChange={(e) => handleFileChange(e.target.files)}
+            />
+          </label>
+
+          {files.length > 0 && (
+            <div className="bg-white border border-earth/8 rounded-md p-3 mb-3 space-y-1.5">
+              <p className="font-body font-semibold text-earth text-xs mb-1">
+                À uploader ({files.length})
+              </p>
+              {files.map((f, i) => (
+                <div key={i} className="flex items-center justify-between gap-2 text-xs">
+                  <span className="font-body text-earth-600 truncate flex items-center gap-1.5">
+                    <FileText className="w-3 h-3 text-earth-400" strokeWidth={1.75} />
+                    {f.name} <span className="text-earth-400">({(f.size / 1024).toFixed(0)} KB)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setFiles((p) => p.filter((_, j) => j !== i))}
+                    className="text-earth-400 hover:text-error"
+                    aria-label="Retirer"
+                  >
+                    <X className="w-3.5 h-3.5" strokeWidth={2} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex flex-col-reverse sm:flex-row gap-2">
+            {files.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={doUpload}
+                disabled={upload.isPending}
+                className="sm:flex-1"
+              >
+                {upload.isPending ? (
+                  <>
+                    <Loader2 className="animate-spin" strokeWidth={2} />
+                    Upload...
+                  </>
+                ) : (
+                  <>
+                    <Upload strokeWidth={2} />
+                    Uploader {files.length} fichier(s)
+                  </>
+                )}
+              </Button>
+            )}
+            {!enReview && docsLegaux.length > 0 && (
+              <Button
+                onClick={doSoumettre}
+                disabled={soumettre.isPending}
+                className="sm:flex-[2]"
+              >
+                {soumettre.isPending ? (
+                  <>
+                    <Loader2 className="animate-spin" strokeWidth={2} />
+                    Soumission...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 strokeWidth={2} />
+                    {refusee ? 'Resoumettre pour certification' : 'Soumettre pour certification'}
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        </>
+      )}
+
+      {certifie && propriete.certifieLe && (
+        <p className="font-body text-xs text-earth-500 mt-2">
+          Certifié le {new Date(propriete.certifieLe).toLocaleDateString('fr-FR', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
+          })}
+        </p>
+      )}
+    </section>
+  )
 }
 
 function Meta({

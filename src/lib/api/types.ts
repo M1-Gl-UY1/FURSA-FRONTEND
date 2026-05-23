@@ -97,6 +97,8 @@ export type DocumentResponse = {
   url: string
   type?: 'PDF' | 'IMAGE'
   dateUpload?: string
+  /** Phase Certification : null pour les documents légaux PDF, sinon section photo. */
+  sectionPhoto?: string | null
 }
 
 export type ProprieteResponse = {
@@ -144,7 +146,13 @@ export type ProprieteResponse = {
   videoUrl?: string | null
   certifie?: boolean | null
   certifieLe?: string | null
+  // Phase Certification (Hugh 22/05/2026)
+  statutCertif?: StatutCertification | null
+  certifSoumiseLe?: string | null
+  certifMotifRefus?: string | null
 }
+
+export type StatutCertification = 'NON_CERTIFIE' | 'EN_REVIEW' | 'CERTIFIE' | 'REFUSEE'
 
 // P1 (Hugh 22/05/2026)
 export type TypeBien =
