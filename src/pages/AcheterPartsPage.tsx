@@ -501,7 +501,7 @@ function Step2Confirmation({
           </li>
           <li>
             • L'argent reste sur le compte séquestre de FURSA jusqu'à ce que la
-            propriété atteigne <strong>{escrow?.seuilPct ?? 80}%</strong> de collecte.
+            propriété atteigne <strong>{escrow?.seuilPct ?? 100}%</strong> de collecte.
           </li>
           <li>
             • À ce seuil, vos parts deviennent actives et vous commencez à recevoir
@@ -579,7 +579,7 @@ function Step3Success({
   onSeeWallet: () => void
   onSeePortfolio: () => void
 }) {
-  const possessionPending = (escrow?.pourcentageCollecte ?? 0) < (escrow?.seuilPct ?? 80)
+  const possessionPending = (escrow?.pourcentageCollecte ?? 0) < (escrow?.seuilPct ?? 100)
 
   function copyHash() {
     navigator.clipboard
@@ -630,7 +630,7 @@ function Step3Success({
           </h3>
           <p className="font-body text-earth-700 text-xs">
             La propriété est en cours de collecte (
-            <strong>{(escrow?.pourcentageCollecte ?? 0).toFixed(0)}% atteint sur {escrow?.seuilPct ?? 80}% requis</strong>
+            <strong>{(escrow?.pourcentageCollecte ?? 0).toFixed(0)}% atteint sur {escrow?.seuilPct ?? 100}% requis</strong>
             ). Vos parts seront activées et commenceront à générer des dividendes
             dès que le seuil sera atteint.
           </p>
@@ -676,7 +676,7 @@ function Step3Success({
 
 function CollecteCard({ escrow }: { escrow: EscrowProprieteResponse }) {
   const pct = escrow.pourcentageCollecte ?? 0
-  const seuil = escrow.seuilPct ?? 80
+  const seuil = escrow.seuilPct ?? 100
   const seuilAtteint = escrow.statut === 'FINANCEE'
 
   return (

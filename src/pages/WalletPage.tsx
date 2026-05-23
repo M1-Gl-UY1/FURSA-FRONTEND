@@ -138,7 +138,7 @@ export function WalletPage() {
             />
             <StatCard
               label="Devise"
-              value={wallet?.devise ?? 'EUR'}
+              value={wallet?.devise ?? 'USD'}
               icon={WalletIcon}
               iconBg="bg-gold/15"
               iconColor="text-gold-600"

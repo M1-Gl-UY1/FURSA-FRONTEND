@@ -25,7 +25,7 @@ type Filter = 'all' | 'DECLARE' | 'DANS_FENETRE' | 'EN_RETARD'
 
 /**
  * Phase 10b : tableau de bord admin du statut de declaration mensuel.
- * Vue globale "qui a déclaré ce mois, qui est en retard, qui est dans la fenêtre".
+ * Vue globale "qui a déclaré ce trimestre, qui est en retard, qui est dans la fenêtre".
  */
 export function AdminDeclarationsStatutPage() {
   const { data, isLoading } = useAdminStatutsDeclaration()
@@ -148,12 +148,12 @@ export function AdminDeclarationsStatutPage() {
         </h1>
         <p className="font-body text-earth-600 text-sm">
           Vue d'ensemble du cycle mensuel de déclaration des revenus. Fenêtre normale du
-          1<sup>er</sup> au 5 du mois — au-delà, pénalité de 300 EUR retenue au compte
+          1<sup>er</sup> au 15 du mois suivant la fin du trimestre — au-delà, pénalité de 300 USD retenue au compte
           central FURSA.
           {moisADeclarer && (
             <span className="block mt-1 inline-flex items-center gap-1.5 text-earth-500 text-xs">
               <CalendarClock className="w-3.5 h-3.5" strokeWidth={1.75} />
-              Mois à déclarer : <strong>{formatMonthLong(moisADeclarer)}</strong>
+              Trimestre à déclarer : <strong>{formatMonthLong(moisADeclarer)}</strong>
             </span>
           )}
         </p>
@@ -175,7 +175,7 @@ export function AdminDeclarationsStatutPage() {
               iconColor="text-ocean"
             />
             <StatCard
-              label="Déclarés ce mois"
+              label="Déclarés ce trimestre"
               value={`${stats.declares} / ${stats.total}`}
               icon={CheckCircle2}
               iconBg="bg-success/10"
@@ -333,8 +333,20 @@ function formatDate(iso: string): string {
   }).format(new Date(iso))
 }
 
-function formatMonthLong(yearMonth: string): string {
-  const [y, m] = yearMonth.split('-')
+function formatMonthLong(value: string): string {
+  // P3 (Hugh 22/05/2026) : format trimestriel "2026-Q1"
+  if (/^\d{4}-Q[1-4]$/.test(value)) {
+    const [year, q] = value.split('-Q')
+    const trimNames: Record<string, string> = {
+      '1': '1er trimestre (jan-fev-mar)',
+      '2': '2e trimestre (avr-mai-jun)',
+      '3': '3e trimestre (jui-aou-sep)',
+      '4': '4e trimestre (oct-nov-dec)',
+    }
+    return `${trimNames[q] ?? q} ${year}`
+  }
+  // Fallback ancien format mensuel
+  const [y, m] = value.split('-')
   const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1)
   return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d)
 }

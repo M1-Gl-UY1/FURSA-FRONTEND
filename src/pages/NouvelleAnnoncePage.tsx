@@ -228,7 +228,7 @@ export function NouvelleAnnoncePage() {
 
           {/* Prix unitaire */}
           <div className="mb-6">
-            <Label htmlFor="prix">Prix unitaire (EUR)</Label>
+            <Label htmlFor="prix">Prix unitaire (USD)</Label>
             <Input
               id="prix"
               type="number"

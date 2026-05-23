@@ -162,7 +162,7 @@ export function AdminRevenusPage() {
           <Money amount={r.montantTotal} mono={false} className="font-bold" />
           {!!r.penaliteRetard && r.penaliteRetard > 0 && (
             <span className="font-mono text-[10px] text-error">
-              −{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(r.penaliteRetard)} pénalité
+              −{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(r.penaliteRetard)} pénalité
             </span>
           )}
         </div>

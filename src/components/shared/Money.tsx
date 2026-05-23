@@ -1,6 +1,8 @@
 import { cn } from '@/lib/utils'
 
-const DEFAULT_CURRENCY = (import.meta.env.VITE_DEFAULT_CURRENCY as string) ?? 'EUR'
+// Decision Hugh 22/05/2026 : USD est la devise de base de FURSA (vs EUR avant).
+// Override possible via VITE_DEFAULT_CURRENCY pour les tests / staging.
+const DEFAULT_CURRENCY = (import.meta.env.VITE_DEFAULT_CURRENCY as string) ?? 'USD'
 const DEFAULT_LOCALE = (import.meta.env.VITE_DEFAULT_LOCALE as string) ?? 'fr-FR'
 
 type MoneyProps = {

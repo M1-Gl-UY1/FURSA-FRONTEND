@@ -256,8 +256,8 @@ export function AdminWalletsPage() {
               onSuccess: () => {
                 toast.success(
                   montant > 0
-                    ? `Wallet crédité de ${montant.toFixed(2)} EUR.`
-                    : `Wallet débité de ${Math.abs(montant).toFixed(2)} EUR.`
+                    ? `Wallet crédité de ${montant.toFixed(2)} USD.`
+                    : `Wallet débité de ${Math.abs(montant).toFixed(2)} USD.`
                 )
                 setAjustementTarget(null)
               },
@@ -355,7 +355,7 @@ function AjustementModal({
 
           {/* Montant */}
           <div>
-            <Label htmlFor="montant-ajust">Montant (EUR)</Label>
+            <Label htmlFor="montant-ajust">Montant (USD)</Label>
             <Input
               id="montant-ajust"
               type="number"
@@ -419,8 +419,8 @@ function AjustementModal({
             {isPending
               ? 'Enregistrement...'
               : sens === 'credit'
-                ? `Créditer ${montantNum > 0 ? montantNum.toFixed(2) : ''} EUR`
-                : `Débiter ${montantNum > 0 ? montantNum.toFixed(2) : ''} EUR`}
+                ? `Créditer ${montantNum > 0 ? montantNum.toFixed(2) : ''} USD`
+                : `Débiter ${montantNum > 0 ? montantNum.toFixed(2) : ''} USD`}
           </Button>
         </DialogFooter>
       </DialogContent>

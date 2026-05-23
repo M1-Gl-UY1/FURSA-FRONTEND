@@ -212,14 +212,14 @@ export function DeclarerRevenuPage() {
             {statut.dansFenetre ? (
               <>
                 <p className="font-body font-semibold text-earth text-sm">
-                  Fenêtre de déclaration ouverte
+                  Fenêtre de déclaration trimestrielle ouverte
                 </p>
                 <p className="font-body text-earth-600 text-xs mt-1">
                   Vous avez <strong>{statut.joursRestants} jour{statut.joursRestants > 1 ? 's' : ''}</strong>{' '}
-                  pour déclarer les revenus de{' '}
+                  pour déclarer les revenus du{' '}
                   <strong>{formatMonthLong(statut.moisADeclarer)}</strong> sans
-                  pénalité. Au-delà du 5, une pénalité de{' '}
-                  <strong>300 EUR</strong> sera retenue sur le montant déclaré.
+                  pénalité. Au-delà du 15, une pénalité de{' '}
+                  <strong>300 USD</strong> sera retenue sur le montant déclaré.
                 </p>
               </>
             ) : (
@@ -228,10 +228,11 @@ export function DeclarerRevenuPage() {
                   Fenêtre fermée — pénalité retard applicable
                 </p>
                 <p className="font-body text-earth-700 text-xs mt-1">
-                  La période normale de déclaration (1<sup>er</sup> au 5) est dépassée.
-                  Vous pouvez toujours déclarer les revenus de{' '}
+                  La période normale de déclaration trimestrielle (1<sup>er</sup> au 15 du 1er
+                  mois du trimestre suivant) est dépassée. Vous pouvez toujours déclarer les
+                  revenus du{' '}
                   <strong>{formatMonthLong(statut.moisADeclarer)}</strong>, mais{' '}
-                  <strong>300 EUR seront retenus</strong> sur le montant déclaré et
+                  <strong>300 USD seront retenus</strong> sur le montant déclaré et
                   reversés au compte central FURSA.
                 </p>
               </>
@@ -255,7 +256,7 @@ export function DeclarerRevenuPage() {
 
           <div className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="montant">Montant total net perçu (EUR)</Label>
+              <Label htmlFor="montant">Montant total net perçu (USD)</Label>
               <div className="relative">
                 <Coins
                   className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none"
@@ -544,8 +545,20 @@ function formatDate(iso: string): string {
   }).format(new Date(iso))
 }
 
-function formatMonthLong(yearMonth: string): string {
-  const [y, m] = yearMonth.split('-')
+function formatMonthLong(value: string): string {
+  // P3 (Hugh 22/05/2026) : format trimestriel "2026-Q1"
+  if (/^\d{4}-Q[1-4]$/.test(value)) {
+    const [year, q] = value.split('-Q')
+    const trimNames: Record<string, string> = {
+      '1': '1er trimestre (jan-fev-mar)',
+      '2': '2e trimestre (avr-mai-jun)',
+      '3': '3e trimestre (jui-aou-sep)',
+      '4': '4e trimestre (oct-nov-dec)',
+    }
+    return `${trimNames[q] ?? q} ${year}`
+  }
+  // Fallback ancien format mensuel
+  const [y, m] = value.split('-')
   const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1)
   return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d)
 }

@@ -318,7 +318,7 @@ function FiltersPanel({
 
       {/* Prix part max */}
       <div className="space-y-2">
-        <Label htmlFor="filter-prix">Prix par part max (EUR)</Label>
+        <Label htmlFor="filter-prix">Prix par part max (USD)</Label>
         <Input
           id="filter-prix"
           type="number"

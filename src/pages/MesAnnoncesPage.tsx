@@ -235,7 +235,7 @@ function EditModal({ annonce, onClose }: { annonce: AnnonceResponse; onClose: ()
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="edit-prix">Prix unitaire (EUR)</Label>
+            <Label htmlFor="edit-prix">Prix unitaire (USD)</Label>
             <Input
               id="edit-prix"
               type="number"

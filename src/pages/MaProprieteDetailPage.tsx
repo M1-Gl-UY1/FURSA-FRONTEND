@@ -129,7 +129,7 @@ export function MaProprieteDetailPage() {
             label="Fonds levés"
             value={<Money amount={valeurLevee} mono={false} />}
             trend={pourcentage}
-            trendLabel={`sur ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(valeurTotale)}`}
+            trendLabel={`sur ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(valeurTotale)}`}
           />
           <StatCard
             label="Parts vendues"

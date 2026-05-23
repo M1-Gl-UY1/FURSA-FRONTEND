@@ -13,7 +13,7 @@ type Props = {
  * Phase 10b : badge synthetique du statut de declaration mensuelle d'une propriete.
  * - DECLARE   : vert "✓ Déclaré pour {mois}"
  * - DANS_FENETRE : ocre "À déclarer (J-X)"
- * - EN_RETARD : rouge "En retard — pénalité {300} EUR"
+ * - EN_RETARD : rouge "En retard — pénalité {300} USD"
  */
 export function StatutDeclarationBadge({ statut, size = 'md', showMonth = true }: Props) {
   const config = configFor(statut)
@@ -70,14 +70,33 @@ function configFor(s: StatutDeclarationResponse) {
   }
 }
 
-function formatMonthShort(yearMonth: string): string {
-  const [y, m] = yearMonth.split('-')
+/**
+ * Format trimestriel : entree "2026-Q1", "2026-Q2", etc. (cf P3 Hugh 22/05/2026).
+ * Fallback : ancien format "2026-05" (mensuel) pour compat retro.
+ */
+function formatMonthShort(value: string): string {
+  if (/^\d{4}-Q[1-4]$/.test(value)) {
+    return value // ex : "2026-Q1"
+  }
+  // Fallback mensuel
+  const [y, m] = value.split('-')
   const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1)
   return new Intl.DateTimeFormat('fr-FR', { month: 'short', year: '2-digit' }).format(d)
 }
 
-function formatMonthLong(yearMonth: string): string {
-  const [y, m] = yearMonth.split('-')
+function formatMonthLong(value: string): string {
+  if (/^\d{4}-Q[1-4]$/.test(value)) {
+    const [year, q] = value.split('-Q')
+    const trimNames: Record<string, string> = {
+      '1': '1er trimestre (jan-fev-mar)',
+      '2': '2e trimestre (avr-mai-jun)',
+      '3': '3e trimestre (jui-aou-sep)',
+      '4': '4e trimestre (oct-nov-dec)',
+    }
+    return `${trimNames[q] ?? q} ${year}`
+  }
+  // Fallback mensuel
+  const [y, m] = value.split('-')
   const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1)
   return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d)
 }
@@ -85,7 +104,7 @@ function formatMonthLong(yearMonth: string): string {
 function formatEur(n: number): string {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
-    currency: 'EUR',
+    currency: 'USD',
     maximumFractionDigits: 0,
   }).format(n)
 }
