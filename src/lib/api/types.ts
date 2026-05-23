@@ -397,6 +397,27 @@ export type RevenuResponse = {
   // Phase 9 : justificatif + flag argent recu
   justificatifUrl?: string | null
   argentRecuParFursa?: boolean | null
+  // Phase 10b : window declaration + penalite retard
+  penaliteRetard?: number
+  montantDistribuable?: number
+}
+
+// --- Statut de declaration mensuel (Phase 10b) ---
+
+export type StatutDeclaration = 'DECLARE' | 'DANS_FENETRE' | 'EN_RETARD'
+
+export type StatutDeclarationResponse = {
+  proprieteId: number
+  proprieteNom: string
+  /** "YYYY-MM" - mois N-1 a declarer */
+  moisADeclarer: string
+  statut: StatutDeclaration
+  /** Jours restants avant le 5 (peut etre negatif si retard) */
+  joursRestants: number
+  dansFenetre: boolean
+  penaliteSiDeclarationMaintenant: number
+  dateSoumission?: string | null
+  revenuId?: number | null
 }
 
 /** Création directe par admin */

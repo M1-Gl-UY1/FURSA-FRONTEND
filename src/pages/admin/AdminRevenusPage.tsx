@@ -46,7 +46,7 @@ function resolveFileUrl(url: string | null | undefined): string | null {
   return base ? `${base}${url.startsWith('/') ? '' : '/'}${url}` : url
 }
 
-type Tab = 'a-valider' | 'valides' | 'distribues' | 'tous'
+type Tab = 'a-valider' | 'valides' | 'distribues' | 'retards' | 'tous'
 
 export function AdminRevenusPage() {
   const { data, isLoading } = useAdminRevenus()
@@ -70,11 +70,13 @@ export function AdminRevenusPage() {
   const aValider = revenus.filter((r) => r.statut === 'EN_REVIEW')
   const valides = revenus.filter((r) => r.statut === 'VALIDE')
   const distribues = revenus.filter((r) => r.statut === 'DISTRIBUE')
+  const retards = revenus.filter((r) => (r.penaliteRetard ?? 0) > 0)
 
   const filtered = (() => {
     if (tab === 'a-valider') return aValider
     if (tab === 'valides') return valides
     if (tab === 'distribues') return distribues
+    if (tab === 'retards') return retards
     return revenus
   })()
 
@@ -155,7 +157,34 @@ export function AdminRevenusPage() {
       key: 'montantTotal',
       label: 'Montant',
       align: 'right',
-      render: (r) => <Money amount={r.montantTotal} mono={false} className="font-bold" />,
+      render: (r) => (
+        <div className="flex flex-col items-end leading-tight">
+          <Money amount={r.montantTotal} mono={false} className="font-bold" />
+          {!!r.penaliteRetard && r.penaliteRetard > 0 && (
+            <span className="font-mono text-[10px] text-error">
+              −{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(r.penaliteRetard)} pénalité
+            </span>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'penaliteRetard',
+      label: 'Pénalité',
+      align: 'right',
+      hideOnMobile: true,
+      sortAccessor: (r) => r.penaliteRetard ?? 0,
+      render: (r) =>
+        r.penaliteRetard && r.penaliteRetard > 0 ? (
+          <span
+            className="inline-flex items-center gap-1 text-error text-xs font-semibold"
+            title="Pénalité retard appliquée (déclaration hors fenêtre 1-5)"
+          >
+            ⚠ <Money amount={r.penaliteRetard} mono={false} />
+          </span>
+        ) : (
+          <span className="text-earth-300 text-xs">—</span>
+        ),
     },
     {
       key: 'statut',
@@ -303,6 +332,14 @@ export function AdminRevenusPage() {
         </TabButton>
         <TabButton active={tab === 'distribues'} onClick={() => changeTab('distribues')} count={distribues.length}>
           Distribués
+        </TabButton>
+        <TabButton
+          active={tab === 'retards'}
+          onClick={() => changeTab('retards')}
+          count={retards.length}
+          highlight={retards.length > 0}
+        >
+          Retards (300€)
         </TabButton>
         <TabButton active={tab === 'tous'} onClick={() => changeTab('tous')} count={revenus.length}>
           Tous

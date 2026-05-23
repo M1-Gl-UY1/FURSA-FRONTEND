@@ -11,6 +11,7 @@ import { RequireAuth } from '@/lib/auth/RequireAuth'
 import { adminOrigin, investisseurOrigin, isAdminHost } from '@/lib/hosts'
 import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
+import { AdminDeclarationsStatutPage } from '@/pages/admin/AdminDeclarationsStatutPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
 import { AdminDistributionPage } from '@/pages/admin/AdminDistributionPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
@@ -145,6 +146,7 @@ function AdminRoutes() {
           <Route path="/admin/proprietes" element={<AdminProprietesPage />} />
           <Route path="/admin/proprietes/:id" element={<AdminProprieteDetailPage />} />
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
+          <Route path="/admin/declarations" element={<AdminDeclarationsStatutPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
           <Route path="/admin/utilisateurs/:id" element={<AdminUserDetailPage />} />
           <Route path="/admin/wallets" element={<AdminWalletsPage />} />

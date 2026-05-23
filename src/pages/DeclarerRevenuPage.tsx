@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CalendarDays,
   CheckCircle2,
+  Clock,
   Coins,
   Edit,
   FileText,
@@ -16,6 +17,7 @@ import {
 import { toast } from 'sonner'
 
 import { Money } from '@/components/shared/Money'
+import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 import { WizardStepper } from '@/components/shared/WizardStepper'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -23,8 +25,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { extractApiError } from '@/lib/api/errors'
-import { useDeclarerRevenuMultipart } from '@/lib/api/revenus'
+import { useDeclarerRevenuMultipart, useStatutDeclaration } from '@/lib/api/revenus'
 import { useMaProprieteProposee } from '@/lib/api/submissions'
+import { cn } from '@/lib/utils'
 
 const STEPS = ['Période & montant', 'Justificatif', 'Récap']
 
@@ -57,6 +60,7 @@ export function DeclarerRevenuPage() {
 
   const navigate = useNavigate()
   const { data: propriete, isLoading, isError } = useMaProprieteProposee(id)
+  const { data: statut } = useStatutDeclaration(Number.isNaN(id) ? null : id)
   const declarer = useDeclarerRevenuMultipart()
 
   const initialPeriode = defaultPeriode()
@@ -167,15 +171,74 @@ export function DeclarerRevenuPage() {
         Retour à la propriété
       </Link>
 
-      <header className="mb-8">
+      <header className="mb-6">
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
           Déclarer un revenu
         </h1>
-        <p className="font-body text-earth-600 text-sm">
+        <p className="font-body text-earth-600 text-sm mb-3">
           Pour <span className="font-semibold text-earth">{propriete.nom}</span>. La
           déclaration sera examinée par notre équipe avant distribution aux investisseurs.
         </p>
+        {statut && (
+          <div className="mt-3">
+            <StatutDeclarationBadge statut={statut} />
+          </div>
+        )}
       </header>
+
+      {/* Banniere window 1-5 : etat de la fenetre de declaration */}
+      {statut && statut.statut !== 'DECLARE' && (
+        <div
+          className={cn(
+            'mb-8 rounded-xl border-[1.5px] p-4 sm:p-5 flex items-start gap-3',
+            statut.dansFenetre
+              ? 'border-success/40 bg-success/5'
+              : 'border-error/40 bg-error/5'
+          )}
+        >
+          <div
+            className={cn(
+              'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
+              statut.dansFenetre ? 'bg-success/15' : 'bg-error/15'
+            )}
+          >
+            {statut.dansFenetre ? (
+              <Clock className="w-5 h-5 text-success" strokeWidth={1.75} />
+            ) : (
+              <AlertTriangle className="w-5 h-5 text-error" strokeWidth={1.75} />
+            )}
+          </div>
+          <div className="flex-1">
+            {statut.dansFenetre ? (
+              <>
+                <p className="font-body font-semibold text-earth text-sm">
+                  Fenêtre de déclaration ouverte
+                </p>
+                <p className="font-body text-earth-600 text-xs mt-1">
+                  Vous avez <strong>{statut.joursRestants} jour{statut.joursRestants > 1 ? 's' : ''}</strong>{' '}
+                  pour déclarer les revenus de{' '}
+                  <strong>{formatMonthLong(statut.moisADeclarer)}</strong> sans
+                  pénalité. Au-delà du 5, une pénalité de{' '}
+                  <strong>300 EUR</strong> sera retenue sur le montant déclaré.
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="font-body font-semibold text-error text-sm">
+                  Fenêtre fermée — pénalité retard applicable
+                </p>
+                <p className="font-body text-earth-700 text-xs mt-1">
+                  La période normale de déclaration (1<sup>er</sup> au 5) est dépassée.
+                  Vous pouvez toujours déclarer les revenus de{' '}
+                  <strong>{formatMonthLong(statut.moisADeclarer)}</strong>, mais{' '}
+                  <strong>300 EUR seront retenus</strong> sur le montant déclaré et
+                  reversés au compte central FURSA.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="mb-10">
         <WizardStepper steps={STEPS} current={step} />
@@ -376,13 +439,34 @@ export function DeclarerRevenuPage() {
               )}
             </Row>
             <div className="pt-3 mt-3 border-t border-earth/8">
-              <Row label="Montant total net">
+              <Row label="Montant total déclaré">
                 <Money
                   amount={form.montantTotal}
                   mono={false}
                   className="font-mono font-bold text-earth text-lg"
                 />
               </Row>
+              {statut && !statut.dansFenetre && form.montantTotal > 0 && (
+                <>
+                  <Row label="Pénalité retard">
+                    <span className="font-mono font-semibold text-error">
+                      −<Money
+                        amount={Math.min(300, form.montantTotal)}
+                        mono={false}
+                      />
+                    </span>
+                  </Row>
+                  <div className="pt-2 mt-2 border-t border-error/20">
+                    <Row label="Distribuable aux investisseurs">
+                      <Money
+                        amount={Math.max(0, form.montantTotal - Math.min(300, form.montantTotal))}
+                        mono={false}
+                        className="font-mono font-bold text-success text-lg"
+                      />
+                    </Row>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -458,4 +542,10 @@ function formatDate(iso: string): string {
     month: 'short',
     year: 'numeric',
   }).format(new Date(iso))
+}
+
+function formatMonthLong(yearMonth: string): string {
+  const [y, m] = yearMonth.split('-')
+  const d = new Date(parseInt(y, 10), parseInt(m, 10) - 1, 1)
+  return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d)
 }

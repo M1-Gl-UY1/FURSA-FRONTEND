@@ -1,7 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from './client'
-import type { RevenuResponse, SubmissionRevenuRequest } from './types'
+import type {
+  RevenuResponse,
+  StatutDeclarationResponse,
+  SubmissionRevenuRequest,
+} from './types'
 
 export function useMesRevenus() {
   return useQuery({
@@ -71,6 +75,41 @@ export function useDeclarerRevenuMultipart() {
       qc.invalidateQueries({ queryKey: ['mes-revenus'] })
       qc.invalidateQueries({ queryKey: ['revenus-propriete', vars.proprieteId] })
       qc.invalidateQueries({ queryKey: ['mes-notifications'] })
+    },
+  })
+}
+
+// --- Phase 10b : statut de declaration ---
+
+export function useStatutDeclaration(proprieteId: number | null | undefined) {
+  return useQuery({
+    queryKey: ['revenus', 'statut-declaration', proprieteId],
+    enabled: proprieteId != null,
+    queryFn: async () => {
+      const { data } = await api.get<StatutDeclarationResponse>(
+        `/api/revenus/propriete/${proprieteId}/statut-mois-courant`
+      )
+      return data
+    },
+  })
+}
+
+export function useMesStatutsDeclaration() {
+  return useQuery({
+    queryKey: ['revenus', 'me', 'statuts'],
+    queryFn: async () => {
+      const { data } = await api.get<StatutDeclarationResponse[]>('/api/revenus/me/statuts')
+      return data
+    },
+  })
+}
+
+export function useAdminStatutsDeclaration() {
+  return useQuery({
+    queryKey: ['admin', 'revenus', 'statuts'],
+    queryFn: async () => {
+      const { data } = await api.get<StatutDeclarationResponse[]>('/api/revenus/admin/statuts')
+      return data
     },
   })
 }

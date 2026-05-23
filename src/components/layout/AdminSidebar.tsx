@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom'
 import {
   ArrowLeftRight,
+  CalendarClock,
   Coins,
   CreditCard,
   DollarSign,
@@ -42,6 +43,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Propriétés', to: '/admin/proprietes', icon: Building2 },
       { label: 'Revenus', to: '/admin/revenus', icon: Banknote },
+      { label: 'Déclarations mensuelles', to: '/admin/declarations', icon: CalendarClock },
       { label: 'Utilisateurs', to: '/admin/utilisateurs', icon: Users },
       { label: 'Wallets', to: '/admin/wallets', icon: WalletCards },
       { label: 'KYC', to: '/admin/kyc', icon: IdCard },

@@ -16,6 +16,8 @@ import {
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMesProprietesProposees } from '@/lib/api/submissions'
+import { useStatutDeclaration } from '@/lib/api/revenus'
+import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 import type { ProprieteResponse } from '@/lib/api/types'
 
 const PLACEHOLDER_IMAGE = '/images/villa-falaise.jpg'
@@ -138,8 +140,9 @@ function ProprieteCard({
           loading="lazy"
           className="w-full h-full object-cover"
         />
-        <div className="absolute top-3 left-3">
+        <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
           <StatusBadge status={p.statut} />
+          {isPubliee && <DeclarationBadgeInline proprieteId={p.id} />}
         </div>
       </div>
 
@@ -220,4 +223,14 @@ function ProprieteCard({
       </div>
     </article>
   )
+}
+
+/**
+ * Phase 10b : affiche le badge de declaration mensuelle sur la card propriete publiee.
+ * Hook isole pour ne pas multiplier les requetes par card (chaque card a son propre id).
+ */
+function DeclarationBadgeInline({ proprieteId }: { proprieteId: number }) {
+  const { data } = useStatutDeclaration(proprieteId)
+  if (!data) return null
+  return <StatutDeclarationBadge statut={data} size="sm" showMonth={false} />
 }

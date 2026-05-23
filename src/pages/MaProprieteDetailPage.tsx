@@ -18,8 +18,9 @@ import { StatCard } from '@/components/shared/StatCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useMesRevenus } from '@/lib/api/revenus'
+import { useMesRevenus, useStatutDeclaration } from '@/lib/api/revenus'
 import { useMaProprieteProposee } from '@/lib/api/submissions'
+import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 
 export function MaProprieteDetailPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -81,6 +82,7 @@ export function MaProprieteDetailPage() {
       <header>
         <div className="flex items-center flex-wrap gap-2 mb-2">
           <StatusBadge status={p.statut} />
+          {isPubliee && <DeclarationBadgeForPropriete proprieteId={id} />}
         </div>
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-2">
           {p.nom}
@@ -329,6 +331,13 @@ function RevenusList({
       ))}
     </ul>
   )
+}
+
+/** Phase 10b : badge declaration mensuelle dans le header de la fiche bien. */
+function DeclarationBadgeForPropriete({ proprieteId }: { proprieteId: number }) {
+  const { data } = useStatutDeclaration(proprieteId)
+  if (!data) return null
+  return <StatutDeclarationBadge statut={data} />
 }
 
 function Meta({
