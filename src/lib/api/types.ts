@@ -121,6 +121,29 @@ export type ProprieteResponse = {
   proposeurId?: number | null
   motifRefus?: string | null
   soumiseLe?: string | null
+  // P1 (Hugh 22/05/2026) — refonte fiche bien
+  pays?: string | null
+  ville?: string | null
+  adressePrecise?: string | null
+  typeBien?: TypeBien | null
+  nombrePieces?: number | null
+  nombreChambres?: number | null
+  superficieM2?: number | null
+  hasPiscine?: boolean | null
+  hasClimatisation?: boolean | null
+  hasParking?: boolean | null
+  hasAscenseur?: boolean | null
+  hasJardin?: boolean | null
+  hasVueMer?: boolean | null
+  statutExploitation?: StatutExploitation | null
+  revenuMensuelActuel?: number | null
+  sourceRevenu?: SourceRevenu | null
+  prixVenteTotal?: number | null
+  deviseLocale?: string | null
+  fractionVenduePct?: number | null
+  videoUrl?: string | null
+  certifie?: boolean | null
+  certifieLe?: string | null
 }
 
 // P1 (Hugh 22/05/2026)
