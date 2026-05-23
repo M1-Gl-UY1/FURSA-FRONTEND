@@ -275,6 +275,8 @@ export type KycStats = {
   expired: number
 }
 
+export type StatutPossession = 'PENDING' | 'ACTIVE' | 'ANNULEE'
+
 export type PossessionResponse = {
   id: number
   proprieteId?: number
@@ -284,6 +286,52 @@ export type PossessionResponse = {
   prixUnitairePart: number
   valeurTotale: number
   rentabilitePrevue: number
+  statut?: StatutPossession
+}
+
+// Phase 10c : escrow crowdfunding
+export type StatutEscrow = 'EN_COLLECTE' | 'FINANCEE' | 'ANNULEE'
+
+export type TypeEscrowTransaction =
+  | 'CREDIT_ACHAT'
+  | 'DEBIT_RETRAIT_PROPRIO'
+  | 'DEBIT_COMMISSION_FURSA'
+  | 'DEBIT_REFUND_INVESTISSEUR'
+  | 'AJUSTEMENT_ADMIN'
+
+export type EscrowProprieteResponse = {
+  id: number
+  proprieteId: number | null
+  proprieteNom: string | null
+  solde: number
+  totalCollecte: number
+  /** Total parts × prix unitaire */
+  montantCible: number
+  /** montantCible × seuilPct / 100 */
+  montantSeuil: number
+  /** 0-100, % de montantCible deja collecte */
+  pourcentageCollecte: number
+  seuilPct: number
+  statut: StatutEscrow
+  createdAt: string
+  financeeLe?: string | null
+  annuleeLe?: string | null
+  motifAnnulation?: string | null
+}
+
+export type EscrowTransactionResponse = {
+  id: number
+  escrowId: number
+  type: TypeEscrowTransaction
+  /** Signe : positif = credit, negatif = debit */
+  montant: number
+  soldeApres: number
+  investisseurId: number | null
+  refTable: string | null
+  refId: number | null
+  libelle: string | null
+  metadata: string | null
+  createdAt: string
 }
 
 export type TransactionResponse = {

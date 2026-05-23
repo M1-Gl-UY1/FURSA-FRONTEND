@@ -1,41 +1,52 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  TrendingUp,
-  Wallet,
-  AlertTriangle,
-  ShieldCheck,
+  Coins,
   Copy,
-  Loader2,
   ExternalLink,
-  XCircle,
+  Loader2,
+  ShieldAlert,
+  ShieldCheck,
+  TrendingUp,
+  Users,
+  Wallet,
+  WalletCards,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { Money } from '@/components/shared/Money'
+import { ProgressBar } from '@/components/shared/ProgressBar'
 import { WizardStepper } from '@/components/shared/WizardStepper'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Slider } from '@/components/ui/slider'
-import { useInitierPaiement, useSessionStatus } from '@/lib/api/paiements'
+import { Skeleton } from '@/components/ui/skeleton'
+import { useAcheterViaWallet, useEscrowPropriete } from '@/lib/api/escrow'
+import { useMyWallet } from '@/lib/api/wallet'
 import { usePropriete } from '@/lib/api/proprietes'
 import type {
-  PaymentInitResponse,
-  PaymentSessionStatusResponse,
+  AchatResponse,
+  EscrowProprieteResponse,
   ProprieteResponse,
+  WalletResponse,
 } from '@/lib/api/types'
 import { extractApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/AuthContext'
-import { ShieldAlert } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
-const STEPS = ['Sélection', 'Confirmation', 'Paiement', 'Succès']
+const STEPS = ['Sélection', 'Confirmation', 'Succès']
 
+/**
+ * Phase 10c : achat de parts via le wallet de l'investisseur (crowdfunding).
+ * Flux en 3 etapes :
+ *  0. Selection : slider parts + apercu cout + check solde wallet
+ *  1. Confirmation : recap + CGV + bouton "Confirmer l'achat"
+ *  2. Succes : recap final + lien historique wallet + retour opportunites
+ */
 export function AcheterPartsPage() {
   const { id: idParam } = useParams<{ id: string }>()
   const id = idParam ? Number(idParam) : NaN
@@ -45,30 +56,28 @@ export function AcheterPartsPage() {
   }
 
   const { data: propriete, isLoading, isError } = usePropriete(id)
-  const { isAdmin } = useAuth()
-  const [step, setStep] = useState<0 | 1 | 2 | 3>(0)
+  const { data: wallet, isLoading: walletLoading } = useMyWallet()
+  const { data: escrow, isLoading: escrowLoading } = useEscrowPropriete(id)
+  const { isAdmin, user } = useAuth()
+  const navigate = useNavigate()
+
+  const [step, setStep] = useState<0 | 1 | 2>(0)
   const [parts, setParts] = useState<number>(1)
   const [cgvAccepted, setCgvAccepted] = useState(false)
-  const [session, setSession] = useState<PaymentInitResponse | null>(null)
-  const mutation = useInitierPaiement()
+  const [result, setResult] = useState<AchatResponse | null>(null)
 
-  // Polling du statut de la session une fois qu'elle existe
-  const { data: sessionStatus } = useSessionStatus(session?.sessionId ?? null)
-
-  // Transition step 2 -> 3 quand la session est CONFIRMED
-  useEffect(() => {
-    if (sessionStatus?.statut === 'CONFIRMED' && step === 2) {
-      setStep(3)
-      toast.success('Paiement confirmé !')
-    }
-  }, [sessionStatus?.statut, step])
+  const mutation = useAcheterViaWallet()
+  // Idempotency-Key regenere a chaque tentative (anti double-clic)
+  const idempotencyKey = useMemo(
+    () => crypto.randomUUID(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [step]
+  )
 
   useEffect(() => {
     if (propriete) setParts(1)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propriete?.id])
-
-  // Idempotency-Key genere une fois par tentative d'achat (anti double-clic, anti retry)
-  const idempotencyKey = useMemo(() => crypto.randomUUID(), [step === 1])
 
   if (isLoading) {
     return (
@@ -103,8 +112,7 @@ export function AcheterPartsPage() {
         </h2>
         <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
           Pour préserver la neutralité de la plateforme, les comptes administrateurs
-          ne peuvent pas investir dans les biens. Connectez-vous avec un compte
-          investisseur pour acheter des parts.
+          ne peuvent pas investir dans les biens.
         </p>
         <Button asChild>
           <Link to={`/opportunites/${propriete.id}`}>Retour à la propriété</Link>
@@ -115,18 +123,25 @@ export function AcheterPartsPage() {
 
   const partsMax = propriete.partsDisponibles ?? 0
   const isPubliee = propriete.statut === 'PUBLIEE'
+  const isCollecteAnnulee = escrow?.statut === 'ANNULEE'
 
-  if (!isPubliee || partsMax <= 0) {
+  if (!isPubliee || partsMax <= 0 || isCollecteAnnulee) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center">
         <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" strokeWidth={1.5} />
         <h2 className="font-display font-bold text-earth text-xl mb-2">
-          {partsMax <= 0 ? 'Plus de parts disponibles' : 'Propriété non disponible'}
+          {isCollecteAnnulee
+            ? 'Collecte annulée'
+            : partsMax <= 0
+              ? 'Plus de parts disponibles'
+              : 'Propriété non disponible'}
         </h2>
         <p className="font-body text-earth-600 text-sm mb-6">
-          {partsMax <= 0
-            ? 'Ce bien est entièrement financé. Consultez le marché secondaire.'
-            : 'Cette propriété n\'est pas ouverte à l\'achat pour le moment.'}
+          {isCollecteAnnulee
+            ? 'La collecte de cette propriété a été annulée. Les investisseurs ont été remboursés.'
+            : partsMax <= 0
+              ? 'Ce bien est entièrement financé. Consultez le marché secondaire.'
+              : "Cette propriété n'est pas ouverte à l'achat pour le moment."}
         </p>
         <Button asChild>
           <Link to="/opportunites">Voir les opportunités</Link>
@@ -135,17 +150,21 @@ export function AcheterPartsPage() {
     )
   }
 
-  function lancerPaiement() {
+  // GUARD KYC
+  const kycOk = user?.isVerified === true
+
+  function lancerAchat() {
     if (!propriete) return
     mutation.mutate(
-      { payload: { proprieteId: propriete.id, nombreParts: parts }, idempotencyKey },
+      { proprieteId: propriete.id, nombreParts: parts, idempotencyKey },
       {
         onSuccess: (res) => {
-          setSession(res)
+          setResult(res)
           setStep(2)
+          toast.success('Achat confirmé !')
         },
         onError: (err) => {
-          toast.error(extractApiError(err, 'Paiement impossible.'))
+          toast.error(extractApiError(err, 'Achat impossible.'))
         },
       }
     )
@@ -168,9 +187,14 @@ export function AcheterPartsPage() {
       {step === 0 && (
         <Step1Selection
           propriete={propriete}
+          escrow={escrow}
+          wallet={wallet}
+          walletLoading={walletLoading}
+          escrowLoading={escrowLoading}
           parts={parts}
           partsMax={partsMax}
           onPartsChange={setParts}
+          kycOk={kycOk}
           onContinue={() => setStep(1)}
         />
       )}
@@ -178,419 +202,215 @@ export function AcheterPartsPage() {
       {step === 1 && (
         <Step2Confirmation
           propriete={propriete}
+          escrow={escrow}
+          wallet={wallet}
           parts={parts}
           cgvAccepted={cgvAccepted}
           onCgvChange={setCgvAccepted}
-          onBack={() => setStep(0)}
-          onConfirm={lancerPaiement}
           isPending={mutation.isPending}
+          onBack={() => setStep(0)}
+          onConfirm={lancerAchat}
         />
       )}
 
-      {step === 2 && session && (
-        <Step3Waiting
-          session={session}
-          status={sessionStatus ?? null}
-          onCancel={() => {
-            setSession(null)
-            setStep(1)
-          }}
+      {step === 2 && result && (
+        <Step3Success
+          propriete={propriete}
+          escrow={escrow}
+          result={result}
+          onSeeWallet={() => navigate('/wallet')}
+          onSeePortfolio={() => navigate('/portefeuille')}
         />
-      )}
-
-      {step === 3 && session && sessionStatus && (
-        <Step4Success session={session} status={sessionStatus} />
       )}
     </div>
   )
 }
 
-// ============================================================================
-// Étape 1 — Sélection
-// ============================================================================
+// =============================================================================
+// Step 1 : Sélection
+// =============================================================================
 
-type Step1Props = {
+function Step1Selection({
+  propriete,
+  escrow,
+  wallet,
+  walletLoading,
+  escrowLoading,
+  parts,
+  partsMax,
+  onPartsChange,
+  kycOk,
+  onContinue,
+}: {
   propriete: ProprieteResponse
+  escrow: EscrowProprieteResponse | undefined
+  wallet: WalletResponse | undefined
+  walletLoading: boolean
+  escrowLoading: boolean
   parts: number
   partsMax: number
   onPartsChange: (n: number) => void
+  kycOk: boolean
   onContinue: () => void
-}
-
-function Step1Selection({ propriete, parts, partsMax, onPartsChange, onContinue }: Step1Props) {
-  const prix = propriete.prixUnitairePart ?? 0
-  const renta = propriete.rentabilitePrevue ?? 0
-  const total = parts * prix
-  const roiAnnuel = (total * renta) / 100
-
-  function handleInput(v: string) {
-    const n = parseInt(v, 10)
-    if (Number.isNaN(n)) onPartsChange(1)
-    else onPartsChange(Math.max(1, Math.min(partsMax, n)))
-  }
+}) {
+  const prixUnitaire = propriete.prixUnitairePart ?? 0
+  const total = parts * prixUnitaire
+  const solde = wallet?.solde ?? 0
+  const soldeInsuffisant = !walletLoading && solde < total
+  const partsValid = parts > 0 && parts <= partsMax
 
   return (
     <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8">
-      <h1 className="font-display font-bold text-earth text-2xl mb-1">
-        Combien de parts ?
-      </h1>
+      <h2 className="font-display font-bold text-earth text-xl mb-1">
+        Sélection
+      </h2>
       <p className="font-body text-earth-600 text-sm mb-6">
-        Choisissez le nombre de parts à acheter dans{' '}
-        <span className="font-semibold text-earth">{propriete.nom}</span>.
+        Combien de parts de <strong>{propriete.nom}</strong> souhaitez-vous acquérir ?
       </p>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-body text-earth-600 mb-8 pb-6 border-b border-earth/8">
-        <span>
-          Prix / part : <Money amount={prix} mono={false} className="font-mono font-semibold text-earth" />
-        </span>
-        <span>
-          Parts dispo :{' '}
-          <span className="font-mono font-semibold text-earth">
-            {partsMax.toLocaleString('fr-FR')}
-          </span>
-        </span>
-        <span>
-          Rentabilité :{' '}
-          <span className="font-mono font-semibold text-success">{renta}% / an</span>
-        </span>
-      </div>
+      {/* Etat de la collecte */}
+      {escrowLoading ? (
+        <Skeleton className="h-20 rounded-lg bg-sand-300 mb-6" />
+      ) : (
+        escrow && <CollecteCard escrow={escrow} />
+      )}
 
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <Label htmlFor="parts">Nombre de parts</Label>
-          <Input
-            id="parts"
-            type="number"
-            min={1}
-            max={partsMax}
-            value={parts}
-            onChange={(e) => handleInput(e.target.value)}
-            className="w-28 h-10 text-right font-mono font-semibold"
-          />
+      {/* Slider parts */}
+      <div className="space-y-4 mt-6">
+        <div className="flex items-baseline justify-between">
+          <span className="font-body text-sm text-earth-600">Nombre de parts</span>
+          <span className="font-mono font-bold text-earth text-xl">
+            {parts.toLocaleString('fr-FR')}{' '}
+            <span className="font-body text-xs text-earth-500 font-normal">
+              / {partsMax.toLocaleString('fr-FR')}
+            </span>
+          </span>
         </div>
         <Slider
           value={[parts]}
           min={1}
           max={partsMax}
           step={1}
-          onValueChange={([v]) => onPartsChange(v)}
-          aria-label="Nombre de parts"
+          onValueChange={(v) => onPartsChange(v[0] ?? 1)}
         />
-        <div className="flex justify-between text-xs font-mono text-earth-500 mt-2">
-          <span>1</span>
-          <span>{partsMax.toLocaleString('fr-FR')}</span>
+        <div className="grid grid-cols-4 gap-2">
+          {[1, 5, 10, partsMax].map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              onClick={() => onPartsChange(Math.min(preset, partsMax))}
+              className={cn(
+                'h-9 rounded-md border-[1.5px] font-body text-xs font-semibold transition-colors',
+                parts === preset
+                  ? 'border-terra bg-terra/10 text-terra'
+                  : 'border-sand-400 text-earth-600 hover:border-terra/40'
+              )}
+            >
+              {preset === partsMax ? 'Max' : preset}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-8 space-y-3">
-        <Row label="Montant total" mono>
-          <Money amount={total} mono={false} className="text-base font-bold text-earth" />
+      {/* Récap coût */}
+      <div className="mt-6 bg-white rounded-lg border border-earth/8 p-5 space-y-2">
+        <Row label="Prix par part">
+          <Money amount={prixUnitaire} mono={false} className="font-semibold" />
         </Row>
-        <Row
-          label="Revenus annuels estimés"
-          accent="success"
-          icon={<TrendingUp className="w-3.5 h-3.5" strokeWidth={2} />}
-        >
-          <Money amount={roiAnnuel} mono={false} className="text-base font-bold text-success" />
-        </Row>
-      </div>
-
-      <Button size="lg" className="w-full" onClick={onContinue}>
-        Continuer
-        <ArrowRight strokeWidth={2} />
-      </Button>
-    </div>
-  )
-}
-
-// ============================================================================
-// Étape 2 — Confirmation
-// ============================================================================
-
-type Step2Props = {
-  propriete: ProprieteResponse
-  parts: number
-  cgvAccepted: boolean
-  onCgvChange: (b: boolean) => void
-  onBack: () => void
-  onConfirm: () => void
-  isPending: boolean
-}
-
-function Step2Confirmation({
-  propriete,
-  parts,
-  cgvAccepted,
-  onCgvChange,
-  onBack,
-  onConfirm,
-  isPending,
-}: Step2Props) {
-  const prix = propriete.prixUnitairePart ?? 0
-  const renta = propriete.rentabilitePrevue ?? 0
-  const total = parts * prix
-  const roiAnnuel = (total * renta) / 100
-
-  return (
-    <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8">
-      <h1 className="font-display font-bold text-earth text-2xl mb-1">
-        Confirmation
-      </h1>
-      <p className="font-body text-earth-600 text-sm mb-6">
-        Vérifiez les détails avant de finaliser votre achat.
-      </p>
-
-      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 space-y-3">
-        <Row label="Propriété">
-          <span className="font-body font-semibold text-earth">{propriete.nom}</span>
-        </Row>
-        <Row label="Localisation">
-          <span className="font-body text-earth">{propriete.localisation}</span>
-        </Row>
-        <Row label="Nombre de parts" mono>
+        <Row label="Nombre de parts">
           <span className="font-mono font-semibold text-earth">
-            {parts.toLocaleString('fr-FR')}
+            ×{parts.toLocaleString('fr-FR')}
           </span>
         </Row>
-        <Row label="Prix unitaire" mono>
-          <Money amount={prix} mono={false} className="font-mono text-earth" />
-        </Row>
-        <div className="pt-3 mt-3 border-t border-earth/8 space-y-3">
-          <Row label="Total à payer" mono>
-            <Money amount={total} mono={false} className="font-mono font-bold text-earth text-lg" />
-          </Row>
-          <Row
-            label="Revenus annuels estimés"
-            accent="success"
-            icon={<TrendingUp className="w-3.5 h-3.5" strokeWidth={2} />}
-          >
+        <div className="pt-2 mt-2 border-t border-earth/8">
+          <Row label="Total à payer">
             <Money
-              amount={roiAnnuel}
+              amount={total}
               mono={false}
-              className="font-mono font-bold text-success"
+              className="font-mono font-bold text-earth text-xl"
             />
           </Row>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg border border-earth/8 p-4 mb-6 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-md bg-ocean/10 flex items-center justify-center">
-          <Wallet className="w-5 h-5 text-ocean" strokeWidth={1.75} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-body font-semibold text-earth text-sm">Paiement par USDC (stable-coin)</p>
-          <p className="font-body text-earth-500 text-xs">
-            Conversion automatique depuis votre devise locale. Mode démo actif.
-          </p>
-        </div>
-      </div>
-
-      <label className="flex items-start gap-3 mb-7 cursor-pointer">
-        <Checkbox
-          id="cgv"
-          checked={cgvAccepted}
-          onCheckedChange={(v) => onCgvChange(v === true)}
-          className="mt-0.5"
-        />
-        <span className="font-body text-sm text-earth-700 leading-relaxed">
-          J'accepte les{' '}
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault()
-              toast.info('Page CGV bientôt disponible.')
-            }}
-            className="text-ocean font-semibold hover:underline"
+      {/* Wallet check */}
+      <div className="mt-4">
+        {walletLoading ? (
+          <Skeleton className="h-16 rounded-lg bg-sand-300" />
+        ) : (
+          <div
+            className={cn(
+              'rounded-lg border-[1.5px] p-4 flex items-center justify-between gap-3',
+              soldeInsuffisant
+                ? 'border-error/40 bg-error/5'
+                : 'border-success/40 bg-success/5'
+            )}
           >
-            conditions générales d'investissement
-          </a>{' '}
-          et je confirme avoir compris les risques.
-        </span>
-      </label>
-
-      <div className="flex flex-col-reverse sm:flex-row gap-3">
-        <Button variant="outline" size="lg" className="sm:flex-1" onClick={onBack} disabled={isPending}>
-          <ArrowLeft strokeWidth={2} />
-          Retour
-        </Button>
-        <Button
-          size="lg"
-          className="sm:flex-[2]"
-          onClick={onConfirm}
-          disabled={!cgvAccepted || isPending}
-        >
-          {isPending ? 'Initialisation...' : 'Payer maintenant'}
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// ============================================================================
-// Étape 3 — En attente du paiement (polling)
-// ============================================================================
-
-type Step3WaitingProps = {
-  session: PaymentInitResponse
-  status: PaymentSessionStatusResponse | null
-  onCancel: () => void
-}
-
-function Step3Waiting({ session, status, onCancel }: Step3WaitingProps) {
-  const statut = status?.statut ?? session.statut
-  const isFailed = statut === 'FAILED' || statut === 'EXPIRED'
-
-  if (isFailed) {
-    return (
-      <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-10 text-center">
-        <XCircle className="w-16 h-16 text-warning mx-auto mb-6" strokeWidth={1.5} />
-        <h1 className="font-display font-bold text-earth text-2xl mb-2">
-          {statut === 'EXPIRED' ? 'Session expirée' : 'Paiement échoué'}
-        </h1>
-        <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
-          {status?.errorMessage ??
-            (statut === 'EXPIRED'
-              ? 'Le délai de paiement est dépassé. Veuillez recommencer.'
-              : 'Le paiement n\'a pas pu être validé. Vous pouvez réessayer.')}
-        </p>
-        <Button onClick={onCancel} size="lg">
-          Réessayer
-        </Button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-10 text-center">
-      <Loader2 className="w-16 h-16 text-ocean mx-auto mb-6 animate-spin" strokeWidth={1.5} />
-      <h1 className="font-display font-bold text-earth text-2xl mb-2">
-        Paiement en cours...
-      </h1>
-      <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
-        En attente de confirmation du paiement. Cela prend généralement quelques secondes.
-        Ne fermez pas cette page.
-      </p>
-
-      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 max-w-md mx-auto text-left space-y-3">
-        <Row label="Montant à payer" mono>
-          <Money
-            amount={session.montantFiat}
-            mono={false}
-            className="font-mono font-bold text-earth"
-          />
-        </Row>
-        <Row label="En USDC" mono>
-          <span className="font-mono text-earth">{session.montantUsdc.toFixed(2)} USDC</span>
-        </Row>
-        <Row label="Provider">
-          <span className="font-body text-earth">{session.providerName}</span>
-        </Row>
-      </div>
-
-      {session.widgetUrl && session.providerName !== 'MOCK' && (
-        <a
-          href={session.widgetUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-ocean text-sm font-semibold hover:underline mb-4"
-        >
-          Ouvrir le portail de paiement
-          <ExternalLink className="w-3.5 h-3.5" strokeWidth={2} />
-        </a>
-      )}
-
-      <Button variant="outline" onClick={onCancel} className="mt-2">
-        Annuler
-      </Button>
-    </div>
-  )
-}
-
-// ============================================================================
-// Étape 4 — Succès
-// ============================================================================
-
-type Step4SuccessProps = {
-  session: PaymentInitResponse
-  status: PaymentSessionStatusResponse
-}
-
-function Step4Success({ session, status }: Step4SuccessProps) {
-  const navigate = useNavigate()
-  const txHash = status.txHash
-
-  function copyHash() {
-    if (!txHash) return
-    navigator.clipboard.writeText(txHash).then(() => toast.success('Hash copié !'))
-  }
-
-  return (
-    <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-10 text-center">
-      <div className="relative w-20 h-20 mx-auto mb-6">
-        <div className="absolute inset-0 rounded-full bg-success/15 animate-ping opacity-75" />
-        <div className="relative w-20 h-20 rounded-full bg-success flex items-center justify-center shadow-card-hover">
-          <CheckCircle2 className="w-10 h-10 text-white" strokeWidth={2} />
-        </div>
-      </div>
-
-      <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-2">
-        Achat confirmé !
-      </h1>
-      <p className="font-body text-earth-600 text-sm sm:text-base mb-8 max-w-md mx-auto">
-        Vos parts ont été ajoutées à votre portefeuille.
-      </p>
-
-      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-8 max-w-md mx-auto text-left space-y-3">
-        <Row label="Montant" mono>
-          <Money
-            amount={session.montantFiat}
-            mono={false}
-            className="font-mono font-semibold text-earth"
-          />
-        </Row>
-        <Row label="Statut">
-          <span className="inline-flex items-center gap-1 text-success text-xs font-semibold">
-            <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2} />
-            {status.statut}
-          </span>
-        </Row>
-        {txHash && (
-          <div className="pt-3 mt-3 border-t border-earth/8">
-            <p className="font-body text-xs text-earth-500 mb-1">Hash transaction</p>
-            <button
-              type="button"
-              onClick={copyHash}
-              className="group flex items-center gap-2 w-full text-left"
-            >
-              <code className="font-mono text-[11px] text-earth break-all flex-1 leading-tight">
-                {txHash}
-              </code>
-              <Copy
-                className="w-4 h-4 text-earth-400 group-hover:text-ocean shrink-0 transition-colors"
-                strokeWidth={1.75}
-              />
-            </button>
-            {status.etherscanUrl && (
-              <a
-                href={status.etherscanUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 mt-2 text-ocean text-xs font-semibold hover:underline"
+            <div className="flex items-center gap-3 min-w-0">
+              <div
+                className={cn(
+                  'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
+                  soldeInsuffisant ? 'bg-error/15' : 'bg-success/15'
+                )}
               >
-                Voir sur Etherscan
-                <ExternalLink className="w-3 h-3" strokeWidth={2} />
-              </a>
+                <WalletCards
+                  className={cn(
+                    'w-5 h-5',
+                    soldeInsuffisant ? 'text-error' : 'text-success'
+                  )}
+                  strokeWidth={1.75}
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="font-body text-xs text-earth-500">Solde wallet</p>
+                <p className="font-mono font-bold text-earth text-base">
+                  <Money amount={solde} mono />
+                </p>
+              </div>
+            </div>
+            {soldeInsuffisant ? (
+              <div className="text-right">
+                <p className="font-body text-xs text-error font-semibold mb-1">
+                  Manque <Money amount={total - solde} mono={false} />
+                </p>
+                <Button asChild size="sm" variant="outline" className="border-error/40 text-error hover:bg-error/10">
+                  <Link to="/wallet">Recharger</Link>
+                </Button>
+              </div>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-success text-xs font-semibold">
+                <CheckCircle2 className="w-4 h-4" strokeWidth={1.75} />
+                Solde suffisant
+              </span>
             )}
           </div>
         )}
       </div>
 
-      <div className="flex flex-col-reverse sm:flex-row gap-3 max-w-md mx-auto">
-        <Button variant="outline" size="lg" className="sm:flex-1" onClick={() => navigate('/opportunites')}>
-          Continuer à investir
-        </Button>
-        <Button size="lg" className="sm:flex-1" onClick={() => navigate('/portefeuille')}>
-          Voir mon portefeuille
+      {/* GUARD KYC */}
+      {!kycOk && (
+        <div className="mt-4 rounded-lg border-[1.5px] border-warning/40 bg-warning/5 p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="w-5 h-5 text-warning" strokeWidth={1.75} />
+            <p className="font-body text-sm text-earth-700">
+              <strong>KYC requis</strong> avant tout investissement.
+            </p>
+          </div>
+          <Button asChild size="sm" variant="outline">
+            <Link to="/compte/kyc">Compléter</Link>
+          </Button>
+        </div>
+      )}
+
+      {/* CTA */}
+      <div className="mt-7">
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!partsValid || soldeInsuffisant || !kycOk}
+          onClick={onContinue}
+        >
+          Continuer
           <ArrowRight strokeWidth={2} />
         </Button>
       </div>
@@ -598,32 +418,321 @@ function Step4Success({ session, status }: Step4SuccessProps) {
   )
 }
 
-// ============================================================================
-// Sous-composant Row
-// ============================================================================
+// =============================================================================
+// Step 2 : Confirmation
+// =============================================================================
 
-type RowProps = {
-  label: string
-  children: React.ReactNode
-  mono?: boolean
-  accent?: 'default' | 'success'
-  icon?: React.ReactNode
+function Step2Confirmation({
+  propriete,
+  escrow,
+  wallet,
+  parts,
+  cgvAccepted,
+  onCgvChange,
+  isPending,
+  onBack,
+  onConfirm,
+}: {
+  propriete: ProprieteResponse
+  escrow: EscrowProprieteResponse | undefined
+  wallet: WalletResponse | undefined
+  parts: number
+  cgvAccepted: boolean
+  onCgvChange: (v: boolean) => void
+  isPending: boolean
+  onBack: () => void
+  onConfirm: () => void
+}) {
+  const prixUnitaire = propriete.prixUnitairePart ?? 0
+  const total = parts * prixUnitaire
+  const soldeApres = (wallet?.solde ?? 0) - total
+
+  return (
+    <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8">
+      <h2 className="font-display font-bold text-earth text-xl mb-1">
+        Confirmation
+      </h2>
+      <p className="font-body text-earth-600 text-sm mb-6">
+        Vérifiez les informations avant de débiter votre wallet.
+      </p>
+
+      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 space-y-3">
+        <Row label="Propriété">
+          <span className="font-body font-semibold text-earth text-right">
+            {propriete.nom}
+          </span>
+        </Row>
+        <Row label="Parts achetées">
+          <span className="font-mono font-bold text-earth">
+            {parts.toLocaleString('fr-FR')}
+          </span>
+        </Row>
+        <Row label="Prix par part">
+          <Money amount={prixUnitaire} mono={false} />
+        </Row>
+        <div className="pt-3 mt-3 border-t border-earth/8 space-y-2">
+          <Row label="Total à débiter">
+            <Money
+              amount={total}
+              mono={false}
+              className="font-mono font-bold text-error text-lg"
+            />
+          </Row>
+          <Row label="Solde wallet après">
+            <Money
+              amount={soldeApres}
+              mono={false}
+              className="font-mono font-bold text-earth"
+            />
+          </Row>
+        </div>
+      </div>
+
+      {/* Explication crowdfunding */}
+      <div className="bg-ocean/8 border border-ocean/20 rounded-lg p-4 mb-6">
+        <h3 className="font-body font-semibold text-ocean text-sm mb-2 flex items-center gap-2">
+          <Users className="w-4 h-4" strokeWidth={1.75} />
+          Comment ça fonctionne
+        </h3>
+        <ul className="font-body text-earth-700 text-xs space-y-1.5 leading-relaxed">
+          <li>
+            • Votre paiement est instantané. <strong>{parts} part(s)</strong> sont
+            réservées à votre nom.
+          </li>
+          <li>
+            • L'argent reste sur le compte séquestre de FURSA jusqu'à ce que la
+            propriété atteigne <strong>{escrow?.seuilPct ?? 80}%</strong> de collecte.
+          </li>
+          <li>
+            • À ce seuil, vos parts deviennent actives et vous commencez à recevoir
+            des dividendes mensuels.
+          </li>
+          <li>
+            • Si la collecte est annulée par FURSA, vous serez intégralement remboursé
+            sur votre wallet.
+          </li>
+        </ul>
+      </div>
+
+      {/* CGV */}
+      <label className="flex items-start gap-3 cursor-pointer mb-7">
+        <Checkbox
+          checked={cgvAccepted}
+          onCheckedChange={(v) => onCgvChange(v === true)}
+          className="mt-0.5"
+        />
+        <span className="font-body text-sm text-earth-700 leading-relaxed">
+          J'accepte les CGV et je confirme que les fonds investis sont des fonds
+          propres dont je peux disposer librement. Je comprends que mes parts seront
+          activées dès que la collecte aura atteint son seuil minimum.
+        </span>
+      </label>
+
+      <div className="flex flex-col-reverse sm:flex-row gap-3">
+        <Button
+          variant="outline"
+          size="lg"
+          className="sm:flex-1"
+          onClick={onBack}
+          disabled={isPending}
+        >
+          <ArrowLeft strokeWidth={2} />
+          Modifier
+        </Button>
+        <Button
+          size="lg"
+          className="sm:flex-[2]"
+          onClick={onConfirm}
+          disabled={!cgvAccepted || isPending}
+        >
+          {isPending ? (
+            <>
+              <Loader2 className="animate-spin" strokeWidth={2} />
+              Débit en cours...
+            </>
+          ) : (
+            <>
+              <Wallet strokeWidth={2} />
+              Débiter mon wallet de <Money amount={total} mono={false} className="font-bold" />
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
+  )
 }
 
-function Row({ label, children, accent = 'default', icon }: RowProps) {
+// =============================================================================
+// Step 3 : Succès
+// =============================================================================
+
+function Step3Success({
+  propriete,
+  escrow,
+  result,
+  onSeeWallet,
+  onSeePortfolio,
+}: {
+  propriete: ProprieteResponse
+  escrow: EscrowProprieteResponse | undefined
+  result: AchatResponse
+  onSeeWallet: () => void
+  onSeePortfolio: () => void
+}) {
+  const possessionPending = (escrow?.pourcentageCollecte ?? 0) < (escrow?.seuilPct ?? 80)
+
+  function copyHash() {
+    navigator.clipboard
+      .writeText(result.hashTransaction)
+      .then(() => toast.success('Hash copié.'))
+      .catch(() => toast.error('Impossible de copier.'))
+  }
+
+  return (
+    <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8 text-center">
+      <div className="w-16 h-16 rounded-full bg-success/15 flex items-center justify-center mx-auto mb-4">
+        <CheckCircle2 className="w-8 h-8 text-success" strokeWidth={1.75} />
+      </div>
+      <h2 className="font-display font-bold text-earth text-2xl mb-2">
+        Achat confirmé !
+      </h2>
+      <p className="font-body text-earth-600 text-sm mb-6">
+        Vous avez acquis <strong>{result.nombreParts} part(s)</strong> de{' '}
+        <strong>{propriete.nom}</strong>.
+      </p>
+
+      <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 space-y-2 text-left">
+        <Row label="Montant débité">
+          <Money amount={result.montant} mono={false} className="font-bold text-error" />
+        </Row>
+        <Row label="Date">
+          <span className="font-mono text-xs text-earth-600">
+            {formatDate(result.dateTransaction)}
+          </span>
+        </Row>
+        <Row label="Référence transaction">
+          <button
+            type="button"
+            onClick={copyHash}
+            className="inline-flex items-center gap-1 font-mono text-xs text-ocean hover:underline"
+          >
+            <span className="truncate max-w-[180px]">{result.hashTransaction}</span>
+            <Copy className="w-3 h-3 flex-shrink-0" strokeWidth={1.75} />
+          </button>
+        </Row>
+      </div>
+
+      {possessionPending ? (
+        <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 mb-6 text-left">
+          <h3 className="font-body font-semibold text-warning text-sm mb-1 flex items-center gap-2">
+            <Coins className="w-4 h-4" strokeWidth={1.75} />
+            Parts en attente d'activation
+          </h3>
+          <p className="font-body text-earth-700 text-xs">
+            La propriété est en cours de collecte (
+            <strong>{(escrow?.pourcentageCollecte ?? 0).toFixed(0)}% atteint sur {escrow?.seuilPct ?? 80}% requis</strong>
+            ). Vos parts seront activées et commenceront à générer des dividendes
+            dès que le seuil sera atteint.
+          </p>
+          {escrow && (
+            <div className="mt-3">
+              <ProgressBar
+                value={Math.min(100, (escrow.pourcentageCollecte / escrow.seuilPct) * 100)}
+                size="sm"
+              />
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="bg-success/10 border border-success/30 rounded-lg p-4 mb-6 text-left">
+          <h3 className="font-body font-semibold text-success text-sm mb-1 flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" strokeWidth={1.75} />
+            Parts actives
+          </h3>
+          <p className="font-body text-earth-700 text-xs">
+            La propriété est déjà financée. Vos parts sont actives, vous percevrez
+            les dividendes dès la prochaine distribution mensuelle.
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-col-reverse sm:flex-row gap-3">
+        <Button variant="outline" size="lg" className="sm:flex-1" onClick={onSeeWallet}>
+          <WalletCards strokeWidth={2} />
+          Voir mon wallet
+        </Button>
+        <Button size="lg" className="sm:flex-1" onClick={onSeePortfolio}>
+          <ExternalLink strokeWidth={2} />
+          Mon portefeuille
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function CollecteCard({ escrow }: { escrow: EscrowProprieteResponse }) {
+  const pct = escrow.pourcentageCollecte ?? 0
+  const seuil = escrow.seuilPct ?? 80
+  const seuilAtteint = escrow.statut === 'FINANCEE'
+
+  return (
+    <div className="bg-white rounded-lg border border-earth/8 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div>
+          <p className="font-body text-[11px] text-earth-500 uppercase tracking-wide">
+            Collecte
+          </p>
+          <p className="font-mono font-bold text-earth text-base">
+            <Money amount={escrow.totalCollecte} mono={false} /> /{' '}
+            <Money amount={escrow.montantCible} mono={false} className="text-earth-500 font-normal text-sm" />
+          </p>
+        </div>
+        <span
+          className={cn(
+            'inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold',
+            seuilAtteint
+              ? 'bg-success/15 text-success'
+              : 'bg-warning/15 text-warning'
+          )}
+        >
+          {seuilAtteint ? (
+            <>
+              <CheckCircle2 className="w-3 h-3" strokeWidth={2} /> Financée
+            </>
+          ) : (
+            <>
+              <Users className="w-3 h-3" strokeWidth={2} /> En collecte
+            </>
+          )}
+        </span>
+      </div>
+      <ProgressBar value={Math.min(100, pct)} size="sm" />
+      <p className="mt-1.5 font-body text-[11px] text-earth-500">
+        {pct.toFixed(1)}% atteint · seuil de déblocage à <strong>{seuil}%</strong>
+      </p>
+    </div>
+  )
+}
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span
-        className={
-          accent === 'success'
-            ? 'flex items-center gap-1.5 text-success text-sm font-body'
-            : 'text-earth-600 text-sm font-body'
-        }
-      >
-        {icon}
-        {label}
-      </span>
+      <span className="text-earth-600 text-sm font-body">{label}</span>
       <div className="text-right">{children}</div>
     </div>
   )
+}
+
+function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(iso))
 }

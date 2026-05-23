@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { PropertyGallery } from '@/components/properties/PropertyGallery'
 import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
+import { useEscrowPropriete } from '@/lib/api/escrow'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -56,6 +57,7 @@ export function OpportuniteDetailPage() {
   const partsVendues = calculatePartsVendues(propriete)
   const isPubliee = propriete.statut === 'PUBLIEE'
   const sansParts = (propriete.partsDisponibles ?? 0) <= 0
+  const { data: escrow } = useEscrowPropriete(isPubliee ? propriete.id : null)
 
   function share() {
     const url = window.location.href
@@ -181,6 +183,24 @@ export function OpportuniteDetailPage() {
                 </p>
               </div>
               <ProgressBar value={pourcentage} />
+              {escrow && (
+                <p className="mt-2 font-body text-[11px] text-earth-500 inline-flex items-center gap-1">
+                  {escrow.statut === 'FINANCEE' ? (
+                    <span className="text-success font-semibold">
+                      ✓ Seuil de {escrow.seuilPct}% atteint — parts actives, dividendes en cours
+                    </span>
+                  ) : escrow.statut === 'ANNULEE' ? (
+                    <span className="text-error font-semibold">
+                      Collecte annulée — investisseurs remboursés
+                    </span>
+                  ) : (
+                    <>
+                      Seuil de déblocage à <strong>{escrow.seuilPct}%</strong> · vos parts
+                      seront actives une fois le seuil atteint
+                    </>
+                  )}
+                </p>
+              )}
             </div>
 
             {/* CTA — masqué pour les admins (conflit d'intérêt + délit d'initié) */}
