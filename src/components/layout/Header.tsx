@@ -1,16 +1,21 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { User, Menu, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useTranslation } from 'react-i18next'
 
-const navLinks = [
-  { label: 'Acceuil', href: '#accueil' },
-  { label: 'A propos', href: '#pourquoi' },
-  { label: 'Contact', href: '#contact' },
-]
+import { LanguageSwitcher } from '@/components/shared/LanguageSwitcher'
+import { cn } from '@/lib/utils'
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { t } = useTranslation()
+
+  const navLinks = [
+    { label: t('header.nav_home', 'Accueil'), href: '#accueil' },
+    { label: t('header.nav_about', 'À propos'), href: '#pourquoi' },
+    { label: t('header.nav_partners', 'Partenaires'), href: '#partenaires' },
+    { label: t('header.nav_contact', 'Contact'), href: '#contact' },
+  ]
 
   return (
     <header className="absolute top-0 left-0 right-0 z-50 bg-earth/55 backdrop-blur-md border-b border-white/10">
@@ -38,13 +43,14 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Right cluster (CTA + avatar) */}
+          {/* Right cluster (lang + CTA + avatar) */}
           <div className="flex items-center gap-2 sm:gap-3">
+            <LanguageSwitcher variant="light" className="hidden sm:inline-flex" />
             <Link
               to="/register"
               className="hidden sm:inline-flex items-center bg-white text-earth rounded-full px-4 lg:px-5 py-2 text-xs lg:text-sm font-semibold font-body hover:bg-sand-50 transition-colors duration-200"
             >
-              je me lance
+              {t('common.create_account')}
             </Link>
             <Link
               to="/login"
@@ -93,8 +99,11 @@ export function Header() {
               onClick={() => setMobileOpen(false)}
               className="sm:hidden mt-1 inline-flex justify-center items-center bg-white text-earth rounded-full px-4 py-2.5 text-sm font-semibold font-body hover:bg-sand-50 transition-colors"
             >
-              je me lance
+              {t('common.create_account')}
             </Link>
+            <div className="sm:hidden flex justify-center pt-2">
+              <LanguageSwitcher variant="light" />
+            </div>
           </nav>
         </div>
       </div>

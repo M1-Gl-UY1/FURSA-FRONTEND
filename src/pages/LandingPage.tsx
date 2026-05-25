@@ -9,6 +9,7 @@ import { CommentCaMarche } from '@/components/landing/CommentCaMarche'
 import { Partenaires } from '@/components/landing/Partenaires'
 import { Stats } from '@/components/landing/Stats'
 import { InvestirConfiance } from '@/components/landing/InvestirConfiance'
+import { Movement } from '@/components/landing/Movement'
 import { CtaFinal } from '@/components/landing/CtaFinal'
 
 export function LandingPage() {
@@ -24,6 +25,7 @@ export function LandingPage() {
         <Proprietaires />
         <Partenaires />
         <CommentCaMarche />
+        <Movement />
         <InvestirConfiance />
         <CtaFinal />
       </main>

@@ -1,98 +1,103 @@
 import { Link } from 'react-router-dom'
-import { UserPlus, Search, Wallet, TrendingUp } from 'lucide-react'
+import { Search, Wallet, ShieldCheck, TrendingUp, DoorOpen } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 
 type Step = {
-  number: string
-  title: string
-  description: string
+  labelKey: string
+  titleKey: string
+  descKey: string
+  highlightKey: string
   icon: LucideIcon
-  highlight?: string
 }
 
+/**
+ * Les 5 etapes reprises du pitch officiel FURSA Community (page 5-6) :
+ * Browse / Invest / Own / Earn / Exit.
+ */
 const STEPS: Step[] = [
   {
-    number: '01',
-    title: 'Créez votre compte',
-    description:
-      'Inscription gratuite en quelques minutes. Vérification KYC simplifiée pour rejoindre la communauté Fursa en toute conformité.',
-    icon: UserPlus,
-    highlight: 'Gratuit · 5 min',
-  },
-  {
-    number: '02',
-    title: 'Choisissez un bien',
-    description:
-      "Parcourez nos biens certifiés à Zanzibar. Étudiez les performances, photos, vidéo de visite et rendement estimé avant de vous décider.",
+    labelKey: 'how.browse_label',
+    titleKey: 'how.browse_title',
+    descKey: 'how.browse_desc',
+    highlightKey: 'how.browse_highlight',
     icon: Search,
-    highlight: 'Dès $67',
   },
   {
-    number: '03',
-    title: 'Investissez en quelques clics',
-    description:
-      "Réglez en USD ou crypto via Yellow Card. Vos fonds restent en séquestre jusqu'à ce que l'objectif de collecte soit atteint à 100%.",
+    labelKey: 'how.invest_label',
+    titleKey: 'how.invest_title',
+    descKey: 'how.invest_desc',
+    highlightKey: 'how.invest_highlight',
     icon: Wallet,
-    highlight: 'Paiement sécurisé',
   },
   {
-    number: '04',
-    title: 'Recevez vos revenus',
-    description:
-      'Loyers nets distribués trimestriellement, directement sur votre wallet Fursa. Suivez vos rendements en temps réel depuis votre dashboard.',
+    labelKey: 'how.own_label',
+    titleKey: 'how.own_title',
+    descKey: 'how.own_desc',
+    highlightKey: 'how.own_highlight',
+    icon: ShieldCheck,
+  },
+  {
+    labelKey: 'how.earn_label',
+    titleKey: 'how.earn_title',
+    descKey: 'how.earn_desc',
+    highlightKey: 'how.earn_highlight',
     icon: TrendingUp,
-    highlight: 'Trimestriel',
+  },
+  {
+    labelKey: 'how.exit_label',
+    titleKey: 'how.exit_title',
+    descKey: 'how.exit_desc',
+    highlightKey: 'how.exit_highlight',
+    icon: DoorOpen,
   },
 ]
 
 export function CommentCaMarche() {
+  const { t } = useTranslation()
+
   return (
     <section id="comment-ca-marche" className="bg-white py-16 sm:py-20 lg:py-24">
       <div className="max-w-container mx-auto px-5 sm:px-6 lg:px-10">
         <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-16">
           <p className="font-body text-xs uppercase tracking-widest text-terra font-semibold mb-3">
-            Parcours investisseur
+            {t('how.eyebrow')}
           </p>
           <h2 className="font-display font-bold text-earth text-3xl sm:text-4xl lg:text-5xl tracking-tight mb-4">
-            Comment ça marche ?
+            {t('how.title')}
           </h2>
           <p className="font-body text-earth-600 text-base sm:text-lg leading-relaxed">
-            Quatre étapes simples pour devenir copropriétaire d'un bien
-            immobilier africain.
+            {t('how.subtitle')}
           </p>
         </div>
 
-        {/* Timeline desktop */}
-        <div className="hidden md:block relative max-w-5xl mx-auto">
-          {/* Ligne horizontale */}
+        {/* Timeline desktop (5 etapes horizontal) */}
+        <div className="hidden md:block relative max-w-6xl mx-auto">
           <div
             aria-hidden="true"
             className="absolute top-8 left-0 right-0 h-0.5 bg-gradient-to-r from-terra/0 via-terra/30 to-terra/0"
           />
 
-          <div className="relative grid grid-cols-4 gap-6">
+          <div className="relative grid grid-cols-5 gap-4">
             {STEPS.map((step) => {
               const Icon = step.icon
               return (
-                <div key={step.number} className="relative flex flex-col items-center text-center">
-                  {/* Bulle numérotée */}
+                <div key={step.titleKey} className="relative flex flex-col items-center text-center">
                   <div className="relative z-10 w-16 h-16 rounded-full bg-white border-2 border-terra flex items-center justify-center shadow-card mb-5">
                     <Icon className="w-6 h-6 text-terra" strokeWidth={1.75} />
                   </div>
-                  <span className="font-mono text-xs font-bold text-terra mb-2">
-                    ÉTAPE {step.number}
+                  <span className="font-mono text-[10px] font-bold text-terra mb-2 uppercase tracking-wider">
+                    {t(step.labelKey)}
                   </span>
-                  <h3 className="font-display font-bold text-earth text-lg mb-2">
-                    {step.title}
+                  <h3 className="font-display font-bold text-earth text-base mb-2">
+                    {t(step.titleKey)}
                   </h3>
-                  <p className="font-body text-earth-600 text-sm leading-relaxed mb-3">
-                    {step.description}
+                  <p className="font-body text-earth-600 text-xs leading-relaxed mb-3">
+                    {t(step.descKey)}
                   </p>
-                  {step.highlight && (
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-terra/10 font-body text-[11px] font-semibold text-terra">
-                      {step.highlight}
-                    </span>
-                  )}
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-terra/10 font-body text-[10px] font-semibold text-terra">
+                    {t(step.highlightKey)}
+                  </span>
                 </div>
               )
             })}
@@ -109,25 +114,23 @@ export function CommentCaMarche() {
             {STEPS.map((step) => {
               const Icon = step.icon
               return (
-                <div key={step.number} className="relative flex gap-5">
+                <div key={step.titleKey} className="relative flex gap-5">
                   <div className="relative z-10 flex-shrink-0 w-16 h-16 rounded-full bg-white border-2 border-terra flex items-center justify-center shadow-card">
                     <Icon className="w-6 h-6 text-terra" strokeWidth={1.75} />
                   </div>
                   <div className="flex-1 pt-1">
-                    <span className="font-mono text-xs font-bold text-terra block mb-1">
-                      ÉTAPE {step.number}
+                    <span className="font-mono text-xs font-bold text-terra block mb-1 uppercase tracking-wider">
+                      {t(step.labelKey)}
                     </span>
                     <h3 className="font-display font-bold text-earth text-lg mb-2">
-                      {step.title}
+                      {t(step.titleKey)}
                     </h3>
                     <p className="font-body text-earth-600 text-sm leading-relaxed mb-2">
-                      {step.description}
+                      {t(step.descKey)}
                     </p>
-                    {step.highlight && (
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-terra/10 font-body text-[11px] font-semibold text-terra">
-                        {step.highlight}
-                      </span>
-                    )}
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-terra/10 font-body text-[11px] font-semibold text-terra">
+                      {t(step.highlightKey)}
+                    </span>
                   </div>
                 </div>
               )
@@ -141,10 +144,10 @@ export function CommentCaMarche() {
             to="/register"
             className="inline-flex items-center justify-center rounded-full bg-terra hover:bg-terra-600 text-white font-display font-semibold text-sm sm:text-base px-7 py-3.5 shadow-brand hover:shadow-brand-hover transition-all duration-200"
           >
-            Créer mon compte gratuitement
+            {t('how.cta')}
           </Link>
           <p className="mt-3 font-body text-earth-500 text-xs">
-            Sans engagement · Vérification KYC en 5 minutes
+            {t('how.cta_sub')}
           </p>
         </div>
       </div>
