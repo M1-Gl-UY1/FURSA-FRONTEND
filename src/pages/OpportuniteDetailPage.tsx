@@ -231,6 +231,40 @@ export function OpportuniteDetailPage() {
             </section>
           )}
 
+          {/* P5 (Hugh 22/05/2026) : valeur totale du bien USD + devise locale */}
+          {propriete.prixVenteTotalUsd != null && propriete.prixVenteTotalUsd > 0 && (
+            <section className="mb-8">
+              <div className="bg-white border border-earth/8 rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                  <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold mb-1">
+                    Valeur totale du bien
+                  </p>
+                  <p className="font-mono font-bold text-earth text-2xl sm:text-3xl">
+                    <Money amount={propriete.prixVenteTotalUsd} mono={false} />
+                  </p>
+                  {propriete.deviseLocale &&
+                    propriete.deviseLocale.toUpperCase() !== 'USD' &&
+                    propriete.prixVenteTotal != null && (
+                      <p className="font-mono text-earth-500 text-xs mt-1">
+                        ≈ {propriete.prixVenteTotal.toLocaleString('fr-FR')}{' '}
+                        {propriete.deviseLocale} <span className="text-earth-400">(devise d'origine)</span>
+                      </p>
+                    )}
+                </div>
+                {propriete.fractionVenduePct != null && (
+                  <div className="text-right">
+                    <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold mb-1">
+                      Fraction mise en vente
+                    </p>
+                    <p className="font-mono font-bold text-terra text-xl">
+                      {propriete.fractionVenduePct}%
+                    </p>
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* Exploitation / Pourquoi investir */}
           {(propriete.statutExploitation || propriete.sourceRevenu || propriete.revenuMensuelActuel) && (
             <section className="mb-8">

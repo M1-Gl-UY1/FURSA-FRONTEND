@@ -142,6 +142,8 @@ export type ProprieteResponse = {
   sourceRevenu?: SourceRevenu | null
   prixVenteTotal?: number | null
   deviseLocale?: string | null
+  /** P5 (Hugh 22/05/2026) : equivalent USD calcule a la soumission. */
+  prixVenteTotalUsd?: number | null
   fractionVenduePct?: number | null
   videoUrl?: string | null
   certifie?: boolean | null
