@@ -269,6 +269,10 @@ export function ProposerBienPage() {
       </Link>
 
       <header className="mb-6">
+        <p className="font-body text-xs uppercase tracking-widest text-ocean font-semibold mb-2 inline-flex items-center gap-1.5">
+          <HomeIcon className="w-3.5 h-3.5" strokeWidth={2} />
+          Espace propriétaire
+        </p>
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
           Proposer un bien
         </h1>

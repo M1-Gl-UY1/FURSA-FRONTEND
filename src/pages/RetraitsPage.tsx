@@ -18,8 +18,9 @@ import { toast } from 'sonner'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
-import { StatCard } from '@/components/shared/StatCard'
 import { Button } from '@/components/ui/button'
+import { useCountUp } from '@/lib/hooks/useCountUp'
+import type { LucideIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -156,45 +157,57 @@ export function RetraitsPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
-      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
-            Mes retraits
-          </h1>
-          <p className="font-body text-earth-600 text-sm">
-            Demandez le versement de votre wallet vers Mobile Money, virement ou crypto.
-            Une commission FURSA de {COMMISSION_FURSA_PCT}% est prélevée à chaque retrait.
-          </p>
+      {/* Hero compact */}
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-terra to-terra-700 p-6 sm:p-7">
+        <div
+          aria-hidden="true"
+          className="absolute -top-16 -right-16 w-56 h-56 bg-gold/15 rounded-full blur-3xl pointer-events-none"
+        />
+        <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-center">
+          <div>
+            <p className="font-body text-xs uppercase tracking-widest text-gold-300 font-semibold mb-2 inline-flex items-center gap-1.5">
+              <ArrowUpFromLine className="w-3.5 h-3.5" strokeWidth={2} />
+              Mes retraits
+            </p>
+            <h1 className="font-display font-bold text-white text-2xl sm:text-3xl lg:text-4xl mb-2">
+              Retirer mon argent
+            </h1>
+            <p className="font-body text-white/80 text-sm">
+              Transférez votre solde vers Mobile Money, virement bancaire ou crypto.
+              Commission FURSA <strong>{COMMISSION_FURSA_PCT}%</strong> · validation admin requise.
+            </p>
+          </div>
+          <Button
+            size="lg"
+            onClick={() => setDemanderOpen(true)}
+            disabled={(wallet?.solde ?? 0) <= 0}
+            className="bg-white text-terra hover:bg-sand-50 disabled:opacity-50"
+          >
+            <ArrowUpFromLine className="w-4 h-4" strokeWidth={2} />
+            Demander un retrait
+          </Button>
         </div>
-        <Button
-          size="lg"
-          onClick={() => setDemanderOpen(true)}
-          disabled={(wallet?.solde ?? 0) <= 0}
-        >
-          <ArrowUpFromLine className="w-4 h-4" strokeWidth={2} />
-          Demander un retrait
-        </Button>
       </header>
 
       {/* KPIs */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-        <StatCard
+        <KpiMoney
           label="Solde wallet"
-          value={<Money amount={wallet?.solde ?? 0} mono={false} />}
+          target={wallet?.solde ?? 0}
           icon={WalletIcon}
           iconBg="bg-terra/10"
           iconColor="text-terra"
         />
-        <StatCard
+        <KpiCount
           label="Demandes en cours"
-          value={stats.pending}
+          target={stats.pending}
           icon={Clock}
           iconBg="bg-warning/15"
           iconColor="text-warning"
         />
-        <StatCard
+        <KpiMoney
           label="Total déjà retiré"
-          value={<Money amount={stats.totalRetire} mono={false} />}
+          target={stats.totalRetire}
           icon={CheckCircle2}
           iconBg="bg-success/10"
           iconColor="text-success"
@@ -478,6 +491,62 @@ function formatDate(iso: string): string {
     hour: '2-digit',
     minute: '2-digit',
   }).format(new Date(iso))
+}
+
+// =============================================================================
+// Animated KPI cards
+// =============================================================================
+
+type KpiAnimProps = {
+  label: string
+  target: number
+  icon: LucideIcon
+  iconBg: string
+  iconColor: string
+}
+
+function KpiMoney({ label, target, icon: Icon, iconBg, iconColor }: KpiAnimProps) {
+  const [value, ref] = useCountUp({ target })
+  return (
+    <div
+      ref={ref}
+      className="bg-white rounded-xl border border-earth/8 shadow-card p-4 sm:p-5"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold">
+          {label}
+        </p>
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${iconBg}`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} strokeWidth={1.75} />
+        </div>
+      </div>
+      <p className="font-mono font-bold text-earth text-xl sm:text-2xl tabular-nums">
+        <Money amount={value} mono={false} />
+      </p>
+    </div>
+  )
+}
+
+function KpiCount({ label, target, icon: Icon, iconBg, iconColor }: KpiAnimProps) {
+  const [value, ref] = useCountUp({ target })
+  return (
+    <div
+      ref={ref}
+      className="bg-white rounded-xl border border-earth/8 shadow-card p-4 sm:p-5"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold">
+          {label}
+        </p>
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${iconBg}`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} strokeWidth={1.75} />
+        </div>
+      </div>
+      <p className="font-mono font-bold text-earth text-2xl sm:text-3xl tabular-nums">
+        {Math.round(value).toLocaleString('fr-FR')}
+      </p>
+    </div>
+  )
 }
 
 // Suppress unused

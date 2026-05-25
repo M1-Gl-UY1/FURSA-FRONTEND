@@ -20,7 +20,6 @@ import { Link } from 'react-router-dom'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
-import { StatCard } from '@/components/shared/StatCard'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -30,8 +29,10 @@ import {
   WALLET_TX_DISPLAY,
   type WalletTxFilter,
 } from '@/lib/api/wallet'
+import { useCountUp } from '@/lib/hooks/useCountUp'
 import type { TypeWalletTransaction, WalletTransactionResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
+import type { LucideIcon } from 'lucide-react'
 
 type Tab = 'historique' | 'recharger' | 'retirer'
 
@@ -48,6 +49,10 @@ export function WalletPage() {
   return (
     <div className="space-y-6 sm:space-y-8">
       <header>
+        <p className="font-body text-xs uppercase tracking-widest text-terra font-semibold mb-2 inline-flex items-center gap-1.5">
+          <WalletIcon className="w-3.5 h-3.5" strokeWidth={2} />
+          Mon espace financier
+        </p>
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
           Mon wallet
         </h1>
@@ -69,13 +74,7 @@ export function WalletPage() {
             {isLoading ? (
               <Skeleton className="h-12 w-64 bg-white/20" />
             ) : (
-              <div className="font-mono font-bold text-4xl sm:text-5xl tabular-nums">
-                <Money
-                  amount={wallet?.solde ?? 0}
-                  className="text-white"
-                  mono={true}
-                />
-              </div>
+              <SoldeAnimated solde={wallet?.solde ?? 0} />
             )}
             {!isLoading && stats?.dernierMouvement && (
               <p className="font-body text-white/70 text-xs mt-3 inline-flex items-center gap-1.5">
@@ -115,28 +114,28 @@ export function WalletPage() {
           ))
         ) : (
           <>
-            <StatCard
+            <KpiMoney
               label="Total crédité"
-              value={<Money amount={stats?.totalCredite ?? 0} mono={false} />}
+              target={stats?.totalCredite ?? 0}
               icon={TrendingUp}
               iconBg="bg-success/10"
               iconColor="text-success"
             />
-            <StatCard
+            <KpiMoney
               label="Total débité"
-              value={<Money amount={stats?.totalDebite ?? 0} mono={false} />}
+              target={stats?.totalDebite ?? 0}
               icon={TrendingDown}
               iconBg="bg-warning/15"
               iconColor="text-warning"
             />
-            <StatCard
+            <KpiCount
               label="Mouvements"
-              value={stats?.nbMouvements ?? 0}
+              target={stats?.nbMouvements ?? 0}
               icon={Coins}
               iconBg="bg-ocean/10"
               iconColor="text-ocean"
             />
-            <StatCard
+            <KpiStatic
               label="Devise"
               value={wallet?.devise ?? 'USD'}
               icon={WalletIcon}
@@ -407,6 +406,104 @@ function RetirerTab() {
         </Link>
       </Button>
     </section>
+  )
+}
+
+// =============================================================================
+// Animated KPI cards
+// =============================================================================
+
+function SoldeAnimated({ solde }: { solde: number }) {
+  const [value, ref] = useCountUp({ target: solde })
+  return (
+    <div
+      ref={ref}
+      className="font-mono font-bold text-4xl sm:text-5xl tabular-nums"
+    >
+      <Money amount={value} className="text-white" mono />
+    </div>
+  )
+}
+
+type KpiProps = {
+  label: string
+  target: number
+  icon: LucideIcon
+  iconBg: string
+  iconColor: string
+}
+
+function KpiMoney({ label, target, icon: Icon, iconBg, iconColor }: KpiProps) {
+  const [value, ref] = useCountUp({ target })
+  return (
+    <div
+      ref={ref}
+      className="bg-white rounded-xl border border-earth/8 shadow-card p-4 sm:p-5"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold">
+          {label}
+        </p>
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${iconBg}`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} strokeWidth={1.75} />
+        </div>
+      </div>
+      <p className="font-mono font-bold text-earth text-xl sm:text-2xl tabular-nums">
+        <Money amount={value} mono={false} />
+      </p>
+    </div>
+  )
+}
+
+function KpiCount({ label, target, icon: Icon, iconBg, iconColor }: KpiProps) {
+  const [value, ref] = useCountUp({ target })
+  return (
+    <div
+      ref={ref}
+      className="bg-white rounded-xl border border-earth/8 shadow-card p-4 sm:p-5"
+    >
+      <div className="flex items-start justify-between mb-3">
+        <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold">
+          {label}
+        </p>
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${iconBg}`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} strokeWidth={1.75} />
+        </div>
+      </div>
+      <p className="font-mono font-bold text-earth text-2xl sm:text-3xl tabular-nums">
+        {Math.round(value).toLocaleString('fr-FR')}
+      </p>
+    </div>
+  )
+}
+
+function KpiStatic({
+  label,
+  value,
+  icon: Icon,
+  iconBg,
+  iconColor,
+}: {
+  label: string
+  value: string
+  icon: LucideIcon
+  iconBg: string
+  iconColor: string
+}) {
+  return (
+    <div className="bg-white rounded-xl border border-earth/8 shadow-card p-4 sm:p-5">
+      <div className="flex items-start justify-between mb-3">
+        <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold">
+          {label}
+        </p>
+        <div className={`w-9 h-9 rounded-md flex items-center justify-center ${iconBg}`}>
+          <Icon className={`w-4 h-4 ${iconColor}`} strokeWidth={1.75} />
+        </div>
+      </div>
+      <p className="font-mono font-bold text-earth text-2xl sm:text-3xl">
+        {value}
+      </p>
+    </div>
   )
 }
 
