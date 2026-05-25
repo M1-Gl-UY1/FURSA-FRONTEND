@@ -99,6 +99,26 @@ export default {
       maxWidth: {
         'container': '1280px',
       },
+      keyframes: {
+        'ken-burns': {
+          '0%': { transform: 'scale(1) translate(0, 0)' },
+          '100%': { transform: 'scale(1.15) translate(-2%, -1%)' },
+        },
+        'fade-up': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+      },
+      animation: {
+        'ken-burns': 'ken-burns 20s ease-in-out infinite alternate',
+        'fade-up': 'fade-up 0.8s ease-out forwards',
+        'fade-up-slow': 'fade-up 1.2s ease-out forwards',
+        'fade-in': 'fade-in 1s ease-out forwards',
+      },
     },
   },
   plugins: [],

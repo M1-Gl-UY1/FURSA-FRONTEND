@@ -10,7 +10,22 @@ import {
   Share2,
   AlertTriangle,
   ShieldAlert,
+  BadgeCheck,
+  Home,
+  Bed,
+  Ruler,
+  LayoutGrid,
+  Waves,
+  Wind,
+  Car,
+  Building2,
+  Trees,
+  Eye,
+  PlayCircle,
+  Sparkles,
+  CalendarClock,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PropertyGallery } from '@/components/properties/PropertyGallery'
@@ -22,6 +37,23 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
 import { useAuth } from '@/lib/auth/AuthContext'
+import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
+
+const TYPE_BIEN_LABELS: Record<TypeBien, string> = {
+  VILLA: 'Villa',
+  APPARTEMENT: 'Appartement',
+  STUDIO: 'Studio',
+  PENTHOUSE: 'Penthouse',
+  DUPLEX: 'Duplex',
+  IMMEUBLE: 'Immeuble',
+  CHAMBRE: 'Chambre',
+}
+
+const SOURCE_REVENU_LABELS: Record<string, string> = {
+  BAIL: 'Bail long terme',
+  AIRBNB: 'Location courte durée (Airbnb)',
+  AUTRE: 'Autre',
+}
 
 export function OpportuniteDetailPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -55,9 +87,14 @@ export function OpportuniteDetailPage() {
 
   const pourcentage = calculatePourcentageVendu(propriete)
   const partsVendues = calculatePartsVendues(propriete)
+  const partsTotales = propriete.nombreTotalPart ?? propriete.partsTotales ?? 0
   const isPubliee = propriete.statut === 'PUBLIEE'
   const sansParts = (propriete.partsDisponibles ?? 0) <= 0
   const { data: escrow } = useEscrowPropriete(isPubliee ? propriete.id : null)
+
+  const equipements = collectEquipements(propriete)
+  const caracteristiques = collectCaracteristiques(propriete)
+  const isCertifie = propriete.certifie === true || propriete.statutCertif === 'CERTIFIE'
 
   function share() {
     const url = window.location.href
@@ -67,6 +104,10 @@ export function OpportuniteDetailPage() {
       navigator.clipboard.writeText(url).then(() => toast.success('Lien copié !'))
     }
   }
+
+  const localisationFull = [propriete.adressePrecise, propriete.ville, propriete.pays]
+    .filter(Boolean)
+    .join(', ') || propriete.localisation
 
   return (
     <div className="max-w-container mx-auto">
@@ -79,30 +120,64 @@ export function OpportuniteDetailPage() {
         Retour aux opportunités
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 lg:gap-10 items-start">
-        {/* Colonne gauche : galerie + description */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-10 items-start">
+        {/* Colonne gauche : galerie + contenu */}
         <div>
           <PropertyGallery photos={propriete.photos} alt={propriete.nom} />
 
           {/* Header titre + meta */}
-          <header className="mt-6 mb-6">
-            <div className="flex items-center flex-wrap gap-2 mb-2">
+          <header className="mt-6 mb-8">
+            <div className="flex items-center flex-wrap gap-2 mb-3">
               {propriete.statut && <StatusBadge status={propriete.statut} />}
               {sansParts && <StatusBadge status="FINANCEE" />}
+              {isCertifie && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-success/10 text-success font-body text-xs font-semibold">
+                  <BadgeCheck className="w-3.5 h-3.5" strokeWidth={2} />
+                  Certifié Fursa
+                </span>
+              )}
+              {propriete.typeBien && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-terra/10 text-terra font-body text-xs font-semibold">
+                  <Home className="w-3.5 h-3.5" strokeWidth={2} />
+                  {TYPE_BIEN_LABELS[propriete.typeBien]}
+                </span>
+              )}
             </div>
             <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl lg:text-4xl mb-2 leading-tight">
               {propriete.nom}
             </h1>
             <p className="flex items-center gap-1.5 text-earth-600 text-sm font-body">
               <MapPin className="w-4 h-4" strokeWidth={1.75} />
-              {propriete.localisation}
+              {localisationFull}
             </p>
           </header>
+
+          {/* Bandeau caractéristiques */}
+          {caracteristiques.length > 0 && (
+            <section className="mb-8">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                {caracteristiques.map((c) => (
+                  <div
+                    key={c.label}
+                    className="bg-sand-100 rounded-lg p-4 border border-earth/5"
+                  >
+                    <div className="flex items-center gap-2 text-earth-500 mb-1">
+                      <c.icon className="w-4 h-4" strokeWidth={1.75} />
+                      <span className="font-body text-xs uppercase tracking-wide">
+                        {c.label}
+                      </span>
+                    </div>
+                    <p className="font-mono font-bold text-earth text-lg">{c.value}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
 
           {/* Description */}
           {propriete.description && (
             <section className="mb-8">
-              <h2 className="font-display font-semibold text-earth text-lg mb-3">
+              <h2 className="font-display font-semibold text-earth text-xl mb-3">
                 À propos de ce bien
               </h2>
               <p className="font-body text-earth-700 text-base leading-relaxed whitespace-pre-line">
@@ -111,29 +186,120 @@ export function OpportuniteDetailPage() {
             </section>
           )}
 
+          {/* Équipements */}
+          {equipements.length > 0 && (
+            <section className="mb-8">
+              <h2 className="font-display font-semibold text-earth text-xl mb-4">
+                Équipements & confort
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {equipements.map((e) => (
+                  <div
+                    key={e.label}
+                    className="flex items-center gap-3 p-3 bg-white border border-earth/8 rounded-lg"
+                  >
+                    <div className="w-9 h-9 rounded-md bg-ocean/10 flex items-center justify-center shrink-0">
+                      <e.icon className="w-4 h-4 text-ocean" strokeWidth={1.75} />
+                    </div>
+                    <span className="font-body text-earth-700 text-sm font-medium">
+                      {e.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Exploitation / Pourquoi investir */}
+          {(propriete.statutExploitation || propriete.sourceRevenu || propriete.revenuMensuelActuel) && (
+            <section className="mb-8">
+              <h2 className="font-display font-semibold text-earth text-xl mb-4">
+                Pourquoi investir ici
+              </h2>
+              <div className="bg-gradient-to-br from-sand-100 to-sand-50 border border-earth/8 rounded-xl p-5 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {propriete.statutExploitation && (
+                    <ExploitItem
+                      icon={propriete.statutExploitation === 'DEJA_RENTABLE' ? Sparkles : CalendarClock}
+                      label="État"
+                      value={
+                        propriete.statutExploitation === 'DEJA_RENTABLE'
+                          ? 'Déjà en exploitation, génère des revenus'
+                          : 'Neuf — premiers revenus à venir'
+                      }
+                    />
+                  )}
+                  {propriete.sourceRevenu && (
+                    <ExploitItem
+                      icon={TrendingUp}
+                      label="Mode d'exploitation"
+                      value={SOURCE_REVENU_LABELS[propriete.sourceRevenu] ?? propriete.sourceRevenu}
+                    />
+                  )}
+                  {propriete.revenuMensuelActuel != null && propriete.revenuMensuelActuel > 0 && (
+                    <ExploitItem
+                      icon={Coins}
+                      label="Revenu mensuel actuel"
+                      value={<Money amount={propriete.revenuMensuelActuel} mono={false} />}
+                    />
+                  )}
+                  {propriete.rentabilitePrevue != null && (
+                    <ExploitItem
+                      icon={PieChart}
+                      label="Rentabilité prévue"
+                      value={`${propriete.rentabilitePrevue}% / an`}
+                    />
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
+
+          {/* Vidéo de visite */}
+          {propriete.videoUrl && (
+            <section className="mb-8">
+              <h2 className="font-display font-semibold text-earth text-xl mb-3 flex items-center gap-2">
+                <PlayCircle className="w-5 h-5 text-terra" strokeWidth={1.75} />
+                Vidéo de visite
+              </h2>
+              <div className="relative aspect-video rounded-xl overflow-hidden bg-earth shadow-card">
+                <video
+                  src={propriete.videoUrl}
+                  controls
+                  preload="metadata"
+                  className="w-full h-full"
+                >
+                  Votre navigateur ne prend pas en charge la lecture vidéo.
+                </video>
+              </div>
+            </section>
+          )}
+
           {/* Documents */}
           {propriete.documents && propriete.documents.length > 0 && (
             <section className="mb-8">
-              <h2 className="font-display font-semibold text-earth text-lg mb-3">
-                Documents
+              <h2 className="font-display font-semibold text-earth text-xl mb-3">
+                Documents légaux
               </h2>
               <ul className="space-y-2">
-                {propriete.documents.map((doc) => (
-                  <li key={doc.id}>
-                    <a
-                      href={doc.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-3 p-3 bg-sand-100 hover:bg-sand-200 rounded-lg border border-earth/5 text-earth font-body text-sm transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-md bg-ocean/10 flex items-center justify-center shrink-0">
-                        <FileText className="w-5 h-5 text-ocean" strokeWidth={1.75} />
-                      </div>
-                      <span className="flex-1 truncate">{doc.nom ?? doc.fileName}</span>
-                      <span className="text-earth-500 text-xs">Ouvrir</span>
-                    </a>
-                  </li>
-                ))}
+                {propriete.documents
+                  .filter((doc) => doc.type === 'PDF' || !doc.sectionPhoto)
+                  .map((doc) => (
+                    <li key={doc.id}>
+                      <a
+                        href={doc.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 p-3 bg-sand-100 hover:bg-sand-200 rounded-lg border border-earth/5 text-earth font-body text-sm transition-colors"
+                      >
+                        <div className="w-10 h-10 rounded-md bg-ocean/10 flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-ocean" strokeWidth={1.75} />
+                        </div>
+                        <span className="flex-1 truncate">{doc.nom ?? doc.fileName}</span>
+                        <span className="text-earth-500 text-xs">Ouvrir</span>
+                      </a>
+                    </li>
+                  ))}
               </ul>
             </section>
           )}
@@ -141,108 +307,126 @@ export function OpportuniteDetailPage() {
 
         {/* Colonne droite : sticky panel achat */}
         <aside className="lg:sticky lg:top-20">
-          <div className="bg-sand-100 rounded-xl border border-earth/5 shadow-card p-6">
-            {/* Prix part */}
-            <div className="mb-5 pb-5 border-b border-earth/8">
-              <p className="font-body text-xs text-earth-500 uppercase tracking-wide mb-1">
+          <div className="bg-white rounded-xl border border-earth/8 shadow-card overflow-hidden">
+            {/* Header panel avec accent terra */}
+            <div className="bg-gradient-to-br from-terra to-terra-600 p-5 text-white">
+              <p className="font-body text-xs uppercase tracking-widest opacity-90 mb-1">
                 Prix par part
               </p>
-              <p className="font-mono font-bold text-earth text-3xl">
+              <p className="font-mono font-bold text-3xl sm:text-4xl">
                 <Money amount={propriete.prixUnitairePart} mono={false} />
+              </p>
+              <p className="font-body text-xs mt-1 opacity-90">
+                Investissement minimum
               </p>
             </div>
 
-            {/* KPIs */}
-            <dl className="space-y-4 mb-5 pb-5 border-b border-earth/8">
-              <KpiRow
-                icon={TrendingUp}
-                label="Rentabilité estimée"
-                value={`${propriete.rentabilitePrevue ?? 0}% / an`}
-                accent="success"
-              />
-              <KpiRow
-                icon={PieChart}
-                label="Parts disponibles"
-                value={`${(propriete.partsDisponibles ?? 0).toLocaleString('fr-FR')} / ${(propriete.nombreTotalPart ?? propriete.partsTotales ?? 0).toLocaleString('fr-FR')}`}
-              />
-              <KpiRow
-                icon={Coins}
-                label="Investissement minimum"
-                value={<Money amount={propriete.prixUnitairePart} mono={false} />}
-              />
-            </dl>
+            <div className="p-5 sm:p-6">
+              {/* KPIs */}
+              <dl className="space-y-4 mb-5 pb-5 border-b border-earth/8">
+                <KpiRow
+                  icon={TrendingUp}
+                  label="Rentabilité estimée"
+                  value={`${propriete.rentabilitePrevue ?? 0}% / an`}
+                  accent="success"
+                />
+                <KpiRow
+                  icon={PieChart}
+                  label="Parts disponibles"
+                  value={`${(propriete.partsDisponibles ?? 0).toLocaleString('fr-FR')} / ${partsTotales.toLocaleString('fr-FR')}`}
+                />
+                <KpiRow
+                  icon={CalendarClock}
+                  label="Distribution"
+                  value="Trimestrielle"
+                />
+              </dl>
 
-            {/* Progression */}
-            <div className="mb-6">
-              <div className="flex items-baseline justify-between mb-2">
-                <p className="font-body text-xs text-earth-500 uppercase tracking-wide">
-                  Financement
-                </p>
-                <p className="font-mono text-xs text-earth-600 tabular-nums">
-                  {partsVendues.toLocaleString('fr-FR')} parts vendues
-                </p>
-              </div>
-              <ProgressBar value={pourcentage} />
-              {escrow && (
-                <p className="mt-2 font-body text-[11px] text-earth-500 inline-flex items-center gap-1">
-                  {escrow.statut === 'FINANCEE' ? (
-                    <span className="text-success font-semibold">
-                      ✓ Seuil de {escrow.seuilPct}% atteint — parts actives, dividendes en cours
-                    </span>
-                  ) : escrow.statut === 'ANNULEE' ? (
-                    <span className="text-error font-semibold">
-                      Collecte annulée — investisseurs remboursés
-                    </span>
-                  ) : (
-                    <>
-                      Seuil de déblocage à <strong>{escrow.seuilPct}%</strong> · vos parts
-                      seront actives une fois le seuil atteint
-                    </>
-                  )}
-                </p>
-              )}
-            </div>
-
-            {/* CTA — masqué pour les admins (conflit d'intérêt + délit d'initié) */}
-            {isAdmin ? (
-              <div className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-start gap-3">
-                <ShieldAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
-                <div>
-                  <p className="font-body font-semibold text-earth text-sm mb-1">
-                    Achat indisponible pour les administrateurs
+              {/* Progression */}
+              <div className="mb-5">
+                <div className="flex items-baseline justify-between mb-2">
+                  <p className="font-body text-xs text-earth-500 uppercase tracking-wide">
+                    Financement
                   </p>
-                  <p className="font-body text-earth-600 text-xs leading-relaxed">
-                    Pour préserver la neutralité de la plateforme, les comptes admin ne peuvent pas investir.
+                  <p className="font-mono text-xs text-earth-600 tabular-nums">
+                    {pourcentage.toFixed(0)}%
                   </p>
                 </div>
-              </div>
-            ) : (
-              <Button
-                size="lg"
-                className="w-full"
-                disabled={!isPubliee || sansParts}
-                asChild={isPubliee && !sansParts}
-              >
-                {isPubliee && !sansParts ? (
-                  <Link to={`/opportunites/${propriete.id}/acheter`}>
-                    Acheter des parts
-                    <ArrowRight className="ml-1" strokeWidth={2} />
-                  </Link>
-                ) : (
-                  <span>{sansParts ? 'Plus de parts disponibles' : 'Indisponible'}</span>
+                <ProgressBar value={pourcentage} />
+                <p className="mt-2 font-mono text-[11px] text-earth-500">
+                  {partsVendues.toLocaleString('fr-FR')} parts vendues
+                </p>
+                {escrow && (
+                  <p className="mt-2 font-body text-[11px] text-earth-500 inline-flex items-center gap-1">
+                    {escrow.statut === 'FINANCEE' ? (
+                      <span className="text-success font-semibold">
+                        ✓ Seuil {escrow.seuilPct}% atteint — dividendes en cours
+                      </span>
+                    ) : escrow.statut === 'ANNULEE' ? (
+                      <span className="text-error font-semibold">
+                        Collecte annulée — investisseurs remboursés
+                      </span>
+                    ) : (
+                      <>
+                        Seuil de déblocage à <strong>{escrow.seuilPct}%</strong>
+                      </>
+                    )}
+                  </p>
                 )}
-              </Button>
-            )}
+              </div>
 
-            <Button
-              variant="ghost"
-              size="default"
-              className="w-full mt-2"
-              onClick={share}
-            >
-              <Share2 className="w-4 h-4" strokeWidth={1.75} />
-              Partager
-            </Button>
+              {/* CTA — masqué pour les admins (conflit d'intérêt + délit d'initié) */}
+              {isAdmin ? (
+                <div className="bg-warning/10 border border-warning/30 rounded-md p-4 flex items-start gap-3">
+                  <ShieldAlert className="w-5 h-5 text-warning shrink-0 mt-0.5" strokeWidth={1.75} />
+                  <div>
+                    <p className="font-body font-semibold text-earth text-sm mb-1">
+                      Achat indisponible pour les administrateurs
+                    </p>
+                    <p className="font-body text-earth-600 text-xs leading-relaxed">
+                      Pour préserver la neutralité de la plateforme, les comptes admin ne peuvent pas investir.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  size="lg"
+                  className="w-full"
+                  disabled={!isPubliee || sansParts}
+                  asChild={isPubliee && !sansParts}
+                >
+                  {isPubliee && !sansParts ? (
+                    <Link to={`/opportunites/${propriete.id}/acheter`}>
+                      Acheter des parts
+                      <ArrowRight className="ml-1" strokeWidth={2} />
+                    </Link>
+                  ) : (
+                    <span>{sansParts ? 'Plus de parts disponibles' : 'Indisponible'}</span>
+                  )}
+                </Button>
+              )}
+
+              <Button
+                variant="ghost"
+                size="default"
+                className="w-full mt-2"
+                onClick={share}
+              >
+                <Share2 className="w-4 h-4" strokeWidth={1.75} />
+                Partager
+              </Button>
+
+              {/* Mini-reassurance */}
+              {isCertifie && (
+                <div className="mt-5 pt-5 border-t border-earth/8 flex items-start gap-2.5">
+                  <BadgeCheck className="w-4 h-4 text-success shrink-0 mt-0.5" strokeWidth={2} />
+                  <p className="font-body text-xs text-earth-600 leading-relaxed">
+                    Bien <strong>certifié Fursa</strong> : documents légaux vérifiés,
+                    inspection physique réalisée.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </aside>
       </div>
@@ -250,10 +434,44 @@ export function OpportuniteDetailPage() {
   )
 }
 
+// --- Helpers ---
+
+type Carac = { icon: LucideIcon; label: string; value: string }
+
+function collectCaracteristiques(p: ProprieteResponse): Carac[] {
+  const out: Carac[] = []
+  if (p.typeBien) {
+    out.push({ icon: Home, label: 'Type', value: TYPE_BIEN_LABELS[p.typeBien] })
+  }
+  if (p.nombrePieces != null && p.nombrePieces > 0) {
+    out.push({ icon: LayoutGrid, label: 'Pièces', value: String(p.nombrePieces) })
+  }
+  if (p.nombreChambres != null && p.nombreChambres > 0) {
+    out.push({ icon: Bed, label: 'Chambres', value: String(p.nombreChambres) })
+  }
+  if (p.superficieM2 != null && p.superficieM2 > 0) {
+    out.push({ icon: Ruler, label: 'Superficie', value: `${p.superficieM2} m²` })
+  }
+  return out
+}
+
+type Equip = { icon: LucideIcon; label: string }
+
+function collectEquipements(p: ProprieteResponse): Equip[] {
+  const out: Equip[] = []
+  if (p.hasPiscine) out.push({ icon: Waves, label: 'Piscine' })
+  if (p.hasClimatisation) out.push({ icon: Wind, label: 'Climatisation' })
+  if (p.hasParking) out.push({ icon: Car, label: 'Parking' })
+  if (p.hasAscenseur) out.push({ icon: Building2, label: 'Ascenseur' })
+  if (p.hasJardin) out.push({ icon: Trees, label: 'Jardin' })
+  if (p.hasVueMer) out.push({ icon: Eye, label: 'Vue mer' })
+  return out
+}
+
 // --- Sous-composants ---
 
 type KpiRowProps = {
-  icon: typeof TrendingUp
+  icon: LucideIcon
   label: string
   value: React.ReactNode
   accent?: 'success' | 'default'
@@ -282,11 +500,33 @@ function KpiRow({ icon: Icon, label, value, accent = 'default' }: KpiRowProps) {
   )
 }
 
+type ExploitItemProps = {
+  icon: LucideIcon
+  label: string
+  value: React.ReactNode
+}
+
+function ExploitItem({ icon: Icon, label, value }: ExploitItemProps) {
+  return (
+    <div className="flex items-start gap-3">
+      <div className="w-10 h-10 rounded-lg bg-terra/10 flex items-center justify-center shrink-0">
+        <Icon className="w-5 h-5 text-terra" strokeWidth={1.75} />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-body text-xs uppercase tracking-wide text-earth-500 mb-1">
+          {label}
+        </p>
+        <p className="font-body text-earth font-semibold text-sm">{value}</p>
+      </div>
+    </div>
+  )
+}
+
 function DetailSkeleton() {
   return (
     <div className="max-w-container mx-auto">
       <Skeleton className="h-4 w-40 mb-5 bg-sand-300" />
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
         <div>
           <Skeleton className="aspect-[16/9] w-full rounded-xl bg-sand-300" />
           <Skeleton className="h-8 w-2/3 mt-6 bg-sand-300" />

@@ -6,6 +6,7 @@ import { Investisseurs } from '@/components/landing/Investisseurs'
 import { Proprietaires } from '@/components/landing/Proprietaires'
 import { Opportunites } from '@/components/landing/Opportunites'
 import { CommentCaMarche } from '@/components/landing/CommentCaMarche'
+import { Partenaires } from '@/components/landing/Partenaires'
 import { Stats } from '@/components/landing/Stats'
 import { InvestirConfiance } from '@/components/landing/InvestirConfiance'
 import { CtaFinal } from '@/components/landing/CtaFinal'
@@ -16,12 +17,13 @@ export function LandingPage() {
       <Header />
       <main>
         <Hero />
+        <Stats />
         <PourquoiFursa />
+        <Opportunites />
         <Investisseurs />
         <Proprietaires />
-        <Opportunites />
+        <Partenaires />
         <CommentCaMarche />
-        <Stats />
         <InvestirConfiance />
         <CtaFinal />
       </main>
