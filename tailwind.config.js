@@ -126,6 +126,7 @@ export default {
       },
       animation: {
         'ken-burns': 'ken-burns 20s ease-in-out infinite alternate',
+        'ken-burns-hover': 'ken-burns-hover 8s ease-out forwards',
         'fade-up': 'fade-up 0.8s ease-out forwards',
         'fade-up-slow': 'fade-up 1.2s ease-out forwards',
         'fade-in': 'fade-in 1s ease-out forwards',

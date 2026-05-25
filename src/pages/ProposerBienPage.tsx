@@ -83,6 +83,8 @@ type FormState = {
   hasVueMer: boolean
   // Etape 3
   statutExploitation: StatutExploitation | ''
+  /** P8b : ISO date string. Obligatoire si statutExploitation = EN_CONSTRUCTION. */
+  dateLivraisonPrevue: string
   revenuMensuelActuel: number
   sourceRevenu: SourceRevenu | ''
   // Etape 4
@@ -118,6 +120,7 @@ const INITIAL: FormState = {
   hasJardin: false,
   hasVueMer: false,
   statutExploitation: '',
+  dateLivraisonPrevue: '',
   revenuMensuelActuel: 0,
   sourceRevenu: '',
   prixVenteTotal: 100000,
@@ -182,7 +185,9 @@ export function ProposerBienPage() {
     // 2 — Statut
     form.statutExploitation !== '' &&
       (form.statutExploitation !== 'DEJA_RENTABLE' ||
-        (form.revenuMensuelActuel > 0 && form.sourceRevenu !== '')),
+        (form.revenuMensuelActuel > 0 && form.sourceRevenu !== '')) &&
+      (form.statutExploitation !== 'EN_CONSTRUCTION' ||
+        form.dateLivraisonPrevue.length > 0),
     // 3 — Finance
     form.prixVenteTotal > 0 &&
       !!form.deviseLocale &&
@@ -229,6 +234,10 @@ export function ProposerBienPage() {
           hasJardin: form.hasJardin,
           hasVueMer: form.hasVueMer,
           statutExploitation: form.statutExploitation as StatutExploitation,
+          dateLivraisonPrevue:
+            form.statutExploitation === 'EN_CONSTRUCTION' && form.dateLivraisonPrevue
+              ? form.dateLivraisonPrevue
+              : null,
           revenuMensuelActuel:
             form.statutExploitation === 'DEJA_RENTABLE' ? form.revenuMensuelActuel : null,
           sourceRevenu:
@@ -630,9 +639,23 @@ function Step2Statut({
       </p>
 
       <div className="space-y-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {(['NEUF', 'DEJA_RENTABLE'] as const).map((s) => {
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {(['EN_CONSTRUCTION', 'NEUF', 'DEJA_RENTABLE'] as const).map((s) => {
             const active = form.statutExploitation === s
+            const labels: Record<typeof s, { title: string; desc: string }> = {
+              EN_CONSTRUCTION: {
+                title: 'En construction',
+                desc: "Le bien n'est pas encore livré. Aucun revenu possible avant livraison.",
+              },
+              NEUF: {
+                title: 'Neuf (livré)',
+                desc: 'Livré mais jamais loué. Aucune preuve de revenu à fournir.',
+              },
+              DEJA_RENTABLE: {
+                title: 'Déjà rentable',
+                desc: 'En exploitation (Airbnb, bail). Vous fournirez des preuves de revenus.',
+              },
+            }
             return (
               <button
                 key={s}
@@ -646,17 +669,41 @@ function Step2Statut({
                 )}
               >
                 <p className={cn('font-display font-bold text-earth mb-1', active && 'text-terra')}>
-                  {s === 'NEUF' ? 'Neuf (non exploité)' : 'Déjà rentable'}
+                  {labels[s].title}
                 </p>
                 <p className="font-body text-earth-600 text-xs leading-relaxed">
-                  {s === 'NEUF'
-                    ? "Jamais loué ou plus en exploitation. Aucune preuve de revenu à fournir."
-                    : "Le bien est en exploitation (Airbnb, bail). Vous fournirez des preuves de revenus."}
+                  {labels[s].desc}
                 </p>
               </button>
             )
           })}
         </div>
+
+        {/* P8b : champ date livraison obligatoire si EN_CONSTRUCTION */}
+        {form.statutExploitation === 'EN_CONSTRUCTION' && (
+          <div className="rounded-lg border-[1.5px] border-warning/30 bg-warning/5 p-5 space-y-3">
+            <div className="flex items-center gap-2 text-warning font-body text-sm font-semibold">
+              <Info className="w-4 h-4" strokeWidth={1.75} />
+              Date de livraison prévue
+            </div>
+            <p className="font-body text-earth-700 text-xs">
+              Cette date sera affichée aux investisseurs. Les déclarations de revenus
+              seront bloquées tant que le bien n'a pas été livré.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="date-livraison">
+                Livraison prévue <span className="text-error">*</span>
+              </Label>
+              <Input
+                id="date-livraison"
+                type="date"
+                value={form.dateLivraisonPrevue ?? ''}
+                onChange={(e) => update('dateLivraisonPrevue', e.target.value)}
+                min={new Date().toISOString().slice(0, 10)}
+              />
+            </div>
+          </div>
+        )}
 
         {form.statutExploitation === 'DEJA_RENTABLE' && (
           <div className="rounded-lg border-[1.5px] border-ocean/30 bg-ocean/5 p-5 space-y-4">

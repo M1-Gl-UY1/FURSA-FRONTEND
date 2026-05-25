@@ -164,6 +164,17 @@ export function OpportuniteDetailPage() {
                   {TYPE_BIEN_LABELS[propriete.typeBien]}
                 </span>
               )}
+              {propriete.statutExploitation === 'EN_CONSTRUCTION' && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-warning/15 text-warning font-body text-xs font-semibold">
+                  <Building2 className="w-3.5 h-3.5" strokeWidth={2} />
+                  En construction
+                  {propriete.dateLivraisonPrevue && (
+                    <span className="font-normal ml-1">
+                      · livr. {new Intl.DateTimeFormat('fr-FR', { month: 'short', year: 'numeric' }).format(new Date(propriete.dateLivraisonPrevue))}
+                    </span>
+                  )}
+                </span>
+              )}
             </div>
             <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl lg:text-4xl mb-2 leading-tight">
               {propriete.nom}
@@ -311,12 +322,20 @@ export function OpportuniteDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   {propriete.statutExploitation && (
                     <ExploitItem
-                      icon={propriete.statutExploitation === 'DEJA_RENTABLE' ? Sparkles : CalendarClock}
+                      icon={
+                        propriete.statutExploitation === 'DEJA_RENTABLE'
+                          ? Sparkles
+                          : propriete.statutExploitation === 'EN_CONSTRUCTION'
+                            ? Building2
+                            : CalendarClock
+                      }
                       label="État"
                       value={
                         propriete.statutExploitation === 'DEJA_RENTABLE'
                           ? 'Déjà en exploitation, génère des revenus'
-                          : 'Neuf — premiers revenus à venir'
+                          : propriete.statutExploitation === 'EN_CONSTRUCTION'
+                            ? `En construction · livraison ${propriete.dateLivraisonPrevue ? new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(new Date(propriete.dateLivraisonPrevue)) : 'à confirmer'}`
+                            : 'Neuf — premiers revenus à venir'
                       }
                     />
                   )}

@@ -250,11 +250,12 @@ function AnnonceCard({
     >
       {/* Image header */}
       <div className="relative aspect-[16/9] overflow-hidden bg-sand-300">
+        {/* UX P1 : Ken Burns au hover */}
         <img
           src={image}
           alt={annonce.proprieteNom}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:animate-ken-burns-hover"
         />
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/55 via-black/20 to-transparent pointer-events-none" />
         <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 bg-terra text-white text-[10px] font-semibold font-body rounded-full px-2.5 py-1 shadow-card">

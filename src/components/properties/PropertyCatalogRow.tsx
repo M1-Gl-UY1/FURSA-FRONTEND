@@ -46,11 +46,12 @@ export function PropertyCatalogRow({ propriete }: Props) {
     >
       {/* Image gauche */}
       <div className="relative w-full sm:w-64 lg:w-72 aspect-[16/10] sm:aspect-auto sm:h-auto shrink-0 overflow-hidden bg-sand-300">
+        {/* UX P1 : Ken Burns au hover (PROPOSITION_UX_FURSA.md §3.4) */}
         <img
           src={image}
           alt={propriete.nom}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:animate-ken-burns-hover"
         />
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           {propriete.statutExploitation === 'DEJA_RENTABLE' && (

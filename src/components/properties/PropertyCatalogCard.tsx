@@ -68,11 +68,12 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
     >
       {/* Image avec overlay gradient et badges */}
       <div className="relative aspect-[4/3] overflow-hidden bg-sand-300">
+        {/* UX P1 : Ken Burns subtil au hover (PROPOSITION_UX_FURSA.md §3.4) */}
         <img
           src={image}
           alt={propriete.nom}
           loading="lazy"
-          className="w-full h-full object-cover group-hover:scale-[1.05] transition-transform duration-700 ease-out"
+          className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:animate-ken-burns-hover"
         />
         {/* Gradient noir bas pour lisibilité */}
         <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/70 via-black/30 to-transparent pointer-events-none" />
@@ -92,6 +93,12 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
             <span className="inline-flex items-center gap-1 bg-ocean text-white text-[10px] font-semibold font-body rounded-full px-2.5 py-0.5 shadow-sm">
               <Sparkles className="w-3 h-3" strokeWidth={2.25} />
               Neuf
+            </span>
+          )}
+          {propriete.statutExploitation === 'EN_CONSTRUCTION' && (
+            <span className="inline-flex items-center gap-1 bg-warning text-white text-[10px] font-semibold font-body rounded-full px-2.5 py-0.5 shadow-sm">
+              <Building className="w-3 h-3" strokeWidth={2.25} />
+              En construction
             </span>
           )}
           {propriete.certifie && (

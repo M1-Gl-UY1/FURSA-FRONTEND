@@ -138,6 +138,8 @@ export type ProprieteResponse = {
   hasJardin?: boolean | null
   hasVueMer?: boolean | null
   statutExploitation?: StatutExploitation | null
+  /** P8b (Hugh 25/05/2026) : date prevue de livraison si EN_CONSTRUCTION. ISO date string. */
+  dateLivraisonPrevue?: string | null
   revenuMensuelActuel?: number | null
   sourceRevenu?: SourceRevenu | null
   prixVenteTotal?: number | null
@@ -236,7 +238,16 @@ export type TypeBien =
   | 'IMMEUBLE'
   | 'CHAMBRE'
 
-export type StatutExploitation = 'NEUF' | 'DEJA_RENTABLE'
+export type StatutExploitation = 'EN_CONSTRUCTION' | 'NEUF' | 'DEJA_RENTABLE'
+
+// P8 (Hugh 22/05/2026) : categorie d'un document legal
+export type CategorieDocument =
+  | 'TITRE_FONCIER'
+  | 'PERMIS_CONSTRUIRE'
+  | 'CONTRAT_GESTION'
+  | 'CONTRAT_BAIL'
+  | 'RELEVE_AIRBNB'
+  | 'AUTRE'
 
 export type SourceRevenu = 'BAIL' | 'AIRBNB' | 'AUTRE'
 
@@ -276,6 +287,8 @@ export type SubmissionRequest = {
   hasJardin?: boolean
   hasVueMer?: boolean
   statutExploitation: StatutExploitation
+  /** P8b (Hugh 25/05/2026) : obligatoire si statutExploitation = EN_CONSTRUCTION. ISO date. */
+  dateLivraisonPrevue?: string | null
   revenuMensuelActuel?: number | null
   sourceRevenu?: SourceRevenu | null
   prixVenteTotal: number

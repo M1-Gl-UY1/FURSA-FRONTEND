@@ -20,16 +20,31 @@ export function PropertyGallery({ photos, alt }: PropertyGalleryProps) {
 
   return (
     <div>
-      {/* Image principale */}
+      {/* Image principale avec cross-fade entre les transitions.
+          UX P1 (PROPOSITION_UX_FURSA.md §3.5) : on superpose toutes les images
+          et on bascule l'opacite pour avoir un fondu enchaine fluide. */}
       <div className="relative aspect-[16/10] sm:aspect-[16/9] rounded-xl overflow-hidden bg-sand-300">
-        {main ? (
-          <img
-            src={main}
-            alt={alt}
-            className="w-full h-full object-cover"
-          />
+        {list.length > 0 ? (
+          list.map((photo, i) => (
+            <img
+              key={`${photo}-${i}`}
+              src={photo}
+              alt={i === index ? alt : ''}
+              className={cn(
+                'absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ease-out',
+                i === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              )}
+              loading={i === 0 ? 'eager' : 'lazy'}
+              aria-hidden={i !== index ? 'true' : undefined}
+            />
+          ))
         ) : (
           <div className="w-full h-full flex items-center justify-center text-earth-400">
+            <ImageOff className="w-12 h-12" strokeWidth={1.5} />
+          </div>
+        )}
+        {!main && (
+          <div className="absolute inset-0 flex items-center justify-center text-earth-400">
             <ImageOff className="w-12 h-12" strokeWidth={1.5} />
           </div>
         )}
