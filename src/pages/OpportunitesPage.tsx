@@ -5,25 +5,33 @@ import {
   Building2,
   BedDouble,
   Castle,
+  ChevronDown,
   Compass,
   Flame,
   Globe,
   Home as HomeIcon,
+  LayoutGrid,
+  List,
   Search,
+  SlidersHorizontal,
   Sparkles,
   X,
 } from 'lucide-react'
 
 import { PropertyCardSkeleton } from '@/components/properties/PropertyCardSkeleton'
 import { PropertyCatalogCard } from '@/components/properties/PropertyCatalogCard'
+import { PropertyCatalogRow } from '@/components/properties/PropertyCatalogRow'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useProprietes } from '@/lib/api/proprietes'
 import { usePays } from '@/lib/api/geo'
+import { useCountUp } from '@/lib/hooks/useCountUp'
 import type { ProprieteResponse, StatutExploitation, TypeBien } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
+
+type ViewMode = 'grid' | 'list'
 
 type SortOption = 'recent' | 'rentabilite-desc' | 'prix-asc' | 'prix-desc' | 'tendance'
 
@@ -74,6 +82,8 @@ export function OpportunitesPage() {
   const [maxPrix, setMaxPrix] = useState('')
   const [minRenta, setMinRenta] = useState('')
   const [sort, setSort] = useState<SortOption>('tendance')
+  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   const filtered = useMemo(() => {
     if (!data) return []
@@ -109,9 +119,15 @@ export function OpportunitesPage() {
     return [...arr].sort(getComparator(sort))
   }, [data, search, typeBien, pays, statutExp, equipements, maxPrix, minRenta, sort])
 
-  const hasActiveFilters = !!(
-    search || typeBien || pays || statutExp || equipements.length > 0 || maxPrix || minRenta
-  )
+  const activeFiltersCount =
+    (search ? 1 : 0) +
+    (typeBien ? 1 : 0) +
+    (pays ? 1 : 0) +
+    (statutExp ? 1 : 0) +
+    equipements.length +
+    (maxPrix ? 1 : 0) +
+    (minRenta ? 1 : 0)
+  const hasActiveFilters = activeFiltersCount > 0
 
   function reset() {
     setSearch('')
@@ -182,15 +198,9 @@ export function OpportunitesPage() {
 
           {/* KPIs globaux dans le hero */}
           <div className="mt-6 grid grid-cols-3 gap-3 sm:gap-6 max-w-md">
-            <HeroKpi label="Biens dispo" value={stats.count.toString()} />
-            <HeroKpi
-              label="Marché"
-              value={<Money amount={stats.valeurMarche} mono={false} compact />}
-            />
-            <HeroKpi
-              label="Rentabilité moy."
-              value={`${stats.rentaMoyenne.toFixed(1)}%/an`}
-            />
+            <HeroKpiAnimated target={stats.count} label="Biens dispo" />
+            <HeroKpiMoney target={stats.valeurMarche} label="Marché" />
+            <HeroKpiPercent target={stats.rentaMoyenne} label="Rentabilité moy." />
           </div>
         </div>
       </section>
@@ -247,7 +257,7 @@ export function OpportunitesPage() {
           {hasActiveFilters && (
             <Button variant="outline" onClick={reset} size="default" className="bg-white">
               <X className="w-4 h-4 mr-1" strokeWidth={1.75} />
-              Réinitialiser
+              Réinitialiser ({activeFiltersCount})
             </Button>
           )}
         </div>
@@ -272,71 +282,102 @@ export function OpportunitesPage() {
           })}
         </div>
 
-        {/* Ligne 3 : statut + pays + prix + renta */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <select
-            value={statutExp}
-            onChange={(e) => setStatutExp(e.target.value as StatutExploitation | '')}
-            aria-label="Statut"
-            className="h-11 rounded-md border-[1.5px] border-sand-400 bg-white px-3 text-xs sm:text-sm font-body text-earth focus-visible:outline-none focus-visible:border-ocean focus-visible:ring-2 focus-visible:ring-ocean/15"
-          >
-            <option value="">Tous états</option>
-            <option value="NEUF">✨ Neuf</option>
-            <option value="DEJA_RENTABLE">📈 Déjà rentable</option>
-          </select>
-          <select
-            value={pays}
-            onChange={(e) => setPays(e.target.value)}
-            aria-label="Pays"
-            className="h-11 rounded-md border-[1.5px] border-sand-400 bg-white px-3 text-xs sm:text-sm font-body text-earth focus-visible:outline-none focus-visible:border-ocean focus-visible:ring-2 focus-visible:ring-ocean/15"
-          >
-            <option value="">Tous pays</option>
-            {(paysList ?? []).map((p) => (
-              <option key={p.code} value={p.code}>
-                {p.nom}
-              </option>
-            ))}
-          </select>
-          <Input
-            type="number"
-            min={0}
-            step={0.5}
-            value={minRenta}
-            onChange={(e) => setMinRenta(e.target.value)}
-            placeholder="Rentab. min %"
-            aria-label="Rentabilité minimum"
-            className="h-11 bg-white text-xs sm:text-sm"
+        {/* Toggle filtres avancés */}
+        <button
+          type="button"
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-md text-earth-600 hover:bg-white text-xs font-body font-semibold uppercase tracking-wide transition-colors"
+          aria-expanded={advancedOpen}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={1.75} />
+          {advancedOpen ? 'Masquer les filtres avancés' : 'Filtres avancés'}
+          {!advancedOpen && (statutExp || pays || maxPrix || minRenta || equipements.length > 0) && (
+            <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-terra text-white text-[10px] font-bold tabular-nums">
+              {(statutExp ? 1 : 0) +
+                (pays ? 1 : 0) +
+                (maxPrix ? 1 : 0) +
+                (minRenta ? 1 : 0) +
+                equipements.length}
+            </span>
+          )}
+          <ChevronDown
+            className={cn(
+              'w-3.5 h-3.5 transition-transform',
+              advancedOpen && 'rotate-180'
+            )}
+            strokeWidth={1.75}
           />
-          <Input
-            type="number"
-            min={0}
-            step={10}
-            value={maxPrix}
-            onChange={(e) => setMaxPrix(e.target.value)}
-            placeholder="Prix part max USD"
-            aria-label="Prix part max"
-            className="h-11 bg-white text-xs sm:text-sm"
-          />
-        </div>
+        </button>
 
-        {/* Ligne 4 : équipements (toggles) */}
-        <div>
-          <p className="font-body text-[10px] text-earth-500 uppercase tracking-wide mb-2 font-semibold">
-            Équipements
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {EQUIPEMENTS_OPTIONS.map((eq) => (
-              <FilterChip
-                key={eq.key}
-                small
-                active={equipements.includes(eq.key)}
-                onClick={() => toggleEquipement(eq.key)}
+        {advancedOpen && (
+          <>
+            {/* Ligne 3 : statut + pays + prix + renta */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <select
+                value={statutExp}
+                onChange={(e) => setStatutExp(e.target.value as StatutExploitation | '')}
+                aria-label="Statut"
+                className="h-11 rounded-md border-[1.5px] border-sand-400 bg-white px-3 text-xs sm:text-sm font-body text-earth focus-visible:outline-none focus-visible:border-ocean focus-visible:ring-2 focus-visible:ring-ocean/15"
               >
-                {eq.label}
-              </FilterChip>
-            ))}
-          </div>
-        </div>
+                <option value="">Tous états</option>
+                <option value="NEUF">✨ Neuf</option>
+                <option value="DEJA_RENTABLE">📈 Déjà rentable</option>
+              </select>
+              <select
+                value={pays}
+                onChange={(e) => setPays(e.target.value)}
+                aria-label="Pays"
+                className="h-11 rounded-md border-[1.5px] border-sand-400 bg-white px-3 text-xs sm:text-sm font-body text-earth focus-visible:outline-none focus-visible:border-ocean focus-visible:ring-2 focus-visible:ring-ocean/15"
+              >
+                <option value="">Tous pays</option>
+                {(paysList ?? []).map((p) => (
+                  <option key={p.code} value={p.code}>
+                    {p.nom}
+                  </option>
+                ))}
+              </select>
+              <Input
+                type="number"
+                min={0}
+                step={0.5}
+                value={minRenta}
+                onChange={(e) => setMinRenta(e.target.value)}
+                placeholder="Rentab. min %"
+                aria-label="Rentabilité minimum"
+                className="h-11 bg-white text-xs sm:text-sm"
+              />
+              <Input
+                type="number"
+                min={0}
+                step={10}
+                value={maxPrix}
+                onChange={(e) => setMaxPrix(e.target.value)}
+                placeholder="Prix part max USD"
+                aria-label="Prix part max"
+                className="h-11 bg-white text-xs sm:text-sm"
+              />
+            </div>
+
+            {/* Ligne 4 : équipements (toggles) */}
+            <div>
+              <p className="font-body text-[10px] text-earth-500 uppercase tracking-wide mb-2 font-semibold">
+                Équipements
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {EQUIPEMENTS_OPTIONS.map((eq) => (
+                  <FilterChip
+                    key={eq.key}
+                    small
+                    active={equipements.includes(eq.key)}
+                    onClick={() => toggleEquipement(eq.key)}
+                  >
+                    {eq.label}
+                  </FilterChip>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
       </section>
 
       {/* ============================================ RÉSULTATS */}
@@ -387,7 +428,7 @@ export function OpportunitesPage() {
 
         {!isLoading && !isError && filtered.length > 0 && (
           <>
-            <div className="flex items-baseline justify-between mb-4">
+            <div className="flex items-center justify-between mb-4 gap-3">
               <p className="font-body text-earth-500 text-sm">
                 <span className="font-mono font-bold text-earth text-base">
                   {filtered.length}
@@ -399,12 +440,52 @@ export function OpportunitesPage() {
                   </span>
                 )}
               </p>
+              <div className="inline-flex items-center bg-sand-100 rounded-lg p-1 border border-earth/5">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('grid')}
+                  aria-label="Vue grille"
+                  aria-pressed={viewMode === 'grid'}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-body font-semibold transition-colors',
+                    viewMode === 'grid'
+                      ? 'bg-white text-earth shadow-sm'
+                      : 'text-earth-500 hover:text-earth'
+                  )}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  <span className="hidden sm:inline">Grille</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('list')}
+                  aria-label="Vue liste"
+                  aria-pressed={viewMode === 'list'}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-body font-semibold transition-colors',
+                    viewMode === 'list'
+                      ? 'bg-white text-earth shadow-sm'
+                      : 'text-earth-500 hover:text-earth'
+                  )}
+                >
+                  <List className="w-3.5 h-3.5" strokeWidth={1.75} />
+                  <span className="hidden sm:inline">Liste</span>
+                </button>
+              </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
-              {filtered.map((p) => (
-                <PropertyCatalogCard key={p.id} propriete={p} />
-              ))}
-            </div>
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4">
+                {filtered.map((p) => (
+                  <PropertyCatalogCard key={p.id} propriete={p} />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filtered.map((p) => (
+                  <PropertyCatalogRow key={p.id} propriete={p} />
+                ))}
+              </div>
+            )}
           </>
         )}
       </section>
@@ -416,11 +497,40 @@ export function OpportunitesPage() {
 // Sub-components
 // =============================================================================
 
-function HeroKpi({ label, value }: { label: string; value: React.ReactNode }) {
+function HeroKpiAnimated({ target, label }: { target: number; label: string }) {
+  const [value, ref] = useCountUp({ target })
   return (
-    <div>
+    <div ref={ref}>
       <p className="font-mono font-bold text-white text-lg sm:text-2xl leading-none tabular-nums">
-        {value}
+        {Math.round(value).toLocaleString('fr-FR')}
+      </p>
+      <p className="font-body text-white/70 text-[10px] sm:text-xs uppercase tracking-wider mt-1">
+        {label}
+      </p>
+    </div>
+  )
+}
+
+function HeroKpiMoney({ target, label }: { target: number; label: string }) {
+  const [value, ref] = useCountUp({ target })
+  return (
+    <div ref={ref}>
+      <p className="font-mono font-bold text-white text-lg sm:text-2xl leading-none tabular-nums">
+        <Money amount={value} mono={false} compact />
+      </p>
+      <p className="font-body text-white/70 text-[10px] sm:text-xs uppercase tracking-wider mt-1">
+        {label}
+      </p>
+    </div>
+  )
+}
+
+function HeroKpiPercent({ target, label }: { target: number; label: string }) {
+  const [value, ref] = useCountUp({ target })
+  return (
+    <div ref={ref}>
+      <p className="font-mono font-bold text-white text-lg sm:text-2xl leading-none tabular-nums">
+        {value.toFixed(1)}%/an
       </p>
       <p className="font-body text-white/70 text-[10px] sm:text-xs uppercase tracking-wider mt-1">
         {label}

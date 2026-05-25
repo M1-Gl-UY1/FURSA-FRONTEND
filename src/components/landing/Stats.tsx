@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
 import { Building2, TrendingUp, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+
+import { useCountUp } from '@/lib/hooks/useCountUp'
 
 type Stat = {
   target: number
@@ -74,45 +75,8 @@ export function Stats() {
 }
 
 function StatCardAnimated({ stat }: { stat: Stat }) {
-  const [value, setValue] = useState(0)
-  const [visible, setVisible] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const [value, ref] = useCountUp({ target: stat.target })
   const Icon = stat.icon
-
-  // Intersection observer pour déclencher l'animation au scroll-in
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true)
-          obs.disconnect()
-        }
-      },
-      { threshold: 0.3 }
-    )
-    obs.observe(el)
-    return () => obs.disconnect()
-  }, [])
-
-  // Animation du compteur quand visible
-  useEffect(() => {
-    if (!visible) return
-    const duration = 1800
-    const start = performance.now()
-    let raf = 0
-    const tick = (now: number) => {
-      const elapsed = now - start
-      const progress = Math.min(elapsed / duration, 1)
-      // ease-out cubic
-      const eased = 1 - Math.pow(1 - progress, 3)
-      setValue(Math.round(stat.target * eased))
-      if (progress < 1) raf = requestAnimationFrame(tick)
-    }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
-  }, [visible, stat.target])
 
   return (
     <div
@@ -126,7 +90,7 @@ function StatCardAnimated({ stat }: { stat: Stat }) {
       </div>
       <div className="font-display font-bold text-earth text-4xl sm:text-5xl lg:text-6xl tracking-tight mb-2 tabular-nums">
         {stat.prefix}
-        {value.toLocaleString('fr-FR')}
+        {Math.round(value).toLocaleString('fr-FR')}
         {stat.suffix && (
           <span className="text-base sm:text-lg align-top ml-1 text-earth-500 font-semibold">
             {stat.suffix}
