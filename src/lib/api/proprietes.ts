@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 
 import { api } from './client'
-import type { ProgressionResponse, ProprieteResponse } from './types'
+import type { HistoriquePrixPartResponse, ProgressionResponse, ProprieteResponse } from './types'
 
 // --- Fonctions brutes ---
 
@@ -43,6 +43,35 @@ export function useProgression(id: number | undefined) {
     queryFn: () => fetchProgression(id!),
     enabled: id != null,
   })
+}
+
+// P1 (Hugh 22/05/2026) : prix dynamique. Voir PRIX_DYNAMIQUE_FURSA.md.
+
+export async function fetchHistoriquePrix(id: number): Promise<HistoriquePrixPartResponse[]> {
+  const { data } = await api.get<HistoriquePrixPartResponse[]>(
+    `/api/proprietes/${id}/historique-prix`
+  )
+  return data
+}
+
+export function useHistoriquePrix(id: number | undefined) {
+  return useQuery({
+    queryKey: ['propriete', id, 'historique-prix'],
+    queryFn: () => fetchHistoriquePrix(id!),
+    enabled: id != null,
+    staleTime: 60_000,
+  })
+}
+
+/**
+ * Variation entre le prix courant et le prix initial, en pourcentage.
+ * Retourne null si le prix initial n'est pas defini (bien anterieur a P1).
+ */
+export function calculateVariationPrix(p: ProprieteResponse): number | null {
+  const initial = p.prixInitialPart
+  const courant = p.prixUnitairePart
+  if (initial == null || initial <= 0 || courant == null) return null
+  return ((courant - initial) / initial) * 100
 }
 
 // --- Helpers ---

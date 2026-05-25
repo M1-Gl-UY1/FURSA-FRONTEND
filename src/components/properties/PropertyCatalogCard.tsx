@@ -14,9 +14,14 @@ import {
 } from 'lucide-react'
 
 import { Money } from '@/components/shared/Money'
+import { PriceVariationBadge } from '@/components/shared/PriceVariationBadge'
 import { ProgressBar } from '@/components/shared/ProgressBar'
 import { StatusBadge } from '@/components/shared/StatusBadge'
-import { calculatePartsVendues, calculatePourcentageVendu } from '@/lib/api/proprietes'
+import {
+  calculatePartsVendues,
+  calculatePourcentageVendu,
+  calculateVariationPrix,
+} from '@/lib/api/proprietes'
 import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
 
@@ -50,6 +55,7 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
   const image = propriete.photos?.[0] ?? PLACEHOLDER_IMAGE
   const pourcentage = calculatePourcentageVendu(propriete)
   const partsVendues = calculatePartsVendues(propriete)
+  const variationPrix = calculateVariationPrix(propriete)
   const isTrending = pourcentage >= 50 && pourcentage < 100
   const isFunded = pourcentage >= 100
   const TypeIcon = propriete.typeBien ? TYPE_ICONS[propriete.typeBien] : null
@@ -160,9 +166,12 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
             <p className="font-body text-[10px] text-earth-500 uppercase tracking-wide mb-0.5">
               Prix par part
             </p>
-            <p className="font-mono font-bold text-earth text-base">
-              <Money amount={propriete.prixUnitairePart} mono={false} />
-            </p>
+            <div className="flex items-baseline gap-1.5">
+              <p className="font-mono font-bold text-earth text-base">
+                <Money amount={propriete.prixUnitairePart} mono={false} />
+              </p>
+              <PriceVariationBadge variationPct={variationPrix} size="sm" />
+            </div>
           </div>
           <div className="text-right">
             <p className="font-body text-[10px] text-earth-500 uppercase tracking-wide mb-0.5">

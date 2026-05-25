@@ -31,11 +31,18 @@ import { toast } from 'sonner'
 import { PropertyGallery } from '@/components/properties/PropertyGallery'
 import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
+import { Sparkline } from '@/components/shared/Sparkline'
 import { useEscrowPropriete } from '@/lib/api/escrow'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
+import {
+  calculatePartsVendues,
+  calculatePourcentageVendu,
+  calculateVariationPrix,
+  useHistoriquePrix,
+  usePropriete,
+} from '@/lib/api/proprietes'
 import { useAuth } from '@/lib/auth/AuthContext'
 import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
 
@@ -88,9 +95,12 @@ export function OpportuniteDetailPage() {
   const pourcentage = calculatePourcentageVendu(propriete)
   const partsVendues = calculatePartsVendues(propriete)
   const partsTotales = propriete.nombreTotalPart ?? propriete.partsTotales ?? 0
+  const variationPrix = calculateVariationPrix(propriete)
   const isPubliee = propriete.statut === 'PUBLIEE'
   const sansParts = (propriete.partsDisponibles ?? 0) <= 0
   const { data: escrow } = useEscrowPropriete(isPubliee ? propriete.id : null)
+  const { data: historiquePrix } = useHistoriquePrix(propriete.id)
+  const sparklineValues = (historiquePrix ?? []).map((h) => h.prixUnitaire)
 
   const equipements = collectEquipements(propriete)
   const caracteristiques = collectCaracteristiques(propriete)
@@ -310,15 +320,41 @@ export function OpportuniteDetailPage() {
           <div className="bg-white rounded-xl border border-earth/8 shadow-card overflow-hidden">
             {/* Header panel avec accent terra */}
             <div className="bg-gradient-to-br from-terra to-terra-600 p-5 text-white">
-              <p className="font-body text-xs uppercase tracking-widest opacity-90 mb-1">
-                Prix par part
-              </p>
+              <div className="flex items-baseline justify-between gap-2 mb-1">
+                <p className="font-body text-xs uppercase tracking-widest opacity-90">
+                  Prix par part
+                </p>
+                {variationPrix != null && Math.abs(variationPrix) >= 0.5 && (
+                  <span
+                    className="font-mono text-xs font-bold tabular-nums bg-white/15 backdrop-blur-sm rounded-full px-2 py-0.5"
+                    title="Variation depuis la mise en vente initiale"
+                  >
+                    {variationPrix > 0 ? '+' : ''}
+                    {variationPrix.toFixed(1)}%
+                  </span>
+                )}
+              </div>
               <p className="font-mono font-bold text-3xl sm:text-4xl">
                 <Money amount={propriete.prixUnitairePart} mono={false} />
               </p>
-              <p className="font-body text-xs mt-1 opacity-90">
-                Investissement minimum
-              </p>
+              {sparklineValues.length > 1 ? (
+                <div className="mt-3 flex items-center gap-2">
+                  <Sparkline
+                    values={sparklineValues}
+                    width={160}
+                    height={28}
+                    color="#ffffff"
+                    className="opacity-90"
+                  />
+                  <span className="font-body text-[10px] opacity-75">
+                    {sparklineValues.length} pts
+                  </span>
+                </div>
+              ) : (
+                <p className="font-body text-xs mt-1 opacity-90">
+                  Investissement minimum
+                </p>
+              )}
             </div>
 
             <div className="p-5 sm:p-6">

@@ -150,6 +150,33 @@ export type ProprieteResponse = {
   statutCertif?: StatutCertification | null
   certifSoumiseLe?: string | null
   certifMotifRefus?: string | null
+  // P1 (Hugh 22/05/2026) : prix dynamique. Voir PRIX_DYNAMIQUE_FURSA.md.
+  /** Prix unitaire INITIAL. prixUnitairePart est le prix COURANT. */
+  prixInitialPart?: number | null
+  bonusRentabiliteTotal?: number | null
+  bonusDemande?: number | null
+}
+
+// P1 (Hugh 22/05/2026)
+export type RaisonRecalculPrix =
+  | 'INITIALE'
+  | 'DECLARATION_REVENU_VALIDEE'
+  | 'CRON_TRIMESTRIEL'
+  | 'LISTE_ATTENTE_CHANGEE'
+  | 'TRADE_SECONDAIRE'
+  | 'AJUSTEMENT_ADMIN'
+
+export type HistoriquePrixPartResponse = {
+  id: number
+  proprieteId: number
+  prixUnitaire: number
+  prixInitial: number
+  bonusRentabiliteTotal: number
+  bonusDemande: number
+  raison: RaisonRecalculPrix
+  sourceId: number | null
+  variationPct: number
+  createdAt: string
 }
 
 export type StatutCertification = 'NON_CERTIFIE' | 'EN_REVIEW' | 'CERTIFIE' | 'REFUSEE'
