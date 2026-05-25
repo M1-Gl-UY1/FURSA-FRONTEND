@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -24,15 +25,22 @@ import {
   PlayCircle,
   Sparkles,
   CalendarClock,
+  Clock,
+  X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { toast } from 'sonner'
 
 import { PropertyGallery } from '@/components/properties/PropertyGallery'
+import { WaitlistModal } from '@/components/properties/WaitlistModal'
 import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
 import { Sparkline } from '@/components/shared/Sparkline'
 import { useEscrowPropriete } from '@/lib/api/escrow'
+import {
+  useDesinscrireListeAttente,
+  useMesInscriptions,
+} from '@/lib/api/liste-attente'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -71,7 +79,10 @@ export function OpportuniteDetailPage() {
   }
 
   const { data: propriete, isLoading, isError } = usePropriete(id)
-  const { isAdmin } = useAuth()
+  const { isAdmin, isAuthenticated } = useAuth()
+  const [waitlistOpen, setWaitlistOpen] = useState(false)
+  const { data: mesInscriptions } = useMesInscriptions(isAuthenticated && !isAdmin)
+  const desinscrire = useDesinscrireListeAttente()
 
   if (isLoading) return <DetailSkeleton />
 
@@ -424,21 +435,32 @@ export function OpportuniteDetailPage() {
                     </p>
                   </div>
                 </div>
+              ) : isPubliee && !sansParts ? (
+                <Button size="lg" className="w-full" asChild>
+                  <Link to={`/opportunites/${propriete.id}/acheter`}>
+                    Acheter des parts
+                    <ArrowRight className="ml-1" strokeWidth={2} />
+                  </Link>
+                </Button>
+              ) : isPubliee && sansParts ? (
+                <WaitlistCTA
+                  proprieteId={propriete.id}
+                  proprieteNom={propriete.nom}
+                  inscriptions={mesInscriptions ?? []}
+                  onOpen={() => setWaitlistOpen(true)}
+                  onCancel={(id) =>
+                    desinscrire.mutate(id, {
+                      onSuccess: () =>
+                        toast.success('Inscription annulée.'),
+                      onError: () =>
+                        toast.error('Annulation impossible.'),
+                    })
+                  }
+                  cancelling={desinscrire.isPending}
+                />
               ) : (
-                <Button
-                  size="lg"
-                  className="w-full"
-                  disabled={!isPubliee || sansParts}
-                  asChild={isPubliee && !sansParts}
-                >
-                  {isPubliee && !sansParts ? (
-                    <Link to={`/opportunites/${propriete.id}/acheter`}>
-                      Acheter des parts
-                      <ArrowRight className="ml-1" strokeWidth={2} />
-                    </Link>
-                  ) : (
-                    <span>{sansParts ? 'Plus de parts disponibles' : 'Indisponible'}</span>
-                  )}
+                <Button size="lg" className="w-full" disabled>
+                  <span>Indisponible</span>
                 </Button>
               )}
 
@@ -466,7 +488,83 @@ export function OpportuniteDetailPage() {
           </div>
         </aside>
       </div>
+
+      {/* P2 — Modal liste d'attente */}
+      <WaitlistModal
+        open={waitlistOpen}
+        onClose={() => setWaitlistOpen(false)}
+        proprieteId={propriete.id}
+        proprieteNom={propriete.nom}
+      />
     </div>
+  )
+}
+
+// --- Waitlist CTA ---
+
+import type { ListeAttenteResponse } from '@/lib/api/types'
+
+function WaitlistCTA({
+  proprieteId,
+  proprieteNom: _proprieteNom,
+  inscriptions,
+  onOpen,
+  onCancel,
+  cancelling,
+}: {
+  proprieteId: number
+  proprieteNom: string
+  inscriptions: ListeAttenteResponse[]
+  onOpen: () => void
+  onCancel: (id: number) => void
+  cancelling: boolean
+}) {
+  const monInscription = inscriptions.find(
+    (i) =>
+      i.proprieteId === proprieteId &&
+      (i.statut === 'EN_ATTENTE' || i.statut === 'NOTIFIE')
+  )
+
+  if (monInscription) {
+    return (
+      <div className="space-y-2">
+        <div className="bg-terra/8 border border-terra/25 rounded-md p-4">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-9 h-9 rounded-full bg-terra/15 flex items-center justify-center">
+              <Clock className="w-4 h-4 text-terra" strokeWidth={1.75} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-body font-semibold text-earth text-sm">
+                Vous êtes en liste d'attente
+              </p>
+              <p className="font-body text-earth-600 text-xs">
+                {monInscription.nombreParts} part{monInscription.nombreParts > 1 ? 's' : ''} demandée{monInscription.nombreParts > 1 ? 's' : ''}
+                {monInscription.position
+                  ? ` · position #${monInscription.position} dans la file`
+                  : ''}
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => onCancel(monInscription.id)}
+            disabled={cancelling}
+          >
+            <X className="w-3.5 h-3.5" strokeWidth={2} />
+            Annuler mon inscription
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <Button size="lg" className="w-full" onClick={onOpen}>
+      <Clock className="w-4 h-4" strokeWidth={1.75} />
+      S'inscrire en liste d'attente
+    </Button>
   )
 }
 

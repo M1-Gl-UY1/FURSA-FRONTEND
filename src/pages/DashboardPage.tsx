@@ -11,8 +11,11 @@ import {
   CalendarClock,
   Flame,
   Sparkles,
+  Clock,
+  X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { toast } from 'sonner'
 
 import { Money } from '@/components/shared/Money'
 import { PropertyCatalogCard } from '@/components/properties/PropertyCatalogCard'
@@ -21,6 +24,10 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useDashboard } from '@/lib/api/dashboard'
 import { useMesNotifications } from '@/lib/api/notifications'
 import { useMesPossessions } from '@/lib/api/portefeuille'
+import {
+  useDesinscrireListeAttente,
+  useMesInscriptions,
+} from '@/lib/api/liste-attente'
 import { calculatePourcentageVendu, useProprietes } from '@/lib/api/proprietes'
 import { useCountUp } from '@/lib/hooks/useCountUp'
 import { useAuth } from '@/lib/auth/AuthContext'
@@ -34,6 +41,11 @@ export function DashboardPage() {
   const { data: possessions, isLoading: loadingPoss } = useMesPossessions()
   const { data: notifs, isLoading: loadingNotifs } = useMesNotifications({ pollMs: 30_000 })
   const { data: proprietes } = useProprietes()
+  const { data: mesInscriptions } = useMesInscriptions()
+  const desinscrire = useDesinscrireListeAttente()
+  const inscriptionsActives = (mesInscriptions ?? []).filter(
+    (i) => i.statut === 'EN_ATTENTE' || i.statut === 'NOTIFIE'
+  )
 
   const topPossessions = possessions?.slice(0, 5) ?? []
   const topNotifs = notifs?.slice(0, 4) ?? []
@@ -186,6 +198,61 @@ export function DashboardPage() {
               value={(dashboard?.totalParts ?? 0).toLocaleString('fr-FR')}
             />
           </div>
+        </section>
+      )}
+
+      {/* P2 (Hugh 22/05/2026) — Ma liste d'attente */}
+      {inscriptionsActives.length > 0 && (
+        <section className="bg-terra/5 border border-terra/15 rounded-xl p-5 sm:p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-display font-bold text-earth text-lg flex items-center gap-2">
+                <Clock className="w-5 h-5 text-terra" strokeWidth={1.75} />
+                Ma liste d'attente
+              </h2>
+              <p className="font-body text-earth-500 text-xs mt-0.5">
+                {inscriptionsActives.length} inscription{inscriptionsActives.length > 1 ? 's' : ''} active{inscriptionsActives.length > 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+          <ul className="space-y-2">
+            {inscriptionsActives.map((i) => (
+              <li
+                key={i.id}
+                className="flex items-center gap-3 bg-white rounded-lg border border-earth/8 p-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <Link
+                    to={`/opportunites/${i.proprieteId}`}
+                    className="font-body font-semibold text-earth text-sm hover:text-terra transition-colors block truncate"
+                  >
+                    {i.proprieteNom}
+                  </Link>
+                  <p className="font-body text-earth-500 text-xs">
+                    {i.nombreParts} part{i.nombreParts > 1 ? 's' : ''} demandée{i.nombreParts > 1 ? 's' : ''}
+                    {i.position ? ` · position #${i.position}` : ''}
+                    {i.statut === 'NOTIFIE' && (
+                      <span className="ml-2 text-success font-semibold">✓ Notifié</span>
+                    )}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    desinscrire.mutate(i.id, {
+                      onSuccess: () => toast.success('Inscription annulée.'),
+                      onError: () => toast.error('Annulation impossible.'),
+                    })
+                  }
+                  disabled={desinscrire.isPending}
+                  aria-label="Annuler cette inscription"
+                  className="w-8 h-8 rounded-full bg-sand-100 hover:bg-error/10 text-earth-500 hover:text-error flex items-center justify-center transition-colors disabled:opacity-50"
+                >
+                  <X className="w-4 h-4" strokeWidth={2} />
+                </button>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

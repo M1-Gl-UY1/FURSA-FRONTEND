@@ -179,6 +179,29 @@ export type HistoriquePrixPartResponse = {
   createdAt: string
 }
 
+// P2 (Hugh 22/05/2026)
+export type StatutListeAttente = 'EN_ATTENTE' | 'NOTIFIE' | 'SERVI' | 'ANNULE'
+
+export type ListeAttenteRequest = {
+  proprieteId: number
+  nombreParts: number
+}
+
+export type ListeAttenteResponse = {
+  id: number
+  proprieteId: number
+  proprieteNom: string
+  proprieteLocalisation: string
+  investisseurId: number
+  nombreParts: number
+  statut: StatutListeAttente
+  /** Position dans la file FIFO (1 = premier). Null si pas EN_ATTENTE. */
+  position: number | null
+  createdAt: string
+  notifieLe: string | null
+  serviLe: string | null
+}
+
 export type StatutCertification = 'NON_CERTIFIE' | 'EN_REVIEW' | 'CERTIFIE' | 'REFUSEE'
 
 // P1 (Hugh 22/05/2026)
