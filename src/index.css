@@ -8,6 +8,22 @@
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* UX P0 (PROPOSITION_UX_FURSA.md §3.12) : scroll fluide vers les ancres
+       avec offset compense pour le header fixe (h-16 sm:h-[72px]). */
+    scroll-behavior: smooth;
+    scroll-padding-top: 80px;
+  }
+
+  /* Respect des preferences utilisateur (a11y) */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 
   body {

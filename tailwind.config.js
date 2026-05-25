@@ -104,6 +104,12 @@ export default {
           '0%': { transform: 'scale(1) translate(0, 0)' },
           '100%': { transform: 'scale(1.15) translate(-2%, -1%)' },
         },
+        // UX P1 (PROPOSITION_UX_FURSA.md §3.4) : Ken Burns plus subtil pour les cards.
+        // Zoom moins prononce, duree plus courte, declenche au hover.
+        'ken-burns-hover': {
+          '0%': { transform: 'scale(1) translate(0, 0)' },
+          '100%': { transform: 'scale(1.08) translate(-1%, -0.5%)' },
+        },
         'fade-up': {
           '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
@@ -112,12 +118,18 @@ export default {
           '0%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        // UX P0 (PROPOSITION_UX_FURSA.md §3.6) : skeleton shimmer premium.
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
       },
       animation: {
         'ken-burns': 'ken-burns 20s ease-in-out infinite alternate',
         'fade-up': 'fade-up 0.8s ease-out forwards',
         'fade-up-slow': 'fade-up 1.2s ease-out forwards',
         'fade-in': 'fade-in 1s ease-out forwards',
+        shimmer: 'shimmer 1.8s infinite linear',
       },
     },
   },

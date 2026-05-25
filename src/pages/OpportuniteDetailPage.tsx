@@ -11,6 +11,7 @@ import {
   Share2,
   AlertTriangle,
   ShieldAlert,
+  ShieldCheck,
   BadgeCheck,
   Home,
   Bed,
@@ -261,6 +262,41 @@ export function OpportuniteDetailPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            </section>
+          )}
+
+          {/* P9 (Hugh 22/05/2026) : gestionnaire locatif assigne */}
+          {propriete.gestionnaire && (
+            <section className="mb-8">
+              <div className="bg-ocean/5 border border-ocean/20 rounded-xl p-5 flex items-start gap-4">
+                <div className="w-11 h-11 rounded-lg bg-ocean/15 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-ocean" strokeWidth={1.75} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-xs uppercase tracking-widest text-ocean font-semibold mb-1">
+                    Gestion locative confiée à
+                  </p>
+                  <p className="font-display font-bold text-earth text-lg">
+                    {propriete.gestionnaire.nom}
+                  </p>
+                  {propriete.gestionnaire.description && (
+                    <p className="font-body text-earth-600 text-sm mt-1 leading-relaxed">
+                      {propriete.gestionnaire.description}
+                    </p>
+                  )}
+                  {propriete.gestionnaire.siteWeb && (
+                    <a
+                      href={propriete.gestionnaire.siteWeb}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-ocean text-xs font-semibold hover:underline mt-2"
+                    >
+                      Visiter le site
+                      <ArrowRight className="w-3 h-3" strokeWidth={2} />
+                    </a>
+                  )}
+                </div>
               </div>
             </section>
           )}

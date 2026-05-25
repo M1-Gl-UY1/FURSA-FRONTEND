@@ -157,6 +157,26 @@ export type ProprieteResponse = {
   prixInitialPart?: number | null
   bonusRentabiliteTotal?: number | null
   bonusDemande?: number | null
+  // P9 (Hugh 22/05/2026) : gestionnaire locatif
+  gestionnaire?: PartenaireGestionResponse | null
+}
+
+// P9 (Hugh 22/05/2026)
+export type TypePartenaire =
+  | 'GESTION_LOCATIVE'
+  | 'PROMOTEUR_VENTE'
+  | 'BLOCKCHAIN_OPS'
+  | 'EXPERTISE_LOCALE'
+
+export type PartenaireGestionResponse = {
+  id: number
+  nom: string
+  typePartenaire: TypePartenaire
+  description: string | null
+  siteWeb: string | null
+  contactEmail: string | null
+  logoUrl: string | null
+  actif: boolean
 }
 
 // P1 (Hugh 22/05/2026)

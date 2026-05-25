@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { User, Menu, X } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -8,7 +8,17 @@ import { cn } from '@/lib/utils'
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const { t } = useTranslation()
+
+  // Effet "magic header" inspire de Fumba.town / Paje Square :
+  // transparent en haut de page, solide au scroll.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 50)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   const navLinks = [
     { label: t('header.nav_home', 'Accueil'), href: '#accueil' },
@@ -18,7 +28,14 @@ export function Header() {
   ]
 
   return (
-    <header className="absolute top-0 left-0 right-0 z-50 bg-earth/55 backdrop-blur-md border-b border-white/10">
+    <header
+      className={cn(
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
+        scrolled
+          ? 'bg-earth/95 backdrop-blur-md border-b border-white/10 shadow-card'
+          : 'bg-transparent backdrop-blur-0 border-b border-transparent'
+      )}
+    >
       <div className="max-w-container mx-auto px-5 sm:px-6 lg:px-10">
         <div className="h-16 sm:h-[72px] flex items-center justify-between">
           {/* Logo */}
