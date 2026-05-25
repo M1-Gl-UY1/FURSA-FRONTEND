@@ -215,6 +215,48 @@ export function useSupprimerPropriete() {
   })
 }
 
+/**
+ * P7 (Hugh 22/05/2026) : tokenisation manuelle d'une propriete sur Sepolia.
+ * Deploie un smart contract ProprieteToken (ERC-20). Voir BLOCKCHAIN_INTEGRATION_FURSA.md.
+ */
+export function useTokeniserPropriete() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await api.post<ProprieteResponse>(
+        `/api/proprietes/admin/${id}/tokeniser`
+      )
+      return data
+    },
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: ['proprietes'] })
+      qc.invalidateQueries({ queryKey: ['propriete', id] })
+    },
+  })
+}
+
+/**
+ * P4 (Hugh 22/05/2026) : toggle le flag "Acquis FURSA" sur un bien.
+ * Workflow Paje Square : FURSA achete one-time au promoteur puis remet en
+ * vente fractionnee.
+ */
+export function useToggleAcquisFursa() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, acquisFursa }: { id: number; acquisFursa: boolean }) => {
+      const { data } = await api.patch<ProprieteResponse>(
+        `/api/proprietes/admin/${id}/acquis-fursa`,
+        { acquisFursa }
+      )
+      return data
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ['proprietes'] })
+      qc.invalidateQueries({ queryKey: ['propriete', vars.id] })
+    },
+  })
+}
+
 // =============================================================================
 // Revenus (admin) — workflow validation + distribution
 // =============================================================================

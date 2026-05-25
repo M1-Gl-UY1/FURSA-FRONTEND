@@ -32,6 +32,8 @@ import {
   usePublierPropriete,
   useRefuserPropriete,
   useSupprimerPropriete,
+  useToggleAcquisFursa,
+  useTokeniserPropriete,
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
@@ -48,6 +50,8 @@ export function AdminProprieteDetailPage() {
   const refuser = useRefuserPropriete()
   const publier = usePublierPropriete()
   const supprimer = useSupprimerPropriete()
+  const toggleAcquis = useToggleAcquisFursa()
+  const tokeniser = useTokeniserPropriete()
   const [refusOpen, setRefusOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
 
@@ -177,6 +181,51 @@ export function AdminProprieteDetailPage() {
               Supprimer
             </Button>
           )}
+          {/* P7 (Hugh 22/05/2026) : tokenisation manuelle Sepolia */}
+          {isPubliee && !p.transactionHash && (
+            <Button
+              variant="outline"
+              onClick={() =>
+                tokeniser.mutate(p.id, {
+                  onSuccess: () => toast.success('Propriété tokenisée sur Sepolia.'),
+                  onError: (e) =>
+                    toast.error(extractApiError(e, 'Tokenisation impossible.')),
+                })
+              }
+              disabled={tokeniser.isPending}
+              className="text-ocean border-ocean/40 hover:bg-ocean/10"
+            >
+              {tokeniser.isPending ? 'Déploiement...' : 'Tokeniser sur Sepolia'}
+            </Button>
+          )}
+
+          {/* P4 (Hugh 22/05/2026) : toggle flag "Acquis FURSA" */}
+          <Button
+            variant="outline"
+            onClick={() =>
+              toggleAcquis.mutate(
+                { id: p.id, acquisFursa: !p.acquisFursa },
+                {
+                  onSuccess: () =>
+                    toast.success(
+                      p.acquisFursa
+                        ? 'Flag "Acquis FURSA" retiré.'
+                        : 'Bien marqué comme acquis par FURSA.'
+                    ),
+                  onError: (e) =>
+                    toast.error(extractApiError(e, 'Action impossible.')),
+                }
+              )
+            }
+            disabled={toggleAcquis.isPending}
+            className={
+              p.acquisFursa
+                ? 'text-gold-700 border-gold/40 hover:bg-gold/10'
+                : 'text-earth-600 border-earth/30 hover:bg-earth/5'
+            }
+          >
+            {p.acquisFursa ? '✓ Acquis FURSA' : 'Marquer Acquis FURSA'}
+          </Button>
         </div>
       </header>
 
@@ -309,6 +358,15 @@ export function AdminProprieteDetailPage() {
               <span className="font-semibold text-earth">{p.nom}</span> sera retirée du catalogue ainsi que tous ses fichiers. Cette action est irréversible.
             </DialogDescription>
           </DialogHeader>
+          <div className="bg-warning/10 border border-warning/25 rounded-md p-3 text-xs font-body text-earth-700 space-y-1 mt-2">
+            <p className="font-semibold text-warning">⚠ La suppression sera refusée si :</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Des investisseurs détiennent encore des parts</li>
+              <li>Des annonces marché secondaire sont ouvertes</li>
+              <li>L'escrow du bien contient encore des fonds</li>
+            </ul>
+            <p className="text-earth-600 mt-1">Annulez d'abord la collecte (escrow) pour rembourser les investisseurs.</p>
+          </div>
           <DialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
             <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={supprimer.isPending}>
               Annuler

@@ -36,7 +36,9 @@ import { PropertyGallery } from '@/components/properties/PropertyGallery'
 import { WaitlistModal } from '@/components/properties/WaitlistModal'
 import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
+import { ReadingProgressBar } from '@/components/shared/ReadingProgressBar'
 import { Sparkline } from '@/components/shared/Sparkline'
+import { StickyTOC, type TOCItem } from '@/components/shared/StickyTOC'
 import { useEscrowPropriete } from '@/lib/api/escrow'
 import {
   useDesinscrireListeAttente,
@@ -131,8 +133,38 @@ export function OpportuniteDetailPage() {
     .filter(Boolean)
     .join(', ') || propriete.localisation
 
+  // UX P3 (PROPOSITION_UX_FURSA.md §3.13) : items de la table des matieres.
+  const tocItems: TOCItem[] = [
+    { id: 'fiche-galerie', label: 'Galerie' },
+    ...(caracteristiques.length > 0
+      ? [{ id: 'fiche-caracteristiques', label: 'Caractéristiques' }]
+      : []),
+    ...(propriete.prixVenteTotalUsd != null && propriete.prixVenteTotalUsd > 0
+      ? [{ id: 'fiche-valeur', label: 'Valeur totale' }]
+      : []),
+    ...(propriete.description
+      ? [{ id: 'fiche-description', label: 'Description' }]
+      : []),
+    ...(equipements.length > 0
+      ? [{ id: 'fiche-equipements', label: 'Équipements' }]
+      : []),
+    ...(propriete.gestionnaire
+      ? [{ id: 'fiche-gestionnaire', label: 'Gestion locative' }]
+      : []),
+    ...(propriete.statutExploitation || propriete.sourceRevenu
+      ? [{ id: 'fiche-pourquoi', label: 'Pourquoi investir' }]
+      : []),
+    ...(propriete.videoUrl ? [{ id: 'fiche-video', label: 'Vidéo de visite' }] : []),
+    ...(propriete.documents && propriete.documents.length > 0
+      ? [{ id: 'fiche-documents', label: 'Documents légaux' }]
+      : []),
+  ]
+
   return (
     <div className="max-w-container mx-auto">
+      <ReadingProgressBar />
+      <StickyTOC items={tocItems} />
+
       {/* Back link */}
       <Link
         to="/opportunites"
@@ -145,7 +177,9 @@ export function OpportuniteDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 lg:gap-10 items-start">
         {/* Colonne gauche : galerie + contenu */}
         <div>
-          <PropertyGallery photos={propriete.photos} alt={propriete.nom} />
+          <div id="fiche-galerie">
+            <PropertyGallery photos={propriete.photos} alt={propriete.nom} />
+          </div>
 
           {/* Header titre + meta */}
           <header className="mt-6 mb-8">
@@ -175,6 +209,27 @@ export function OpportuniteDetailPage() {
                   )}
                 </span>
               )}
+              {propriete.acquisFursa && (
+                <span
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-gold/15 text-gold-700 font-body text-xs font-semibold"
+                  title="Ce bien a été acquis par FURSA auprès d'un promoteur partenaire. Gestion et garanties supplémentaires."
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2} />
+                  Acquis FURSA
+                </span>
+              )}
+              {propriete.transactionHash && (
+                <a
+                  href={`https://sepolia.etherscan.io/tx/${propriete.transactionHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-ocean/10 text-ocean font-body text-xs font-semibold hover:bg-ocean/15 transition-colors"
+                  title="Ce bien est tokenisé sur la blockchain Sepolia. Cliquez pour voir la transaction sur Etherscan."
+                >
+                  <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
+                  On-chain
+                </a>
+              )}
             </div>
             <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl lg:text-4xl mb-2 leading-tight">
               {propriete.nom}
@@ -187,7 +242,7 @@ export function OpportuniteDetailPage() {
 
           {/* Bandeau caractéristiques */}
           {caracteristiques.length > 0 && (
-            <section className="mb-8">
+            <section id="fiche-caracteristiques" className="mb-8">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
                 {caracteristiques.map((c) => (
                   <div
@@ -209,7 +264,7 @@ export function OpportuniteDetailPage() {
 
           {/* Description */}
           {propriete.description && (
-            <section className="mb-8">
+            <section id="fiche-description" className="mb-8">
               <h2 className="font-display font-semibold text-earth text-xl mb-3">
                 À propos de ce bien
               </h2>
@@ -221,7 +276,7 @@ export function OpportuniteDetailPage() {
 
           {/* Équipements */}
           {equipements.length > 0 && (
-            <section className="mb-8">
+            <section id="fiche-equipements" className="mb-8">
               <h2 className="font-display font-semibold text-earth text-xl mb-4">
                 Équipements & confort
               </h2>
@@ -245,7 +300,7 @@ export function OpportuniteDetailPage() {
 
           {/* P5 (Hugh 22/05/2026) : valeur totale du bien USD + devise locale */}
           {propriete.prixVenteTotalUsd != null && propriete.prixVenteTotalUsd > 0 && (
-            <section className="mb-8">
+            <section id="fiche-valeur" className="mb-8">
               <div className="bg-white border border-earth/8 rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <p className="font-body text-xs text-earth-500 uppercase tracking-wide font-semibold mb-1">
@@ -279,7 +334,7 @@ export function OpportuniteDetailPage() {
 
           {/* P9 (Hugh 22/05/2026) : gestionnaire locatif assigne */}
           {propriete.gestionnaire && (
-            <section className="mb-8">
+            <section id="fiche-gestionnaire" className="mb-8">
               <div className="bg-ocean/5 border border-ocean/20 rounded-xl p-5 flex items-start gap-4">
                 <div className="w-11 h-11 rounded-lg bg-ocean/15 flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-5 h-5 text-ocean" strokeWidth={1.75} />
@@ -314,7 +369,7 @@ export function OpportuniteDetailPage() {
 
           {/* Exploitation / Pourquoi investir */}
           {(propriete.statutExploitation || propriete.sourceRevenu || propriete.revenuMensuelActuel) && (
-            <section className="mb-8">
+            <section id="fiche-pourquoi" className="mb-8">
               <h2 className="font-display font-semibold text-earth text-xl mb-4">
                 Pourquoi investir ici
               </h2>
@@ -367,7 +422,7 @@ export function OpportuniteDetailPage() {
 
           {/* Vidéo de visite */}
           {propriete.videoUrl && (
-            <section className="mb-8">
+            <section id="fiche-video" className="mb-8">
               <h2 className="font-display font-semibold text-earth text-xl mb-3 flex items-center gap-2">
                 <PlayCircle className="w-5 h-5 text-terra" strokeWidth={1.75} />
                 Vidéo de visite
@@ -387,7 +442,7 @@ export function OpportuniteDetailPage() {
 
           {/* Documents */}
           {propriete.documents && propriete.documents.length > 0 && (
-            <section className="mb-8">
+            <section id="fiche-documents" className="mb-8">
               <h2 className="font-display font-semibold text-earth text-xl mb-3">
                 Documents légaux
               </h2>

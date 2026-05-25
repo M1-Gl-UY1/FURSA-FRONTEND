@@ -161,6 +161,11 @@ export type ProprieteResponse = {
   bonusDemande?: number | null
   // P9 (Hugh 22/05/2026) : gestionnaire locatif
   gestionnaire?: PartenaireGestionResponse | null
+  // P4 (Hugh 22/05/2026) : bien acquis par FURSA one-time aupres d'un promoteur
+  acquisFursa?: boolean | null
+  // P7 (Hugh 22/05/2026) : tokenisation blockchain (Sepolia testnet)
+  adresseContrat?: string | null
+  transactionHash?: string | null
 }
 
 // P9 (Hugh 22/05/2026)

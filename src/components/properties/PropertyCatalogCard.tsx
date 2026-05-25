@@ -101,6 +101,12 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
               En construction
             </span>
           )}
+          {propriete.acquisFursa && (
+            <span className="inline-flex items-center gap-1 bg-gold text-earth text-[10px] font-semibold font-body rounded-full px-2.5 py-0.5 shadow-sm">
+              <Sparkles className="w-3 h-3" strokeWidth={2.25} />
+              Acquis FURSA
+            </span>
+          )}
           {propriete.certifie && (
             <span className="inline-flex items-center bg-white/90 text-success text-[10px] font-semibold font-body rounded-full px-2 py-0.5 shadow-sm">
               ✓ Certifié
