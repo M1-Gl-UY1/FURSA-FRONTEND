@@ -37,6 +37,7 @@ import {
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
+import { resolveFileUrl } from '@/lib/utils'
 
 export function AdminProprieteDetailPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -81,8 +82,9 @@ export function AdminProprieteDetailPage() {
   const total = p.nombreTotalPart ?? p.partsTotales ?? 0
   const valeurTotale = total * p.prixUnitairePart
 
-  const apiBase = import.meta.env.VITE_API_BASE
-  const fileUrl = (urlOrName: string) => `${apiBase}/api/fichiers/${urlOrName}`
+  // Fix 25/05/2026 : utiliser resolveFileUrl qui gere correctement les chemins
+  // /api/fichiers/* deja prefixes par le backend (mapper).
+  const fileUrl = (urlOrName: string) => resolveFileUrl(urlOrName)
   const photos = p.documents?.filter((d) => d.type === 'IMAGE') ?? []
   const docs = p.documents?.filter((d) => d.type === 'PDF') ?? []
   const heroPhoto = photos[0]

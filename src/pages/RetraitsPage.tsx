@@ -40,7 +40,7 @@ import type {
   MethodeRetrait,
   StatutDemandeRetrait,
 } from '@/lib/api/types'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 const COMMISSION_FURSA_PCT = 5
 
@@ -127,9 +127,9 @@ export function RetraitsPage() {
           )
         }
         if (r.preuvePaiement) {
-          return r.preuvePaiement.startsWith('http') ? (
+          return /\.(pdf|jpg|jpeg|png|webp)$/i.test(r.preuvePaiement) || r.preuvePaiement.startsWith('http') || r.preuvePaiement.startsWith('/api/') ? (
             <a
-              href={r.preuvePaiement}
+              href={resolveFileUrl(r.preuvePaiement)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-ocean text-xs hover:underline"

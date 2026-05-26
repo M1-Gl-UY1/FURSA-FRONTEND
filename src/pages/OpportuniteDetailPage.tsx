@@ -55,6 +55,7 @@ import {
   usePropriete,
 } from '@/lib/api/proprietes'
 import { useAuth } from '@/lib/auth/AuthContext'
+import { resolveFileUrl } from '@/lib/utils'
 import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
 
 const TYPE_BIEN_LABELS: Record<TypeBien, string> = {
@@ -74,21 +75,27 @@ const SOURCE_REVENU_LABELS: Record<string, string> = {
 }
 
 export function OpportuniteDetailPage() {
+  // === TOUS les hooks d'abord, dans un ordre stable entre re-renders. ===
+  // Fix React #310 (25/05/2026) : early returns deplaces APRES tous les hooks
+  // pour ne jamais changer le nombre d'appels de hooks entre 2 renders.
   const { id: idParam } = useParams<{ id: string }>()
-  const id = idParam ? Number(idParam) : NaN
-
-  if (Number.isNaN(id)) {
-    return <Navigate to="/opportunites" replace />
-  }
+  const parsedId = idParam ? Number(idParam) : NaN
+  const id = Number.isNaN(parsedId) ? undefined : parsedId
 
   const { data: propriete, isLoading, isError } = usePropriete(id)
   const { isAdmin, isAuthenticated } = useAuth()
   const [waitlistOpen, setWaitlistOpen] = useState(false)
   const { data: mesInscriptions } = useMesInscriptions(isAuthenticated && !isAdmin)
   const desinscrire = useDesinscrireListeAttente()
+  const isPubliee = propriete?.statut === 'PUBLIEE'
+  const { data: escrow } = useEscrowPropriete(isPubliee && propriete ? propriete.id : null)
+  const { data: historiquePrix } = useHistoriquePrix(id)
 
+  // === Early returns (APRES tous les hooks) ===
+  if (id === undefined) {
+    return <Navigate to="/opportunites" replace />
+  }
   if (isLoading) return <DetailSkeleton />
-
   if (isError || !propriete) {
     return (
       <div className="max-w-container mx-auto py-12 text-center">
@@ -106,14 +113,12 @@ export function OpportuniteDetailPage() {
     )
   }
 
+  // === Computations derivees (apres la garantie que propriete est defini) ===
   const pourcentage = calculatePourcentageVendu(propriete)
   const partsVendues = calculatePartsVendues(propriete)
   const partsTotales = propriete.nombreTotalPart ?? propriete.partsTotales ?? 0
   const variationPrix = calculateVariationPrix(propriete)
-  const isPubliee = propriete.statut === 'PUBLIEE'
   const sansParts = (propriete.partsDisponibles ?? 0) <= 0
-  const { data: escrow } = useEscrowPropriete(isPubliee ? propriete.id : null)
-  const { data: historiquePrix } = useHistoriquePrix(propriete.id)
   const sparklineValues = (historiquePrix ?? []).map((h) => h.prixUnitaire)
 
   const equipements = collectEquipements(propriete)
@@ -429,7 +434,7 @@ export function OpportuniteDetailPage() {
               </h2>
               <div className="relative aspect-video rounded-xl overflow-hidden bg-earth shadow-card">
                 <video
-                  src={propriete.videoUrl}
+                  src={resolveFileUrl(propriete.videoUrl)}
                   controls
                   preload="metadata"
                   className="w-full h-full"
@@ -452,7 +457,7 @@ export function OpportuniteDetailPage() {
                   .map((doc) => (
                     <li key={doc.id}>
                       <a
-                        href={doc.url}
+                        href={resolveFileUrl(doc.url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-3 p-3 bg-sand-100 hover:bg-sand-200 rounded-lg border border-earth/5 text-earth font-body text-sm transition-colors"

@@ -34,7 +34,7 @@ import { useMaProprieteProposee } from '@/lib/api/submissions'
 import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 import { extractApiError } from '@/lib/api/errors'
 import type { ProprieteResponse } from '@/lib/api/types'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 export function MaProprieteDetailPage() {
   const { id: idParam } = useParams<{ id: string }>()
@@ -79,8 +79,8 @@ export function MaProprieteDetailPage() {
 
   const photos = p.documents?.filter((d) => d.type === 'IMAGE') ?? []
   const docs = p.documents?.filter((d) => d.type === 'PDF') ?? []
-  const apiBase = import.meta.env.VITE_API_BASE
-  const fileUrl = (urlOrName: string) => `${apiBase}/api/fichiers/${urlOrName}`
+  // Fix 25/05/2026 : utiliser resolveFileUrl (backend prefixe deja /api/fichiers/)
+  const fileUrl = (urlOrName: string) => resolveFileUrl(urlOrName)
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

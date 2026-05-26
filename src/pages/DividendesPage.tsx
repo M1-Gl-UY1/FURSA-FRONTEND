@@ -8,6 +8,7 @@ import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useMaBalanceDividendes, useMesDividendes } from '@/lib/api/dividendes'
 import type { DividendeResponse } from '@/lib/api/types'
+import { resolveFileUrl } from '@/lib/utils'
 
 export function DividendesPage() {
   const { data, isLoading } = useMesDividendes()
@@ -78,9 +79,9 @@ export function DividendesPage() {
       noSort: true,
       render: (d) =>
         d.preuvePaiement ? (
-          d.preuvePaiement.startsWith('http') ? (
+          /\.(pdf|jpg|jpeg|png|webp)$/i.test(d.preuvePaiement) || d.preuvePaiement.startsWith('http') || d.preuvePaiement.startsWith('/api/') ? (
             <a
-              href={d.preuvePaiement}
+              href={resolveFileUrl(d.preuvePaiement)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-ocean text-xs hover:underline"

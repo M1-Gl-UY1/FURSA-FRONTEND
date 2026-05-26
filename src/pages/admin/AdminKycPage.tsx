@@ -29,7 +29,7 @@ import {
 } from '@/lib/api/kyc'
 import { extractApiError } from '@/lib/api/errors'
 import type { KycAdminResponse, StatutKyc } from '@/lib/api/types'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 type Tab = Exclude<StatutKyc, 'NONE'>
 
@@ -258,9 +258,9 @@ function AdminKycDetail({ id, onBack }: { id: number; onBack: () => void }) {
           <h2 className="font-display font-bold text-earth text-base">Documents</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DocumentPreview label="Pièce d'identité" url={kyc.documentIdentiteUrl} />
-          <DocumentPreview label="Justificatif domicile" url={kyc.documentDomicileUrl} />
-          <DocumentPreview label="Selfie" url={kyc.selfieUrl} />
+          <DocumentPreview label="Pièce d'identité" url={resolveFileUrl(kyc.documentIdentiteUrl)} />
+          <DocumentPreview label="Justificatif domicile" url={resolveFileUrl(kyc.documentDomicileUrl)} />
+          <DocumentPreview label="Selfie" url={resolveFileUrl(kyc.selfieUrl)} />
         </div>
       </section>
 

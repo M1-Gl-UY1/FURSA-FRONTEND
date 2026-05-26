@@ -32,8 +32,9 @@ import {
 } from '@/lib/api/certification'
 import { extractApiError } from '@/lib/api/errors'
 import type { DocumentResponse, ProprieteResponse } from '@/lib/api/types'
+import { resolveFileUrl } from '@/lib/utils'
 
-const apiBase = (import.meta.env.VITE_API_BASE ?? '').replace(/\/$/, '')
+// Fix 25/05/2026 : apiBase n'est plus utilise directement, resolveFileUrl gere le prefixe.
 
 /**
  * Phase Certification (Hugh 22/05/2026) : page admin pour valider/refuser les
@@ -334,9 +335,8 @@ function DocumentsModal({
             <p className="font-body text-earth-500 text-sm">Aucun document uploadé.</p>
           ) : (
             docs.map((d) => {
-              const url = d.url
-                ? d.url.startsWith('http') ? d.url : `${apiBase}/api/fichiers/${d.url}`
-                : null
+              // Fix 25/05/2026 : resolveFileUrl gere le prefixe /api/fichiers/ deja mis par le backend
+              const url = d.url ? resolveFileUrl(d.url) : null
               return (
                 <div
                   key={d.id}
