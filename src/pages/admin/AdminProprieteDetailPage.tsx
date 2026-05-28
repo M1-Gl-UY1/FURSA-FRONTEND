@@ -448,7 +448,7 @@ function RefusDialog({
         </DialogHeader>
 
         <div className="space-y-2 py-2">
-          <Label htmlFor="motif">Motif (10-1000 caractères)</Label>
+          <Label htmlFor="motif">Motif (3-1000 caractères)</Label>
           <textarea
             id="motif"
             rows={5}
@@ -457,7 +457,13 @@ function RefusDialog({
             placeholder="Ex: Documents incomplets, prix surévalué..."
             className="w-full rounded-md border-[1.5px] border-sand-400 bg-white px-4 py-3 text-sm font-body text-earth focus-visible:outline-none focus-visible:border-ocean focus-visible:ring-2 focus-visible:ring-ocean/15 transition-colors resize-y"
           />
-          <p className="font-mono text-xs text-earth-500">{motif.length} / 1000</p>
+          {motif.trim().length > 0 && motif.trim().length < 3 ? (
+            <p className="font-mono text-xs text-error">
+              Encore {3 - motif.trim().length} caractère(s) minimum pour activer le refus
+            </p>
+          ) : (
+            <p className="font-mono text-xs text-earth-500">{motif.length} / 1000</p>
+          )}
         </div>
 
         <DialogFooter className="flex-col-reverse sm:flex-row gap-2">
@@ -466,7 +472,7 @@ function RefusDialog({
           </Button>
           <Button
             variant="destructive"
-            disabled={motif.trim().length < 10 || isPending}
+            disabled={motif.trim().length < 3 || isPending}
             onClick={() => onConfirm(motif.trim())}
           >
             <XCircle strokeWidth={2} />
