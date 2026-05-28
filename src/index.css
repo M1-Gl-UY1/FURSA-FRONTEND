@@ -31,3 +31,43 @@
     margin: 0;
   }
 }
+
+/* =========================================================================
+   Toasts (sonner) — style "subtil premium" synchronise avec le design system.
+   Fond blanc, bordure + icone coloree selon le type, texte earth.
+   Cible les data-attributes de sonner + !important pour battre ses styles inline.
+   ========================================================================= */
+[data-sonner-toast] {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(26, 26, 46, 0.10) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 8px 24px rgba(26, 26, 46, 0.08) !important;
+  color: #1A1A2E !important;
+  font-family: 'Inter', system-ui, sans-serif !important;
+}
+[data-sonner-toast] [data-title] {
+  color: #1A1A2E !important;
+  font-weight: 600;
+}
+[data-sonner-toast] [data-description] {
+  color: #2B2B4A !important;
+}
+[data-sonner-toast] [data-close-button] {
+  background: #FFFFFF !important;
+  border: 1px solid rgba(26, 26, 46, 0.15) !important;
+  color: #636383 !important;
+}
+[data-sonner-toast] [data-close-button]:hover {
+  background: #F5F0EB !important;
+  color: #1A1A2E !important;
+}
+
+/* Couleurs semantiques par type : bordure + icone (fond reste blanc) */
+[data-sonner-toast][data-type="success"] { border-color: rgba(46, 125, 91, 0.35) !important; }
+[data-sonner-toast][data-type="success"] [data-icon] { color: #2E7D5B !important; }
+[data-sonner-toast][data-type="error"] { border-color: rgba(196, 61, 61, 0.35) !important; }
+[data-sonner-toast][data-type="error"] [data-icon] { color: #C43D3D !important; }
+[data-sonner-toast][data-type="warning"] { border-color: rgba(212, 145, 61, 0.35) !important; }
+[data-sonner-toast][data-type="warning"] [data-icon] { color: #D4913D !important; }
+[data-sonner-toast][data-type="info"] { border-color: rgba(45, 106, 122, 0.35) !important; }
+[data-sonner-toast][data-type="info"] [data-icon] { color: #2D6A7A !important; }

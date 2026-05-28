@@ -68,9 +68,10 @@ function App() {
       <BrowserRouter>
         <AuthProvider>
           {adminMode ? <AdminRoutes /> : <InvestisseurRoutes />}
+          {/* Style "subtil premium" defini dans index.css (data-sonner-toast).
+              richColors retire : on gere nos propres couleurs (success/error/warning/ocean). */}
           <Toaster
             position="top-right"
-            richColors
             closeButton
             toastOptions={{
               classNames: { toast: 'font-body' },
