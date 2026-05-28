@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { ChevronLeft, ChevronRight, ImageOff } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 const PLACEHOLDER = '/images/villa-falaise.jpg'
 
@@ -11,7 +11,10 @@ type PropertyGalleryProps = {
 }
 
 export function PropertyGallery({ photos, alt }: PropertyGalleryProps) {
-  const list = (photos && photos.length > 0 ? photos : [PLACEHOLDER])
+  // Les photos backend sont des chemins relatifs (/api/fichiers/...) : on les prefixe
+  // avec l'API base. Le placeholder reste un asset local du frontend (pas de prefixe).
+  const resolved = (photos ?? []).map((p) => resolveFileUrl(p)).filter(Boolean)
+  const list = resolved.length > 0 ? resolved : [PLACEHOLDER]
   const [index, setIndex] = useState(0)
   const main = list[index]
 
@@ -35,7 +38,7 @@ export function PropertyGallery({ photos, alt }: PropertyGalleryProps) {
                 i === index ? 'opacity-100' : 'opacity-0 pointer-events-none'
               )}
               loading={i === 0 ? 'eager' : 'lazy'}
-              aria-hidden={i !== index ? 'true' : undefined}
+              aria-hidden={i !== index}
             />
           ))
         ) : (

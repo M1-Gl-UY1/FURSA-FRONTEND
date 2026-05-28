@@ -57,10 +57,10 @@ const STEPS = [
   'Récap',
 ]
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024 // 100 MB
+const MAX_VIDEO_SIZE = 200 * 1024 * 1024 // 200 Mo
 const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_PHOTO_SIZE = 10 * 1024 * 1024 // 10 MB par photo
+const MAX_PHOTO_SIZE = 20 * 1024 * 1024 // 20 Mo par photo
 
 type FormState = {
   // Etape 1
@@ -946,7 +946,7 @@ function Step4Photos({
         continue
       }
       if (f.size > MAX_PHOTO_SIZE) {
-        toast.error(`Photo trop lourde : ${f.name} (max 10 MB)`)
+        toast.error(`Photo trop lourde : ${f.name} (max 20 Mo)`)
         continue
       }
       accepted.push({ file: f, section })
@@ -967,8 +967,11 @@ function Step4Photos({
         <Camera className="w-5 h-5 text-terra" strokeWidth={1.75} />
         Photos structurées
       </h2>
-      <p className="font-body text-earth-600 text-sm mb-6">
+      <p className="font-body text-earth-600 text-sm mb-1">
         Une photo par section. Façade et salon sont obligatoires.
+      </p>
+      <p className="font-body text-earth-500 text-xs mb-6">
+        Formats acceptés : JPG, PNG, WebP · <strong>20 Mo max</strong> par photo.
       </p>
 
       <div className="space-y-4">
@@ -1065,7 +1068,7 @@ function Step5Video({
       return
     }
     if (file.size > MAX_VIDEO_SIZE) {
-      toast.error('Vidéo trop lourde (max 100 MB).')
+      toast.error('Vidéo trop lourde (max 200 Mo).')
       return
     }
     update('video', file)
@@ -1096,7 +1099,7 @@ function Step5Video({
               Cliquez pour choisir votre vidéo
             </p>
             <p className="font-body text-earth-500 text-xs mt-1">
-              MP4, MOV ou WebM · max 100 MB · 1-3 min recommandé
+              MP4, MOV ou WebM · <strong>200 Mo max</strong> · 1-3 min recommandé
             </p>
           </div>
           <input

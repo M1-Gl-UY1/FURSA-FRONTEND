@@ -23,7 +23,7 @@ import {
   calculateVariationPrix,
 } from '@/lib/api/proprietes'
 import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 type PropertyCatalogCardProps = {
   propriete: ProprieteResponse
@@ -52,7 +52,7 @@ const TYPE_LABELS: Record<TypeBien, string> = {
 }
 
 export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
-  const image = propriete.photos?.[0] ?? PLACEHOLDER_IMAGE
+  const image = propriete.photos?.[0] ? resolveFileUrl(propriete.photos[0]) : PLACEHOLDER_IMAGE
   const pourcentage = calculatePourcentageVendu(propriete)
   const partsVendues = calculatePartsVendues(propriete)
   const variationPrix = calculateVariationPrix(propriete)
