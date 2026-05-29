@@ -176,7 +176,7 @@ export function AdminCertificationsPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {isLoading ? (
           Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl bg-sand-300" />
+            <Skeleton key={i} className="h-28 rounded-xl " />
           ))
         ) : (
           <>
@@ -199,7 +199,7 @@ export function AdminCertificationsPage() {
       </section>
 
       {isLoading ? (
-        <Skeleton className="h-64 rounded-xl bg-sand-300" />
+        <Skeleton className="h-64 rounded-xl" />
       ) : (
         <DataTable
           data={pending}

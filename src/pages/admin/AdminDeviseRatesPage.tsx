@@ -26,7 +26,7 @@ export function AdminDeviseRatesPage() {
         </p>
       </header>
 
-      {isLoading && <Skeleton className="h-96 w-full bg-sand-300" />}
+      {isLoading && <Skeleton className="h-96 w-full" />}
 
       {isError && (
         <EmptyState

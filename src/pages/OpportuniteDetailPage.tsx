@@ -638,6 +638,41 @@ export function OpportuniteDetailPage() {
         </aside>
       </div>
 
+      {/* Sticky CTA mobile (Polish UX) : barre d'action fixee en bas d'ecran sur
+          mobile uniquement. Le sticky panel desktop reste actif en lg+. */}
+      {isPubliee && !isAdmin && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-earth/10 shadow-[0_-4px_12px_rgba(26,26,46,0.08)] px-4 py-3 flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <p className="font-body text-[10px] text-earth-500 uppercase tracking-wide leading-none">
+              Prix par part
+            </p>
+            <p className="font-mono font-bold text-earth text-lg leading-tight mt-0.5">
+              <Money amount={propriete.prixUnitairePart} mono={false} />
+            </p>
+          </div>
+          {sansParts ? (
+            <Button
+              size="lg"
+              variant="outline"
+              className="shrink-0"
+              onClick={() => setWaitlistOpen(true)}
+            >
+              Liste d'attente
+            </Button>
+          ) : (
+            <Button asChild size="lg" className="shrink-0">
+              <Link to={`/opportunites/${propriete.id}/acheter`}>
+                Acheter
+                <ArrowRight className="ml-1" strokeWidth={2} />
+              </Link>
+            </Button>
+          )}
+        </div>
+      )}
+
+      {/* Spacer mobile pour eviter que le sticky CTA cache le footer scroll */}
+      {isPubliee && !isAdmin && <div className="lg:hidden h-20" aria-hidden="true" />}
+
       {/* P2 — Modal liste d'attente */}
       <WaitlistModal
         open={waitlistOpen}
@@ -808,14 +843,14 @@ function ExploitItem({ icon: Icon, label, value }: ExploitItemProps) {
 function DetailSkeleton() {
   return (
     <div className="max-w-container mx-auto">
-      <Skeleton className="h-4 w-40 mb-5 bg-sand-300" />
+      <Skeleton className="h-4 w-40 mb-5" />
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-10">
         <div>
-          <Skeleton className="aspect-[16/9] w-full rounded-xl bg-sand-300" />
-          <Skeleton className="h-8 w-2/3 mt-6 bg-sand-300" />
-          <Skeleton className="h-4 w-1/3 mt-3 bg-sand-300" />
+          <Skeleton className="aspect-[16/9] w-full rounded-xl" />
+          <Skeleton className="h-8 w-2/3 mt-6" />
+          <Skeleton className="h-4 w-1/3 mt-3" />
         </div>
-        <Skeleton className="h-96 rounded-xl bg-sand-300" />
+        <Skeleton className="h-96 rounded-xl" />
       </div>
     </div>
   )

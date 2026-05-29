@@ -216,7 +216,7 @@ export function RetraitsPage() {
 
       {/* Table */}
       {isLoading ? (
-        <Skeleton className="h-64 rounded-xl bg-sand-300" />
+        <Skeleton className="h-64 rounded-xl" />
       ) : (
         <DataTable
           data={retraits ?? []}

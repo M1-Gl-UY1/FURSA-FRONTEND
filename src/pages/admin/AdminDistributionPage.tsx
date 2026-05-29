@@ -102,7 +102,7 @@ export function AdminDistributionPage() {
 
       {/* Liste */}
       {isLoading ? (
-        <Skeleton className="h-64 rounded-xl bg-sand-300" />
+        <Skeleton className="h-64 rounded-xl" />
       ) : tab === 'a-distribuer' ? (
         aDistribuer.length === 0 ? (
           <EmptyState
@@ -171,7 +171,7 @@ function PreviewModal({ revenuId, onClose }: { revenuId: number | null; onClose:
         </DialogHeader>
 
         {isLoading || !preview ? (
-          <Skeleton className="h-48 bg-sand-300" />
+          <Skeleton className="h-48" />
         ) : (
           <>
             {/* Recap */}

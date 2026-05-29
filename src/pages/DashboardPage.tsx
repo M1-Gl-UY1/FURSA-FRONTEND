@@ -124,7 +124,7 @@ export function DashboardPage() {
       >
         {loadingDash ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl bg-sand-300" />
+            <Skeleton key={i} className="h-32 rounded-xl " />
           ))
         ) : (
           <>
@@ -282,7 +282,7 @@ export function DashboardPage() {
           {loadingPoss ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 rounded-lg bg-sand-300" />
+                <Skeleton key={i} className="h-20 rounded-lg " />
               ))}
             </div>
           ) : topPossessions.length === 0 ? (
@@ -369,7 +369,7 @@ export function DashboardPage() {
           {loadingNotifs ? (
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 rounded-lg bg-sand-300" />
+                <Skeleton key={i} className="h-12 rounded-lg " />
               ))}
             </div>
           ) : topNotifs.length === 0 ? (

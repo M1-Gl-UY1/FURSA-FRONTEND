@@ -66,9 +66,9 @@ export function AdminUserDetailPage() {
   if (isLoading || !user) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-8 w-40 bg-sand-300" />
-        <Skeleton className="h-32 w-full rounded-xl bg-sand-300" />
-        <Skeleton className="h-64 w-full rounded-xl bg-sand-300" />
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-32 w-full rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     )
   }

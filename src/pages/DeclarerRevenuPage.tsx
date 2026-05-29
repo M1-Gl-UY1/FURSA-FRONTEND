@@ -96,8 +96,8 @@ export function DeclarerRevenuPage() {
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto space-y-6">
-        <Skeleton className="h-8 w-40 bg-sand-300" />
-        <Skeleton className="h-64 rounded-xl bg-sand-300" />
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="h-64 rounded-xl" />
       </div>
     )
   }

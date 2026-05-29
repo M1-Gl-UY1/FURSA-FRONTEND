@@ -243,7 +243,7 @@ export function AdminRetraitsPage() {
       <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl bg-sand-300" />
+            <Skeleton key={i} className="h-28 rounded-xl " />
           ))
         ) : (
           <>
@@ -294,7 +294,7 @@ export function AdminRetraitsPage() {
 
       {/* Table */}
       {isLoading ? (
-        <Skeleton className="h-64 rounded-xl bg-sand-300" />
+        <Skeleton className="h-64 rounded-xl" />
       ) : (
         <DataTable
           data={filtered}

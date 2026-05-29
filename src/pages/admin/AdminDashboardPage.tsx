@@ -90,7 +90,7 @@ export function AdminDashboardPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl bg-sand-300" />
+            <Skeleton key={i} className="h-32 rounded-xl " />
           ))
         ) : (
           <>

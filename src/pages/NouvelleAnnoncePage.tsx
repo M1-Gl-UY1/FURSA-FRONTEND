@@ -100,8 +100,8 @@ export function NouvelleAnnoncePage() {
   if (loadingPoss) {
     return (
       <div className="max-w-3xl mx-auto">
-        <Skeleton className="h-8 w-40 mb-6 bg-sand-300" />
-        <Skeleton className="h-72 rounded-xl bg-sand-300" />
+        <Skeleton className="h-8 w-40 mb-6" />
+        <Skeleton className="h-72 rounded-xl" />
       </div>
     )
   }

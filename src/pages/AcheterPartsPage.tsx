@@ -82,9 +82,9 @@ export function AcheterPartsPage() {
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto">
-        <Skeleton className="h-8 w-40 mb-6 bg-sand-300" />
-        <Skeleton className="h-12 w-full mb-8 bg-sand-300" />
-        <Skeleton className="h-96 w-full rounded-xl bg-sand-300" />
+        <Skeleton className="h-8 w-40 mb-6" />
+        <Skeleton className="h-12 w-full mb-8" />
+        <Skeleton className="h-96 w-full rounded-xl" />
       </div>
     )
   }
@@ -279,7 +279,7 @@ function Step1Selection({
 
       {/* Etat de la collecte */}
       {escrowLoading ? (
-        <Skeleton className="h-20 rounded-lg bg-sand-300 mb-6" />
+        <Skeleton className="h-20 rounded-lg mb-6" />
       ) : (
         escrow && <CollecteCard escrow={escrow} />
       )}
@@ -345,7 +345,7 @@ function Step1Selection({
       {/* Wallet check */}
       <div className="mt-4">
         {walletLoading ? (
-          <Skeleton className="h-16 rounded-lg bg-sand-300" />
+          <Skeleton className="h-16 rounded-lg" />
         ) : (
           <div
             className={cn(

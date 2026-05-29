@@ -116,7 +116,7 @@ export function DividendesPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {balanceLoading || isLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl bg-sand-300" />
+            <Skeleton key={i} className="h-32 rounded-xl " />
           ))
         ) : (
           <>
@@ -169,7 +169,7 @@ export function DividendesPage() {
       {/* Tableau */}
       <section>
         {isLoading ? (
-          <Skeleton className="h-64 rounded-xl bg-sand-300" />
+          <Skeleton className="h-64 rounded-xl" />
         ) : (
           <DataTable
             data={data ?? []}

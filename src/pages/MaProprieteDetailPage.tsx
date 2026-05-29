@@ -48,9 +48,9 @@ export function MaProprieteDetailPage() {
   if (isLoading) {
     return (
       <div className="max-w-4xl mx-auto space-y-6">
-        <Skeleton className="h-8 w-40 bg-sand-300" />
-        <Skeleton className="aspect-[16/9] rounded-xl bg-sand-300" />
-        <Skeleton className="h-32 rounded-xl bg-sand-300" />
+        <Skeleton className="h-8 w-40" />
+        <Skeleton className="aspect-[16/9] rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
       </div>
     )
   }

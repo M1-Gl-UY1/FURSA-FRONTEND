@@ -65,7 +65,7 @@ export function AdminPaiementSessionsPage() {
         ))}
       </div>
 
-      {isLoading && <Skeleton className="h-64 w-full bg-sand-300" />}
+      {isLoading && <Skeleton className="h-64 w-full" />}
 
       {isError && (
         <EmptyState

@@ -57,6 +57,13 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
   const partsVendues = calculatePartsVendues(propriete)
   const variationPrix = calculateVariationPrix(propriete)
   const isTrending = pourcentage >= 50 && pourcentage < 100
+  // Polish UX : badge "Nouveau" pour les biens publies depuis moins de 7 jours.
+  const isNew = (() => {
+    const iso = propriete.dateCreation ?? propriete.createdAt
+    if (!iso) return false
+    const ageMs = Date.now() - new Date(iso).getTime()
+    return ageMs >= 0 && ageMs < 7 * 24 * 60 * 60 * 1000
+  })()
   const isFunded = pourcentage >= 100
   const TypeIcon = propriete.typeBien ? TYPE_ICONS[propriete.typeBien] : null
   const typeLabel = propriete.typeBien ? TYPE_LABELS[propriete.typeBien] : null
@@ -114,8 +121,13 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
           )}
         </div>
 
-        {/* Badges top-right : type + tendance */}
+        {/* Badges top-right : nouveau + type + tendance */}
         <div className="absolute top-3 right-3 flex flex-col gap-2 items-end">
+          {isNew && (
+            <span className="inline-flex items-center gap-1 bg-terra text-white text-[10px] font-bold font-body rounded-full px-2.5 py-0.5 shadow-card uppercase tracking-wide animate-pulse">
+              ★ Nouveau
+            </span>
+          )}
           {typeLabel && TypeIcon && (
             <span className="inline-flex items-center gap-1 bg-white/95 backdrop-blur-sm text-earth text-[10px] font-semibold font-body rounded-full px-2.5 py-1 shadow-card">
               <TypeIcon className="w-3 h-3" strokeWidth={2} />

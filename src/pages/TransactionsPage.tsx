@@ -139,7 +139,7 @@ function TransactionsTab() {
     },
   ]
 
-  if (isLoading) return <Skeleton className="h-64 rounded-xl bg-sand-300" />
+  if (isLoading) return <Skeleton className="h-64 rounded-xl" />
 
   return (
     <DataTable
@@ -207,7 +207,7 @@ function PaiementsTab() {
     },
   ]
 
-  if (isLoading) return <Skeleton className="h-64 rounded-xl bg-sand-300" />
+  if (isLoading) return <Skeleton className="h-64 rounded-xl" />
 
   return (
     <DataTable

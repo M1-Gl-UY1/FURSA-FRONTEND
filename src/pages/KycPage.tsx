@@ -57,8 +57,8 @@ export function KycPage() {
   if (isLoading) {
     return (
       <div className="max-w-3xl mx-auto">
-        <Skeleton className="h-12 w-full mb-8 bg-sand-300" />
-        <Skeleton className="h-96 w-full rounded-xl bg-sand-300" />
+        <Skeleton className="h-12 w-full mb-8" />
+        <Skeleton className="h-96 w-full rounded-xl" />
       </div>
     )
   }

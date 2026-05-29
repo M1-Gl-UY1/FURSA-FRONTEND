@@ -85,7 +85,7 @@ export function AdminKycPage() {
         ))}
       </div>
 
-      {isLoading && <Skeleton className="h-64 w-full bg-sand-300" />}
+      {isLoading && <Skeleton className="h-64 w-full" />}
 
       {list && list.length === 0 && (
         <EmptyState
@@ -165,7 +165,7 @@ function AdminKycDetail({ id, onBack }: { id: number; onBack: () => void }) {
   const [motif, setMotif] = useState('')
 
   if (isLoading || !kyc) {
-    return <Skeleton className="h-96 w-full bg-sand-300" />
+    return <Skeleton className="h-96 w-full" />
   }
 
   const canReview = kyc.statut === 'PENDING' || kyc.statut === 'IN_REVIEW'

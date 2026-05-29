@@ -345,6 +345,10 @@ export function ProposerBienPage() {
       </div>
 
       <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8">
+        {/* Wrapper avec key={step} : remount a chaque changement d'etape
+            -> l'animation fade-up se relance pour donner un effet de
+            transition douce (Polish UX). */}
+        <div key={step} className="animate-fade-up">
         {step === 0 && (
           <Step0Localisation
             form={form}
@@ -374,6 +378,7 @@ export function ProposerBienPage() {
             onEditStep={(n) => setStep(n)}
           />
         )}
+        </div>
 
         {/* Barre de progression d'upload (visible pendant l'envoi) */}
         {soumettre.isPending && (
@@ -498,7 +503,7 @@ function Step0Localisation({
                 strokeWidth={1.75}
               />
               {paysLoading ? (
-                <Skeleton className="h-11 rounded-md bg-sand-300" />
+                <Skeleton className="h-11 rounded-md" />
               ) : (
                 <select
                   id="pays"

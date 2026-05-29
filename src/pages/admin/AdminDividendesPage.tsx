@@ -193,7 +193,7 @@ export function AdminDividendesPage() {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {isLoading ? (
           Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-xl bg-sand-300" />
+            <Skeleton key={i} className="h-32 rounded-xl " />
           ))
         ) : (
           <>
@@ -229,7 +229,7 @@ export function AdminDividendesPage() {
       </section>
 
       {isLoading ? (
-        <Skeleton className="h-64 rounded-xl bg-sand-300" />
+        <Skeleton className="h-64 rounded-xl" />
       ) : (
         <DataTable
           data={dividendes}

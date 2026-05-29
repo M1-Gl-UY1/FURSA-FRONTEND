@@ -64,7 +64,7 @@ export function NotificationsPage() {
         {isLoading && (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-20 rounded-xl bg-sand-300" />
+              <Skeleton key={i} className="h-20 rounded-xl " />
             ))}
           </div>
         )}
