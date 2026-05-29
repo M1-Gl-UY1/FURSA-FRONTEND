@@ -49,6 +49,8 @@ export type SoumissionPayload = {
   video?: File | null
   /** Documents legaux (PDFs). Etape de certification post-creation. */
   documents?: File[]
+  /** Callback de progression d'upload (0-100). Pour la barre de chargement. */
+  onProgress?: (percent: number) => void
 }
 
 export function useSoumettreBien() {
@@ -87,7 +89,15 @@ export function useSoumettreBien() {
       const { data } = await api.post<ProprieteResponse>(
         '/api/proprietes/submissions',
         formData,
-        { headers: { 'Content-Type': undefined as unknown as string } }
+        {
+          headers: { 'Content-Type': undefined as unknown as string },
+          // Barre de progression d'upload (la video peut peser 100 MB).
+          onUploadProgress: (evt) => {
+            if (vars.onProgress && evt.total) {
+              vars.onProgress(Math.round((evt.loaded / evt.total) * 100))
+            }
+          },
+        }
       )
       return data
     },

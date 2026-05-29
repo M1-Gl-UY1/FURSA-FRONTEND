@@ -154,10 +154,31 @@ const EQUIPEMENTS: { key: keyof FormState; label: string }[] = [
   { key: 'hasVueMer', label: 'Vue mer' },
 ]
 
+// Persistance : on sauvegarde les champs texte/nombre/bool dans localStorage
+// pour ne pas perdre la progression au refresh. Les File (photos/video/documents)
+// ne sont PAS serialisables et devront etre re-selectionnes apres un refresh.
+const DRAFT_KEY = 'fursa.proposer-bien.draft'
+
+type DraftState = Omit<FormState, 'photos' | 'video' | 'documents'>
+
+function loadDraft(): Partial<DraftState> | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY)
+    return raw ? (JSON.parse(raw) as Partial<DraftState>) : null
+  } catch {
+    return null
+  }
+}
+
 export function ProposerBienPage() {
   const navigate = useNavigate()
   const [step, setStep] = useState<number>(0)
-  const [form, setForm] = useState<FormState>(INITIAL)
+  const [form, setForm] = useState<FormState>(() => {
+    const draft = loadDraft()
+    return draft ? { ...INITIAL, ...draft, photos: [], video: null, documents: [] } : INITIAL
+  })
+  const [uploadProgress, setUploadProgress] = useState<number>(0)
   const soumettre = useSoumettreBien()
 
   const { data: paysList, isLoading: paysLoading } = usePays()
@@ -171,6 +192,18 @@ export function ProposerBienPage() {
       setForm((s) => ({ ...s, deviseLocale: found.devise }))
     }
   }, [form.pays, paysList, form.deviseLocale])
+
+  // Persistance du brouillon a chaque modif (hors fichiers, non serialisables).
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const { photos: _p, video: _v, documents: _d, ...serializable } = form
+    void _p; void _v; void _d
+    try {
+      window.localStorage.setItem(DRAFT_KEY, JSON.stringify(serializable))
+    } catch {
+      // quota depasse ou indispo : on ignore silencieusement
+    }
+  }, [form])
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((s) => ({ ...s, [key]: value }))
@@ -254,13 +287,21 @@ export function ProposerBienPage() {
         photos: form.photos,
         video: form.video,
         documents: form.documents,
+        onProgress: (pct) => setUploadProgress(pct),
       },
       {
         onSuccess: () => {
+          // Brouillon envoye avec succes : on nettoie le localStorage.
+          try {
+            window.localStorage.removeItem(DRAFT_KEY)
+          } catch {
+            // ignore
+          }
           toast.success('Bien soumis pour validation. Un admin vous contactera.')
           navigate('/mes-proprietes')
         },
         onError: (err) => {
+          setUploadProgress(0)
           toast.error(extractApiError(err, 'Soumission impossible.'))
         },
       }
@@ -319,6 +360,32 @@ export function ProposerBienPage() {
           />
         )}
 
+        {/* Barre de progression d'upload (visible pendant l'envoi) */}
+        {soumettre.isPending && (
+          <div className="mt-6">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-body text-sm text-earth font-medium inline-flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-terra" strokeWidth={2} />
+                {uploadProgress < 100
+                  ? 'Envoi des données et médias en cours…'
+                  : 'Finalisation côté serveur…'}
+              </p>
+              <span className="font-mono text-sm font-bold text-terra tabular-nums">
+                {uploadProgress}%
+              </span>
+            </div>
+            <div className="h-2 w-full rounded-full bg-sand-200 overflow-hidden">
+              <div
+                className="h-full bg-terra transition-[width] duration-200 ease-out"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+            <p className="mt-2 font-body text-xs text-earth-500">
+              Ne fermez pas cette page. La vidéo peut prendre un moment selon votre connexion.
+            </p>
+          </div>
+        )}
+
         {/* Navigation */}
         <div className="mt-8 flex flex-col-reverse sm:flex-row gap-3">
           {step > 0 && (
@@ -353,7 +420,7 @@ export function ProposerBienPage() {
               {soumettre.isPending ? (
                 <>
                   <Loader2 className="animate-spin" strokeWidth={2} />
-                  Envoi...
+                  {uploadProgress < 100 ? `Envoi… ${uploadProgress}%` : 'Finalisation…'}
                 </>
               ) : (
                 <>

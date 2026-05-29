@@ -23,6 +23,12 @@ export function extractApiError(error: unknown, fallback = 'Une erreur est surve
     return data?.message ?? 'Identifiants invalides.'
   }
 
+  // 413 : fichier(s) trop volumineux — message explicite et actionnable.
+  if (status === 413) {
+    return data?.message
+      ?? 'Un ou plusieurs fichiers sont trop volumineux. La vidéo doit faire moins de 100 Mo et chaque photo moins de 10 Mo.'
+  }
+
   if (data?.message) {
     return data.message
   }
