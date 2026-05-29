@@ -4,28 +4,37 @@ import {
   ArrowUpRight,
   ArrowUpFromLine,
   ArrowDownToLine,
+  Building2,
+  CheckCircle2,
   Clock,
   Coins,
-  Construction,
+  CreditCard,
   Filter,
   Info,
+  Loader2,
   PlusCircle,
+  Smartphone,
   TrendingDown,
   TrendingUp,
   Wallet as WalletIcon,
   X,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { toast } from 'sonner'
 
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { extractApiError } from '@/lib/api/errors'
 import {
   useMyWallet,
   useMyWalletStats,
   useMyWalletTransactions,
+  useRechargerWallet,
   WALLET_TX_DISPLAY,
   type WalletTxFilter,
 } from '@/lib/api/wallet'
@@ -334,29 +343,134 @@ function HistoriqueTab({
 }
 
 // =============================================================================
-// Tab : Recharger (placeholder — sera plein avec PSP en Phase 10c)
+// Tab : Recharger (mode demo — credite directement, sans PSP reel)
 // =============================================================================
 
+const RECHARGE_PRESETS = [10, 50, 100, 500]
+const RECHARGE_METHODES = [
+  { value: 'MOBILE_MONEY', label: 'Mobile Money', icon: Smartphone },
+  { value: 'VIREMENT', label: 'Virement', icon: Building2 },
+  { value: 'CARTE', label: 'Carte', icon: CreditCard },
+] as const
+
 function RechargerTab() {
+  const recharger = useRechargerWallet()
+  const [montant, setMontant] = useState('')
+  const [methode, setMethode] =
+    useState<(typeof RECHARGE_METHODES)[number]['value']>('MOBILE_MONEY')
+
+  const montantNum = parseFloat(montant)
+  const valid = !Number.isNaN(montantNum) && montantNum >= 1 && montantNum <= 10000
+
+  function submit() {
+    if (!valid) return
+    recharger.mutate(
+      { montant: montantNum, methode },
+      {
+        onSuccess: () => {
+          toast.success(`Wallet rechargé de ${montantNum.toLocaleString('fr-FR')} (démo).`)
+          setMontant('')
+        },
+        onError: (e) => toast.error(extractApiError(e, 'Recharge impossible.')),
+      }
+    )
+  }
+
   return (
-    <section className="rounded-xl border border-dashed border-earth/15 bg-sand-50 p-8 sm:p-12 text-center">
-      <div className="w-14 h-14 rounded-full bg-ocean/10 flex items-center justify-center mx-auto mb-4">
-        <Construction className="w-6 h-6 text-ocean" strokeWidth={1.75} />
-      </div>
-      <h2 className="font-display font-bold text-earth text-xl mb-2">
-        Recharge wallet — bientôt disponible
-      </h2>
-      <p className="font-body text-earth-600 text-sm max-w-md mx-auto mb-6">
-        La recharge via Mobile Money, virement et crypto sera disponible dans la prochaine
-        mise à jour. En attendant, votre solde sera crédité automatiquement lors de la
-        distribution des dividendes des propriétés dans lesquelles vous détenez des parts.
+    <section className="rounded-xl border border-earth/10 bg-white p-6 sm:p-8 max-w-lg">
+      <h2 className="font-display font-bold text-earth text-xl mb-1">Recharger mon wallet</h2>
+      <p className="font-body text-earth-600 text-sm mb-5">
+        Créditez votre solde pour acheter des parts. Choisissez un montant et une méthode.
       </p>
-      <div className="inline-flex flex-col sm:flex-row gap-2 items-start sm:items-center bg-white border border-earth/10 rounded-lg px-4 py-3 text-left">
-        <Info className="w-4 h-4 text-ocean flex-shrink-0" strokeWidth={1.75} />
-        <p className="font-body text-earth-700 text-xs">
-          <strong>Besoin de tester votre wallet ?</strong> Contactez l'équipe FURSA pour
-          un crédit de test.
+
+      {/* Bandeau mode demo */}
+      <div className="flex items-start gap-2 bg-ocean/8 border border-ocean/20 rounded-lg px-4 py-3 mb-6">
+        <Info className="w-4 h-4 text-ocean flex-shrink-0 mt-0.5" strokeWidth={1.75} />
+        <p className="font-body text-earth-700 text-xs leading-relaxed">
+          <strong>Mode démo :</strong> aucun paiement réel n'est encaissé. Le solde est crédité
+          immédiatement pour tester la plateforme. L'intégration Mobile Money / virement arrive bientôt.
         </p>
+      </div>
+
+      <div className="space-y-5">
+        {/* Méthode */}
+        <div className="space-y-2">
+          <Label>Méthode</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {RECHARGE_METHODES.map((m) => {
+              const Icon = m.icon
+              const active = methode === m.value
+              return (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setMethode(m.value)}
+                  className={cn(
+                    'flex flex-col items-center justify-center gap-1.5 p-3 rounded-lg border-[1.5px] font-body text-xs font-semibold transition-colors',
+                    active
+                      ? 'border-terra bg-terra/10 text-terra'
+                      : 'border-sand-400 text-earth-600 hover:border-terra/40'
+                  )}
+                >
+                  <Icon className="w-5 h-5" strokeWidth={1.75} />
+                  {m.label}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Montant */}
+        <div className="space-y-2">
+          <Label htmlFor="montant-recharge">Montant (USD)</Label>
+          <Input
+            id="montant-recharge"
+            type="number"
+            min={1}
+            max={10000}
+            step={1}
+            value={montant}
+            onChange={(e) => setMontant(e.target.value)}
+            placeholder="Ex: 100"
+            className="font-mono font-semibold"
+          />
+          <div className="grid grid-cols-4 gap-2">
+            {RECHARGE_PRESETS.map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setMontant(String(p))}
+                className={cn(
+                  'h-9 rounded-md border-[1.5px] font-body text-xs font-semibold transition-colors',
+                  montant === String(p)
+                    ? 'border-terra bg-terra/10 text-terra'
+                    : 'border-sand-400 text-earth-600 hover:border-terra/40'
+                )}
+              >
+                {p.toLocaleString('fr-FR')}
+              </button>
+            ))}
+          </div>
+          {montant !== '' && !valid && (
+            <p className="font-body text-xs text-error">
+              Le montant doit être compris entre 1 et 10 000.
+            </p>
+          )}
+        </div>
+
+        <Button size="lg" className="w-full" disabled={!valid || recharger.isPending} onClick={submit}>
+          {recharger.isPending ? (
+            <>
+              <Loader2 className="animate-spin" strokeWidth={2} />
+              Recharge en cours...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 strokeWidth={2} />
+              Recharger {valid ? `${montantNum.toLocaleString('fr-FR')} USD` : ''}
+            </>
+          )}
+        </Button>
       </div>
     </section>
   )

@@ -33,6 +33,34 @@ export function useMyWalletStats() {
   })
 }
 
+export type RechargePayload = {
+  montant: number
+  /** Methode affichee (mock) : MOBILE_MONEY | VIREMENT | CARTE. */
+  methode?: string
+}
+
+/**
+ * Recharge wallet (mode demo). Aucun paiement reel : le backend credite le solde
+ * directement (type TOPUP). A remplacer par un vrai PSP avant prod.
+ */
+export function useRechargerWallet() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: RechargePayload) => {
+      const { data } = await api.post<WalletTransactionResponse>(
+        '/api/wallet/me/recharger',
+        payload
+      )
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['wallet', 'me'] })
+      qc.invalidateQueries({ queryKey: ['wallet', 'me', 'stats'] })
+      qc.invalidateQueries({ queryKey: ['wallet', 'me', 'transactions'] })
+    },
+  })
+}
+
 export type WalletTxFilter = {
   type?: TypeWalletTransaction | null
   from?: string | null
