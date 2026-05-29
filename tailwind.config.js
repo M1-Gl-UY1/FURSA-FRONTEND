@@ -1,5 +1,10 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  // Fix 25/05/2026 : FURSA est un theme clair only. On force darkMode 'class'
+  // pour que les variantes dark: ne s'activent JAMAIS automatiquement via la
+  // preference systeme (prefers-color-scheme). Sinon les modales/composants
+  // shadcn avec dark:bg-slate-950 deviennent illisibles sur un OS en dark.
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
