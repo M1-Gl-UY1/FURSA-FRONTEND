@@ -31,6 +31,7 @@ import {
   useRefuserCertification,
 } from '@/lib/api/certification'
 import { extractApiError } from '@/lib/api/errors'
+import { fireConfetti } from '@/lib/confetti'
 import type { DocumentResponse, ProprieteResponse } from '@/lib/api/types'
 import { resolveFileUrl } from '@/lib/utils'
 
@@ -60,8 +61,10 @@ export function AdminCertificationsPage() {
 
   function handleApprouver(p: ProprieteResponse) {
     approuver.mutate(p.id, {
-      onSuccess: () =>
-        toast.success(`"${p.nom}" certifié. Les investisseurs peuvent maintenant acheter.`),
+      onSuccess: () => {
+        fireConfetti()
+        toast.success(`"${p.nom}" certifié. Les investisseurs peuvent maintenant acheter.`)
+      },
       onError: (e) => toast.error(extractApiError(e, 'Approbation impossible.')),
     })
   }

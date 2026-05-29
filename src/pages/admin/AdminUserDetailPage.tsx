@@ -16,6 +16,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { toast } from 'sonner'
 
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
@@ -120,6 +121,15 @@ export function AdminUserDetailPage() {
         <ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
         Retour à la liste
       </Link>
+
+      <Breadcrumbs
+        items={[
+          { label: 'Admin', to: '/admin' },
+          { label: 'Utilisateurs', to: '/admin/utilisateurs' },
+          { label: `${user.prenom ?? ''} ${user.nom ?? ''}`.trim() || user.email || `User #${user.id}` },
+        ]}
+        className="mt-1 mb-0"
+      />
 
       {/* Header user */}
       <header className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">

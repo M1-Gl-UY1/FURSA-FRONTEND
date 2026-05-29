@@ -36,6 +36,7 @@ import type {
 } from '@/lib/api/types'
 import { extractApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/AuthContext'
+import { fireConfetti } from '@/lib/confetti'
 import { cn } from '@/lib/utils'
 
 const STEPS = ['Sélection', 'Confirmation', 'Succès']
@@ -170,6 +171,7 @@ export function AcheterPartsPage() {
         onSuccess: (res) => {
           setResult(res)
           setStep(2)
+          fireConfetti({ count: 80 })
           toast.success('Achat confirmé !')
         },
         onError: (err) => {

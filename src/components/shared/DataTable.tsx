@@ -83,10 +83,10 @@ export function DataTable<T>({
 
   return (
     <div>
-      {/* Vue desktop : tableau */}
+      {/* Vue desktop : tableau (header sticky pour long scroll) */}
       <div className="hidden md:block bg-sand-100 rounded-xl border border-earth/5 overflow-hidden">
         <table className="w-full">
-          <thead className="bg-sand-200 border-b border-earth/8">
+          <thead className="bg-sand-200 border-b border-earth/8 sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
             <tr>
               {columns.map((col) => {
                 const isSorted = sort?.key === col.key

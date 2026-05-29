@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   useApprouverPropriete,
@@ -36,6 +37,7 @@ import {
   useTokeniserPropriete,
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
+import { fireConfetti } from '@/lib/confetti'
 import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
 import { resolveFileUrl } from '@/lib/utils'
 
@@ -97,7 +99,10 @@ export function AdminProprieteDetailPage() {
   }
   function publish() {
     publier.mutate(p!.id, {
-      onSuccess: () => toast.success('Propriété publiée. Visible sur le marché.'),
+      onSuccess: () => {
+        fireConfetti()
+        toast.success('Propriété publiée. Visible sur le marché.')
+      },
       onError: (e) => toast.error(extractApiError(e, 'Publication impossible.')),
     })
   }
@@ -137,6 +142,15 @@ export function AdminProprieteDetailPage() {
         <ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
         Retour
       </Link>
+
+      <Breadcrumbs
+        items={[
+          { label: 'Admin', to: '/admin' },
+          { label: 'Propriétés', to: '/admin/proprietes' },
+          { label: p.nom },
+        ]}
+        className="mt-2 mb-0"
+      />
 
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="min-w-0">
@@ -189,7 +203,10 @@ export function AdminProprieteDetailPage() {
               variant="outline"
               onClick={() =>
                 tokeniser.mutate(p.id, {
-                  onSuccess: () => toast.success('Propriété tokenisée sur Sepolia.'),
+                  onSuccess: () => {
+                    fireConfetti({ count: 90, durationMs: 2800 })
+                    toast.success('Propriété tokenisée sur Sepolia.')
+                  },
                   onError: (e) =>
                     toast.error(extractApiError(e, 'Tokenisation impossible.')),
                 })
