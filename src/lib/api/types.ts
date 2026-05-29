@@ -254,7 +254,7 @@ export type CategorieDocument =
   | 'RELEVE_AIRBNB'
   | 'AUTRE'
 
-export type SourceRevenu = 'BAIL' | 'AIRBNB' | 'AUTRE'
+export type SourceRevenu = 'PAJE_SQUARE' | 'FUMBA_TOWN' | 'AUTRE'
 
 export type SectionPhoto =
   | 'FACADE'

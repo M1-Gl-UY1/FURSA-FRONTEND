@@ -57,10 +57,10 @@ const STEPS = [
   'Récap',
 ]
 
-const MAX_VIDEO_SIZE = 200 * 1024 * 1024 // 200 Mo
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024 // 100 Mo
 const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_PHOTO_SIZE = 20 * 1024 * 1024 // 20 Mo par photo
+const MAX_PHOTO_SIZE = 4 * 1024 * 1024 // 4 Mo par photo (limite imposee Hugh)
 
 type FormState = {
   // Etape 1
@@ -244,6 +244,14 @@ export function ProposerBienPage() {
     return cible / form.nombreTotalPart
   }, [form.prixVenteTotal, form.fractionVenduePct, form.nombreTotalPart])
 
+  // Liste unique des devises disponibles, derivee des pays FURSA + USD/EUR
+  // toujours acceptes (devise de base de la plateforme + devise de l'UE).
+  const devises = useMemo(() => {
+    const set = new Set<string>(['USD', 'EUR'])
+    ;(paysList ?? []).forEach((p) => p.devise && set.add(p.devise))
+    return Array.from(set).sort()
+  }, [paysList])
+
   function submit() {
     const villeFinal = form.villeManuelle.trim() || form.ville
 
@@ -348,7 +356,14 @@ export function ProposerBienPage() {
         )}
         {step === 1 && <Step1Type form={form} update={update} />}
         {step === 2 && <Step2Statut form={form} update={update} />}
-        {step === 3 && <Step3Finance form={form} update={update} prixUnitaire={prixUnitaire} />}
+        {step === 3 && (
+          <Step3Finance
+            form={form}
+            update={update}
+            prixUnitaire={prixUnitaire}
+            devises={devises}
+          />
+        )}
         {step === 4 && <Step4Photos form={form} update={update} />}
         {step === 5 && <Step5Video form={form} update={update} />}
         {step === 6 && (
@@ -799,9 +814,9 @@ function Step2Statut({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Source <span className="text-error">*</span></Label>
+                <Label>Partenaire / opérateur <span className="text-error">*</span></Label>
                 <div className="flex gap-1.5">
-                  {(['BAIL', 'AIRBNB', 'AUTRE'] as const).map((src) => (
+                  {(['PAJE_SQUARE', 'FUMBA_TOWN', 'AUTRE'] as const).map((src) => (
                     <button
                       key={src}
                       type="button"
@@ -813,7 +828,7 @@ function Step2Statut({
                           : 'border-sand-400 text-earth-600 hover:border-ocean/40'
                       )}
                     >
-                      {src === 'BAIL' ? 'Bail' : src === 'AIRBNB' ? 'Airbnb' : 'Autre'}
+                      {src === 'PAJE_SQUARE' ? 'Paje Square' : src === 'FUMBA_TOWN' ? 'Fumba Town' : 'Autre'}
                     </button>
                   ))}
                 </div>
@@ -839,10 +854,12 @@ function Step3Finance({
   form,
   update,
   prixUnitaire,
+  devises,
 }: {
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
   prixUnitaire: number
+  devises: string[]
 }) {
   return (
     <>
@@ -869,13 +886,20 @@ function Step3Finance({
           </div>
           <div className="space-y-2">
             <Label htmlFor="devise">Devise <span className="text-error">*</span></Label>
-            <Input
+            <select
               id="devise"
+              aria-label="Devise"
               value={form.deviseLocale}
-              onChange={(e) => update('deviseLocale', e.target.value.toUpperCase().slice(0, 3))}
-              maxLength={3}
-              className="font-mono uppercase text-center"
-            />
+              onChange={(e) => update('deviseLocale', e.target.value)}
+              className="h-11 w-full px-3 rounded-md border-[1.5px] border-sand-400 bg-white text-sm font-mono font-semibold text-earth focus:outline-none focus:border-ocean focus:ring-2 focus:ring-ocean/15"
+            >
+              <option value="">—</option>
+              {devises.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -1013,7 +1037,10 @@ function Step4Photos({
         continue
       }
       if (f.size > MAX_PHOTO_SIZE) {
-        toast.error(`Photo trop lourde : ${f.name} (max 20 Mo)`)
+        const sizeMo = (f.size / (1024 * 1024)).toFixed(1)
+        toast.error(
+          `Photo "${f.name}" rejetée : ${sizeMo} Mo. Taille maximum autorisée : 4 Mo. Compressez l'image (TinyPNG, Squoosh...) puis recommencez.`
+        )
         continue
       }
       accepted.push({ file: f, section })
@@ -1028,6 +1055,12 @@ function Step4Photos({
     )
   }
 
+  // Aide visuelle en temps reel : count + poids total + check obligatoires.
+  const totalBytes = form.photos.reduce((acc, p) => acc + (p.file?.size ?? 0), 0)
+  const totalMo = totalBytes / (1024 * 1024)
+  const hasFacade = form.photos.some((p) => p.section === 'FACADE')
+  const hasSalon = form.photos.some((p) => p.section === 'SALON')
+
   return (
     <>
       <h2 className="font-display font-bold text-earth text-xl mb-1 flex items-center gap-2">
@@ -1037,9 +1070,38 @@ function Step4Photos({
       <p className="font-body text-earth-600 text-sm mb-1">
         Une photo par section. Façade et salon sont obligatoires.
       </p>
-      <p className="font-body text-earth-500 text-xs mb-6">
-        Formats acceptés : JPG, PNG, WebP · <strong>20 Mo max</strong> par photo.
+      <p className="font-body text-earth-500 text-xs mb-4">
+        Formats acceptés : JPG, PNG, WebP · <strong>4 Mo max</strong> par photo.
       </p>
+
+      {/* Mini-dashboard temps reel : count + taille + obligatoires */}
+      {form.photos.length > 0 && (
+        <div className="mb-6 p-3 rounded-lg bg-sand-50 border border-earth/8 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-body">
+          <span className="inline-flex items-center gap-1.5 text-earth">
+            <strong className="font-mono text-base text-earth">{form.photos.length}</strong>
+            photo{form.photos.length > 1 ? 's' : ''} ajoutée{form.photos.length > 1 ? 's' : ''}
+          </span>
+          <span className="text-earth-500">
+            Poids total : <strong className="font-mono text-earth">{totalMo.toFixed(1)} Mo</strong>
+          </span>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 font-semibold',
+              hasFacade ? 'text-success' : 'text-error'
+            )}
+          >
+            {hasFacade ? '✓' : '✗'} Façade
+          </span>
+          <span
+            className={cn(
+              'inline-flex items-center gap-1 font-semibold',
+              hasSalon ? 'text-success' : 'text-error'
+            )}
+          >
+            {hasSalon ? '✓' : '✗'} Salon
+          </span>
+        </div>
+      )}
 
       <div className="space-y-4">
         {sectionsRequises.map(({ section, label, required }) => {
@@ -1135,7 +1197,10 @@ function Step5Video({
       return
     }
     if (file.size > MAX_VIDEO_SIZE) {
-      toast.error('Vidéo trop lourde (max 200 Mo).')
+      const sizeMo = (file.size / (1024 * 1024)).toFixed(1)
+      toast.error(
+        `Vidéo trop lourde : ${sizeMo} Mo. Taille maximum autorisée : 100 Mo. Compressez la vidéo (HandBrake, format MP4 720p) avant de réessayer.`
+      )
       return
     }
     update('video', file)
@@ -1166,7 +1231,7 @@ function Step5Video({
               Cliquez pour choisir votre vidéo
             </p>
             <p className="font-body text-earth-500 text-xs mt-1">
-              MP4, MOV ou WebM · <strong>200 Mo max</strong> · 1-3 min recommandé
+              MP4, MOV ou WebM · <strong>100 Mo max</strong> · 1-3 min recommandé
             </p>
           </div>
           <input

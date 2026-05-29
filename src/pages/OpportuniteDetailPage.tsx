@@ -69,8 +69,8 @@ const TYPE_BIEN_LABELS: Record<TypeBien, string> = {
 }
 
 const SOURCE_REVENU_LABELS: Record<string, string> = {
-  BAIL: 'Bail long terme',
-  AIRBNB: 'Location courte durée (Airbnb)',
+  PAJE_SQUARE: 'Paje Square',
+  FUMBA_TOWN: 'Fumba Town',
   AUTRE: 'Autre',
 }
 
