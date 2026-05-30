@@ -23,6 +23,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Skeleton } from '@/components/ui/skeleton'
+import { resolveFileUrl } from '@/lib/utils'
 import { useMesProprietesProposees } from '@/lib/api/submissions'
 import { useStatutDeclaration } from '@/lib/api/revenus'
 import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
@@ -244,7 +245,11 @@ function ProprieteCard({
   propriete: ProprieteResponse
   onShowRefus: () => void
 }) {
-  const imageUrl = p.photos?.[0] ?? PLACEHOLDER_IMAGE
+  // Fix : passer par resolveFileUrl pour que l'URL relative renvoyee par le
+  // backend (ex "/api/fichiers/abc.jpg") soit prefixee par VITE_API_BASE en prod.
+  // Sans ca, le navigateur tape le frontend qui repond 404.
+  const firstPhoto = p.photos?.[0]
+  const imageUrl = firstPhoto ? resolveFileUrl(firstPhoto) : PLACEHOLDER_IMAGE
 
   const total = p.nombreTotalPart ?? p.partsTotales ?? 0
   const dispo = p.partsDisponibles ?? 0

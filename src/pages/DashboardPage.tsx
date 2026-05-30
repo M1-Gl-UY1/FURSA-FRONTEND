@@ -21,6 +21,7 @@ import { Money } from '@/components/shared/Money'
 import { PropertyCatalogCard } from '@/components/properties/PropertyCatalogCard'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import { resolveFileUrl } from '@/lib/utils'
 import { useDashboard } from '@/lib/api/dashboard'
 import { useMesNotifications } from '@/lib/api/notifications'
 import { useMesPossessions } from '@/lib/api/portefeuille'
@@ -299,7 +300,8 @@ export function DashboardPage() {
             <ul className="space-y-3">
               {topPossessions.map((p) => {
                 const prop = p.proprieteId ? proprieteById.get(p.proprieteId) : undefined
-                const image = prop?.photos?.[0] ?? PLACEHOLDER_IMAGE
+                const firstPhoto = prop?.photos?.[0]
+                const image = firstPhoto ? resolveFileUrl(firstPhoto) : PLACEHOLDER_IMAGE
                 const partsTotales =
                   prop?.nombreTotalPart ?? prop?.partsTotales ?? 0
                 const pctOwned =

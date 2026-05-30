@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 
 import { Money } from '@/components/shared/Money'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -134,8 +135,9 @@ export function AnnonceDetailPage() {
                 <UserIcon className="w-5 h-5 text-ocean" strokeWidth={1.75} />
               </div>
               <div>
-                <p className="font-body font-semibold text-earth text-sm">
-                  {annonce.vendeurNom ?? `Investisseur #${annonce.vendeurId}`}
+                <p className="font-body font-semibold text-earth text-sm flex items-center gap-1.5">
+                  <span>{annonce.vendeurNom ?? `Investisseur #${annonce.vendeurId}`}</span>
+                  <VerifiedBadge verified={annonce.vendeurIsVerified} size="sm" />
                 </p>
                 <p className="font-body text-earth-500 text-xs">Vendeur</p>
               </div>

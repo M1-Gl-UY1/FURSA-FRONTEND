@@ -33,6 +33,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useAuth } from '@/lib/auth/AuthContext'
 import { usePays, useVilles } from '@/lib/api/geo'
 import {
   useSoumettreBien,
@@ -173,6 +174,7 @@ function loadDraft(): Partial<DraftState> | null {
 
 export function ProposerBienPage() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [step, setStep] = useState<number>(0)
   const [form, setForm] = useState<FormState>(() => {
     const draft = loadDraft()
@@ -313,6 +315,43 @@ export function ProposerBienPage() {
           toast.error(extractApiError(err, 'Soumission impossible.'))
         },
       }
+    )
+  }
+
+  // GUARD KYC : seuls les profils verifies peuvent soumettre un bien.
+  // Symetrique de AcheterPartsPage. Le backend renforce dans ProprieteService.soumettre.
+  if (user && user.isVerified !== true) {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <Link
+          to="/mes-proprietes"
+          className="inline-flex items-center gap-1.5 text-earth-600 hover:text-earth text-sm font-body mb-6 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.75} />
+          Retour
+        </Link>
+        <div className="bg-sand-100 border border-warning/30 rounded-2xl p-8 sm:p-10 text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-warning/15">
+            <AlertCircle className="w-7 h-7 text-warning" strokeWidth={1.75} />
+          </div>
+          <h1 className="font-display font-bold text-earth text-2xl">
+            Verification d'identite requise
+          </h1>
+          <p className="font-body text-earth-600 text-sm max-w-md mx-auto">
+            Pour proposer un bien immobilier sur FURSA, vous devez d'abord verifier votre identite.
+            Cette etape est obligatoire pour respecter la reglementation et proteger les investisseurs.
+            Comptez quelques minutes.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+            <Button asChild size="lg">
+              <Link to="/compte/kyc">Verifier mon profil</Link>
+            </Button>
+            <Button asChild variant="outline" size="lg">
+              <Link to="/dashboard">Plus tard</Link>
+            </Button>
+          </div>
+        </div>
+      </div>
     )
   }
 

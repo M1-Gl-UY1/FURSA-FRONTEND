@@ -27,6 +27,7 @@ import {
   Sparkles,
   CalendarClock,
   Clock,
+  UserRound,
   X,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -45,6 +46,7 @@ import {
   useMesInscriptions,
 } from '@/lib/api/liste-attente'
 import { StatusBadge } from '@/components/shared/StatusBadge'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -333,6 +335,26 @@ export function OpportuniteDetailPage() {
                     </p>
                   </div>
                 )}
+              </div>
+            </section>
+          )}
+
+          {/* Proposeur : nom anonymise + badge de verification KYC. */}
+          {propriete.proposeurNom && (
+            <section className="mb-6">
+              <div className="bg-sand-100 border border-earth/8 rounded-xl p-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-terra/10 flex items-center justify-center shrink-0">
+                  <UserRound className="w-5 h-5 text-terra" strokeWidth={1.75} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-body text-xs text-earth-500 uppercase tracking-wider">
+                    Proposé par
+                  </p>
+                  <p className="font-body font-semibold text-earth text-sm flex items-center gap-1.5">
+                    <span>{propriete.proposeurNom}</span>
+                    <VerifiedBadge verified={propriete.proposeurIsVerified} size="sm" />
+                  </p>
+                </div>
               </div>
             </section>
           )}

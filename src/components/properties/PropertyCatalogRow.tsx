@@ -14,6 +14,7 @@ import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
 import { calculatePartsVendues, calculatePourcentageVendu } from '@/lib/api/proprietes'
 import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
+import { resolveFileUrl } from '@/lib/utils'
 
 const PLACEHOLDER_IMAGE = '/images/villa-falaise.jpg'
 
@@ -31,7 +32,8 @@ type Props = { propriete: ProprieteResponse }
 
 /** Vue liste horizontale d'une propriete — alternative compact a PropertyCatalogCard. */
 export function PropertyCatalogRow({ propriete }: Props) {
-  const image = propriete.photos?.[0] ?? PLACEHOLDER_IMAGE
+  const firstPhoto = propriete.photos?.[0]
+  const image = firstPhoto ? resolveFileUrl(firstPhoto) : PLACEHOLDER_IMAGE
   const pourcentage = calculatePourcentageVendu(propriete)
   const partsVendues = calculatePartsVendues(propriete)
   const partsTotales = propriete.nombreTotalPart ?? propriete.partsTotales ?? 0

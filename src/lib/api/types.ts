@@ -121,6 +121,10 @@ export type ProprieteResponse = {
   createdAt?: string
   // Phase 7 — workflow soumission propriétaire
   proposeurId?: number | null
+  /** Prenom + initiale du nom du proposeur (ex "Marie D."). Anonymise pour RGPD. */
+  proposeurNom?: string | null
+  /** True si le proposeur a complete son KYC. */
+  proposeurIsVerified?: boolean | null
   motifRefus?: string | null
   soumiseLe?: string | null
   // P1 (Hugh 22/05/2026) — refonte fiche bien
@@ -532,6 +536,8 @@ export type AnnonceResponse = {
   id: number
   vendeurId: number
   vendeurNom: string
+  /** True si l'investisseur vendeur a complete son KYC. */
+  vendeurIsVerified?: boolean | null
   proprieteId: number
   proprieteNom: string
   /** Optionnel : alias frontend si fourni séparément, sinon on utilise un placeholder */
@@ -694,6 +700,8 @@ export type NotificationResponse = {
   date?: string
   dateCreation?: string
   metadata?: Record<string, unknown>
+  /** Lien cliquable interne (ex "/opportunites/12"). Null/absent = pas de navigation. */
+  lien?: string | null
 }
 
 // --- Wallet (Phase 10a) ---

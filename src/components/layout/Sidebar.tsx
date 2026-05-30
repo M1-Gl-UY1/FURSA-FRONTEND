@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { adminOrigin } from '@/lib/hosts'
 import { cn } from '@/lib/utils'
@@ -189,8 +190,9 @@ export function Sidebar({ hasProprietesProposees = false, onNavigate }: SidebarP
             </span>
           </div>
           <div className="min-w-0 flex-1">
-            <p className="font-body font-semibold text-earth text-sm truncate">
-              {user?.prenom} {user?.nom}
+            <p className="font-body font-semibold text-earth text-sm truncate flex items-center gap-1">
+              <span className="truncate">{user?.prenom} {user?.nom}</span>
+              <VerifiedBadge verified={user?.isVerified} size="xs" />
             </p>
             <p className="font-body text-earth-500 text-xs truncate">{user?.email}</p>
           </div>

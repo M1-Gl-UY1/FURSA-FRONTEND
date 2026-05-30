@@ -15,13 +15,14 @@ import type { LucideIcon } from 'lucide-react'
 
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
+import { VerifiedBadge } from '@/components/shared/VerifiedBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAnnonces } from '@/lib/api/annonces'
 import { useProprietes } from '@/lib/api/proprietes'
 import { useCountUp } from '@/lib/hooks/useCountUp'
 import type { AnnonceResponse, ProprieteResponse } from '@/lib/api/types'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 type SortOption = 'recent' | 'prix-asc' | 'prix-desc'
 
@@ -234,7 +235,8 @@ function AnnonceCard({
 }) {
   const total = annonce.nombreDePartsAVendre * annonce.prixUnitaireDemande
   const prixFursa = propriete?.prixUnitairePart ?? null
-  const image = annonce.proprieteImage ?? propriete?.photos?.[0] ?? '/images/villa-falaise.jpg'
+  const rawImage = annonce.proprieteImage ?? propriete?.photos?.[0]
+  const image = rawImage ? resolveFileUrl(rawImage) : '/images/villa-falaise.jpg'
   const localisation = propriete?.localisation
 
   // Ecart prix demande vs prix FURSA courant
@@ -287,6 +289,7 @@ function AnnonceCard({
           <span className="truncate">
             Vendu par {annonce.vendeurNom ?? `Investisseur #${annonce.vendeurId}`}
           </span>
+          <VerifiedBadge verified={annonce.vendeurIsVerified} size="xs" />
         </p>
 
         <div className="grid grid-cols-2 gap-2 pb-3 mb-3 border-b border-earth/8">

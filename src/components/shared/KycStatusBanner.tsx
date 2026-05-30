@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { useKycMe } from '@/lib/api/kyc'
+import { useAuth } from '@/lib/auth/AuthContext'
 import { cn } from '@/lib/utils'
 
 /**
@@ -17,6 +18,13 @@ import { cn } from '@/lib/utils'
  */
 export function KycStatusBanner({ className }: { className?: string }) {
   const { data, isLoading } = useKycMe()
+  const { user } = useAuth()
+
+  // Source de verite fonctionnelle : Investisseur.isVerified.
+  // Peut etre true sans que la derniere KycSubmission soit APPROVED
+  // (validation manuelle BDD, migration historique, etc.). On masque
+  // le bandeau dans ce cas pour eviter de paniquer un user verifie.
+  if (user?.isVerified === true) return null
 
   if (isLoading || !data) return null
   if (data.statut === 'APPROVED') return null
