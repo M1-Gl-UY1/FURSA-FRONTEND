@@ -7,6 +7,7 @@ import {
   MapPin,
   PlayCircle,
   Plus,
+  Trash2,
   TrendingUp,
 } from 'lucide-react'
 
@@ -25,6 +26,8 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { resolveFileUrl } from '@/lib/utils'
 import { useMesProprietesProposees } from '@/lib/api/submissions'
+import { useMesBrouillons, useSupprimerBrouillon } from '@/lib/api/brouillon'
+import { toast } from 'sonner'
 import { useStatutDeclaration } from '@/lib/api/revenus'
 import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 import { useCountUp } from '@/lib/hooks/useCountUp'
@@ -34,6 +37,14 @@ const PLACEHOLDER_IMAGE = '/images/villa-falaise.jpg'
 
 export function MesProprietesPage() {
   const { data: proprietes, isLoading } = useMesProprietesProposees()
+  const { data: brouillons } = useMesBrouillons()
+  const supprimerBrouillon = useSupprimerBrouillon()
+
+  // On exclut les brouillons de la grille principale (ils ont leur propre section).
+  const proprietesNonBrouillon = useMemo(
+    () => (proprietes ?? []).filter((p) => p.statut !== 'BROUILLON'),
+    [proprietes]
+  )
   const [refusInfo, setRefusInfo] = useState<ProprieteResponse | null>(null)
 
   const stats = useMemo(() => {
@@ -121,30 +132,94 @@ export function MesProprietesPage() {
             <Skeleton key={i} className="h-80 rounded-xl " />
           ))}
         </div>
-      ) : !proprietes || proprietes.length === 0 ? (
-        <EmptyState
-          icon={Building2}
-          title="Aucun bien proposé"
-          description="Soumettez votre premier bien immobilier à la communauté Fursa pour lever des fonds et garder une fraction."
-          action={
-            <Button asChild>
-              <Link to="/proposer-un-bien">
-                <Plus strokeWidth={2} />
-                Proposer un bien
-              </Link>
-            </Button>
-          }
-        />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
-          {proprietes.map((p) => (
-            <ProprieteCard
-              key={p.id}
-              propriete={p}
-              onShowRefus={() => setRefusInfo(p)}
-            />
-          ))}
-        </div>
+        <>
+        {/* Section Brouillons : biens en cours de soumission, non encore envoyes a l'admin */}
+        {brouillons && brouillons.length > 0 && (
+          <section className="bg-warning/5 border border-warning/20 rounded-xl p-5 sm:p-6">
+            <header className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h2 className="font-display font-semibold text-earth text-lg flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-warning text-white text-xs font-bold">
+                    {brouillons.length}
+                  </span>
+                  Brouillons à finir
+                </h2>
+                <p className="font-body text-earth-600 text-xs mt-0.5">
+                  Reprenez vos soumissions en cours. Vos données sont sauvegardées étape par étape.
+                </p>
+              </div>
+            </header>
+            <ul className="space-y-2.5">
+              {brouillons.map((b) => (
+                <li
+                  key={b.id}
+                  className="bg-white border border-warning/30 rounded-lg p-3 sm:p-4 flex items-center gap-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <p className="font-body font-semibold text-earth text-sm truncate">
+                      {b.nom && b.nom !== 'Brouillon' ? b.nom : 'Brouillon sans nom'}
+                    </p>
+                    <p className="font-body text-earth-500 text-xs">
+                      {b.ville && b.pays
+                        ? `${b.ville}, ${b.pays}`
+                        : 'Localisation non renseignée'}
+                      {b.soumiseLe && ` · démarré le ${new Date(b.soumiseLe).toLocaleDateString('fr-FR')}`}
+                    </p>
+                  </div>
+                  <Button asChild size="sm">
+                    <Link to={`/proposer-un-bien/${b.id}`}>
+                      Continuer
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={() => {
+                      if (confirm(`Supprimer définitivement ce brouillon ?`)) {
+                        supprimerBrouillon.mutate(b.id, {
+                          onSuccess: () => toast.success('Brouillon supprimé.'),
+                          onError: () => toast.error('Suppression impossible.'),
+                        })
+                      }
+                    }}
+                    className="text-earth-500 hover:text-error"
+                    aria-label="Supprimer le brouillon"
+                  >
+                    <Trash2 className="w-4 h-4" strokeWidth={1.75} />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {proprietesNonBrouillon.length === 0 && (!brouillons || brouillons.length === 0) ? (
+          <EmptyState
+            icon={Building2}
+            title="Aucun bien proposé"
+            description="Soumettez votre premier bien immobilier à la communauté Fursa pour lever des fonds et garder une fraction."
+            action={
+              <Button asChild>
+                <Link to="/proposer-un-bien">
+                  <Plus strokeWidth={2} />
+                  Proposer un bien
+                </Link>
+              </Button>
+            }
+          />
+        ) : proprietesNonBrouillon.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-5">
+            {proprietesNonBrouillon.map((p) => (
+              <ProprieteCard
+                key={p.id}
+                propriete={p}
+                onShowRefus={() => setRefusInfo(p)}
+              />
+            ))}
+          </div>
+        ) : null}
+        </>
       )}
 
       {/* Modal motif refus */}

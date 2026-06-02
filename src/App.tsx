@@ -115,6 +115,7 @@ function InvestisseurRoutes() {
           <Route path="/marche/mes-annonces" element={<MesAnnoncesPage />} />
           <Route path="/marche/nouvelle-annonce" element={<NouvelleAnnoncePage />} />
           <Route path="/proposer-un-bien" element={<ProposerBienPage />} />
+          <Route path="/proposer-un-bien/:id" element={<ProposerBienPage />} />
           <Route path="/mes-proprietes" element={<MesProprietesPage />} />
           <Route path="/mes-proprietes/:id" element={<MaProprieteDetailPage />} />
           <Route path="/mes-proprietes/:id/declarer-revenu" element={<DeclarerRevenuPage />} />

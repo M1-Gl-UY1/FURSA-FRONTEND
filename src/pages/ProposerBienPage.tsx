@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   AlertCircle,
   ArrowLeft,
@@ -41,6 +41,17 @@ import {
   type DocumentLegal,
   type PhotoStructuree,
 } from '@/lib/api/submissions'
+import {
+  useAjouterDocsBrouillon,
+  useAjouterPhotosBrouillon,
+  useBrouillonDetail,
+  useCreerBrouillon,
+  useFinaliserBrouillon,
+  usePatcherBrouillon,
+  useSetVideoBrouillon,
+  useSupprimerMediaBrouillon,
+  type BrouillonPatch,
+} from '@/lib/api/brouillon'
 import type {
   SectionPhoto,
   SourceRevenu,
@@ -206,6 +217,7 @@ function loadDraft(): Partial<DraftState> | null {
 
 export function ProposerBienPage() {
   const navigate = useNavigate()
+  const { id: idParam } = useParams<{ id?: string }>()
   const { user } = useAuth()
   const [step, setStep] = useState<number>(0)
   const [form, setForm] = useState<FormState>(() => {
@@ -214,6 +226,79 @@ export function ProposerBienPage() {
   })
   const [uploadProgress, setUploadProgress] = useState<number>(0)
   const soumettre = useSoumettreBien()
+
+  // ===========================================================================
+  // Wizard auto-save (Phase 9, 02/06/2026)
+  // ===========================================================================
+  // Strategie : creer un brouillon serveur des le mount, puis PATCH a chaque
+  // "Continuer". Permet la reprise sur un autre appareil. La soumission finale
+  // appelle /finaliser au lieu de l'ancien POST /submissions multipart.
+  const [brouillonId, setBrouillonId] = useState<number | null>(
+    idParam ? Number(idParam) : null
+  )
+  const creerBrouillon = useCreerBrouillon()
+  const patcher = usePatcherBrouillon()
+  const ajouterPhotos = useAjouterPhotosBrouillon()
+  const setVideoApi = useSetVideoBrouillon()
+  const ajouterDocs = useAjouterDocsBrouillon()
+  const supprimerMedia = useSupprimerMediaBrouillon()
+  const finaliser = useFinaliserBrouillon()
+  const { data: brouillonData } = useBrouillonDetail(brouillonId ?? undefined)
+  const initRef = useRef(false)
+  const hydratedRef = useRef(false)
+
+  // Au mount : si pas d'id, creer un brouillon vide. Si id fourni, on charge via
+  // useBrouillonDetail puis on hydrate le form.
+  useEffect(() => {
+    if (initRef.current) return
+    if (brouillonId == null && user?.isVerified === true) {
+      initRef.current = true
+      creerBrouillon.mutate(undefined, {
+        onSuccess: (b) => {
+          setBrouillonId(b.id)
+          // Push l'id dans l'URL pour permettre la reprise au refresh
+          navigate(`/proposer-un-bien/${b.id}`, { replace: true })
+        },
+        onError: (e) => {
+          initRef.current = false
+          toast.error(extractApiError(e, 'Impossible de creer le brouillon.'))
+        },
+      })
+    }
+  }, [brouillonId, user?.isVerified, creerBrouillon, navigate])
+
+  // Hydrater le form depuis le brouillon serveur (une fois charge).
+  useEffect(() => {
+    if (!brouillonData || hydratedRef.current) return
+    hydratedRef.current = true
+    setForm((s) => ({
+      ...s,
+      nom: brouillonData.nom && brouillonData.nom !== 'Brouillon' ? brouillonData.nom : s.nom,
+      pays: brouillonData.pays ?? s.pays,
+      ville: brouillonData.ville ?? s.ville,
+      adressePrecise: brouillonData.adressePrecise ?? s.adressePrecise,
+      description: brouillonData.description ?? s.description,
+      typeBien: (brouillonData.typeBien as TypeBien) ?? s.typeBien,
+      nombrePieces: brouillonData.nombrePieces ?? s.nombrePieces,
+      nombreChambres: brouillonData.nombreChambres ?? s.nombreChambres,
+      superficieM2: brouillonData.superficieM2 ?? s.superficieM2,
+      hasPiscine: brouillonData.hasPiscine ?? s.hasPiscine,
+      hasClimatisation: brouillonData.hasClimatisation ?? s.hasClimatisation,
+      hasParking: brouillonData.hasParking ?? s.hasParking,
+      hasAscenseur: brouillonData.hasAscenseur ?? s.hasAscenseur,
+      hasJardin: brouillonData.hasJardin ?? s.hasJardin,
+      hasVueMer: brouillonData.hasVueMer ?? s.hasVueMer,
+      statutExploitation: (brouillonData.statutExploitation as StatutExploitation) ?? s.statutExploitation,
+      dateLivraisonPrevue: brouillonData.dateLivraisonPrevue ?? s.dateLivraisonPrevue,
+      revenuMensuelActuel: Number(brouillonData.revenuMensuelActuel ?? s.revenuMensuelActuel),
+      sourceRevenu: (brouillonData.sourceRevenu as SourceRevenu) ?? s.sourceRevenu,
+      prixVenteTotal: Number(brouillonData.prixVenteTotal ?? s.prixVenteTotal),
+      deviseLocale: brouillonData.deviseLocale ?? s.deviseLocale,
+      fractionVenduePct: brouillonData.fractionVenduePct ?? s.fractionVenduePct,
+      nombreTotalPart: brouillonData.nombreTotalPart ?? s.nombreTotalPart,
+      rentabilitePrevue: brouillonData.rentabilitePrevue ?? s.rentabilitePrevue,
+    }))
+  }, [brouillonData])
 
   const { data: paysList, isLoading: paysLoading } = usePays()
   const { data: villesList } = useVilles(form.pays || null)
@@ -288,6 +373,9 @@ export function ProposerBienPage() {
     return Array.from(set).sort()
   }, [paysList])
 
+  // Legacy : ancien flux multipart en 1 requete. Garde temporairement pour
+  // documentation et fallback. Le nouveau flux utilise brouillon + finaliser.
+  // @ts-expect-error legacy non utilise apres migration auto-save
   function submit() {
     const villeFinal = form.villeManuelle.trim() || form.ville
 
@@ -352,6 +440,143 @@ export function ProposerBienPage() {
     )
   }
 
+  // ===========================================================================
+  // Phase 9 auto-save : PATCH par etape + upload immediat medias + finaliser
+  // ===========================================================================
+
+  /**
+   * Construit le patch correspondant a l'etape courante (champs touches).
+   * Retourne null si rien a sauvegarder (etapes 4-6 = medias, gerees a part).
+   */
+  function buildPatchForStep(currentStep: number): BrouillonPatch | null {
+    const villeFinal = form.villeManuelle.trim() || form.ville
+    switch (currentStep) {
+      case 0:
+        return {
+          nom: form.nom.trim() || undefined,
+          pays: form.pays || undefined,
+          ville: villeFinal || undefined,
+          adressePrecise: form.adressePrecise.trim() || undefined,
+          description: form.description.trim() || undefined,
+        }
+      case 1:
+        return {
+          typeBien: (form.typeBien || undefined) as TypeBien | undefined,
+          nombrePieces: form.nombrePieces || undefined,
+          nombreChambres: form.nombreChambres || undefined,
+          superficieM2: form.superficieM2 || undefined,
+          hasPiscine: form.hasPiscine,
+          hasClimatisation: form.hasClimatisation,
+          hasParking: form.hasParking,
+          hasAscenseur: form.hasAscenseur,
+          hasJardin: form.hasJardin,
+          hasVueMer: form.hasVueMer,
+        }
+      case 2:
+        return {
+          statutExploitation: (form.statutExploitation || undefined) as StatutExploitation | undefined,
+          dateLivraisonPrevue:
+            form.statutExploitation === 'EN_CONSTRUCTION' && form.dateLivraisonPrevue
+              ? form.dateLivraisonPrevue
+              : undefined,
+          revenuMensuelActuel:
+            form.statutExploitation === 'DEJA_RENTABLE' ? form.revenuMensuelActuel : undefined,
+          sourceRevenu:
+            form.statutExploitation === 'DEJA_RENTABLE'
+              ? (form.sourceRevenu as SourceRevenu)
+              : undefined,
+        }
+      case 3:
+        return {
+          prixVenteTotal: form.prixVenteTotal,
+          deviseLocale: form.deviseLocale || undefined,
+          fractionVenduePct: form.fractionVenduePct,
+          nombreTotalPart: form.nombreTotalPart,
+          prixUnitairePart: Number(prixUnitaire.toFixed(2)),
+          rentabilitePrevue: form.rentabilitePrevue,
+        }
+      default:
+        return null
+    }
+  }
+
+  /**
+   * Au clic Continuer : PATCH les champs de l'etape + upload eventuels medias
+   * de cette etape + avance d'une etape. Si pas de brouillonId encore (creation
+   * en cours), on attend.
+   */
+  async function handleNext() {
+    if (brouillonId == null) {
+      toast.error('Brouillon en cours de creation, patientez quelques secondes.')
+      return
+    }
+    try {
+      // Etapes 0-3 : champs texte/number → PATCH
+      const patch = buildPatchForStep(step)
+      if (patch) {
+        await patcher.mutateAsync({ id: brouillonId, patch })
+      }
+
+      // Etape 4 : photos selectionnees en local → upload
+      if (step === 4 && form.photos.length > 0) {
+        await ajouterPhotos.mutateAsync({ id: brouillonId, photos: form.photos })
+        // Reset local : les photos sont maintenant cote serveur (visibles via brouillonData.documents)
+        setForm((s) => ({ ...s, photos: [] }))
+      }
+      // Etape 5 : video selectionnee en local → upload
+      if (step === 5 && form.video) {
+        await setVideoApi.mutateAsync({
+          id: brouillonId,
+          video: form.video,
+          onProgress: (pct) => setUploadProgress(pct),
+        })
+        setForm((s) => ({ ...s, video: null }))
+        setUploadProgress(0)
+      }
+      // Etape 6 : documents selectionnes en local → upload
+      if (step === 6 && form.documents.length > 0) {
+        await ajouterDocs.mutateAsync({ id: brouillonId, documents: form.documents })
+        setForm((s) => ({ ...s, documents: [] }))
+      }
+
+      setStep(step + 1)
+    } catch (err) {
+      toast.error(extractApiError(err, 'Sauvegarde impossible.'))
+    }
+  }
+
+  /**
+   * Etape finale : bascule BROUILLON → EN_REVIEW. Le backend valide tous les
+   * requis et renvoie 400 + message explicite si quelque chose manque.
+   */
+  async function handleFinaliser() {
+    if (brouillonId == null) return
+    try {
+      await finaliser.mutateAsync(brouillonId)
+      try { window.localStorage.removeItem(DRAFT_KEY) } catch { /* ignore */ }
+      toast.success('Bien soumis pour validation. Un admin vous contactera.')
+      navigate('/mes-proprietes')
+    } catch (err) {
+      toast.error(extractApiError(err, 'Soumission impossible.'))
+    }
+  }
+
+  /**
+   * Retire un media deja uploade cote serveur (depuis l'affichage des medias deja
+   * uploades du brouillon en cours). A brancher sur les boutons de suppression
+   * dans les sous-composants Photos/Video/Documents.
+   */
+  // @ts-expect-error : utilise par futurs handlers UI sur les medias deja uploades
+  async function handleRemoveMedia(mediaId: number) {
+    if (brouillonId == null) return
+    try {
+      await supprimerMedia.mutateAsync({ id: brouillonId, mediaId })
+      toast.success('Media supprime.')
+    } catch (err) {
+      toast.error(extractApiError(err, 'Suppression impossible.'))
+    }
+  }
+
   // GUARD KYC : seuls les profils verifies peuvent soumettre un bien.
   // Symetrique de AcheterPartsPage. Le backend renforce dans ProprieteService.soumettre.
   if (user && user.isVerified !== true) {
@@ -400,16 +625,40 @@ export function ProposerBienPage() {
       </Link>
 
       <header className="mb-6">
-        <p className="font-body text-xs uppercase tracking-widest text-ocean font-semibold mb-2 inline-flex items-center gap-1.5">
-          <HomeIcon className="w-3.5 h-3.5" strokeWidth={2} />
-          Espace propriétaire
-        </p>
+        <div className="flex items-start justify-between gap-3 mb-2">
+          <p className="font-body text-xs uppercase tracking-widest text-ocean font-semibold inline-flex items-center gap-1.5">
+            <HomeIcon className="w-3.5 h-3.5" strokeWidth={2} />
+            Espace propriétaire
+          </p>
+          {/* Badge "Brouillon sauvegarde" : auto-save discret */}
+          {brouillonId != null && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-body font-medium border transition-all',
+                patcher.isPending || ajouterPhotos.isPending || setVideoApi.isPending || ajouterDocs.isPending
+                  ? 'bg-ocean/10 border-ocean/30 text-ocean'
+                  : 'bg-success/10 border-success/30 text-success'
+              )}
+              title={`Brouillon #${brouillonId} - reprise possible depuis tout appareil`}
+            >
+              <span className={cn(
+                'w-1.5 h-1.5 rounded-full',
+                patcher.isPending || ajouterPhotos.isPending || setVideoApi.isPending || ajouterDocs.isPending
+                  ? 'bg-ocean animate-pulse'
+                  : 'bg-success'
+              )} />
+              {patcher.isPending || ajouterPhotos.isPending || setVideoApi.isPending || ajouterDocs.isPending
+                ? 'Sauvegarde en cours…'
+                : 'Brouillon sauvegardé'}
+            </span>
+          )}
+        </div>
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
           Proposer un bien
         </h1>
         <p className="font-body text-earth-600 text-sm">
-          Décrivez votre bien immobilier pour le mettre en vente fractionnée sur FURSA.
-          Validation par un admin avant publication.
+          Décrivez votre bien étape par étape. Chaque progression est sauvegardée :
+          vous pouvez reprendre depuis n'importe quel appareil.
         </p>
       </header>
 
@@ -498,23 +747,41 @@ export function ProposerBienPage() {
             <Button
               size="lg"
               className="sm:flex-[2]"
-              onClick={() => setStep(step + 1)}
-              disabled={!stepValid[step]}
+              onClick={handleNext}
+              disabled={
+                !stepValid[step] ||
+                patcher.isPending ||
+                ajouterPhotos.isPending ||
+                setVideoApi.isPending ||
+                ajouterDocs.isPending ||
+                brouillonId == null
+              }
             >
-              Continuer
-              <ArrowRight strokeWidth={2} />
+              {patcher.isPending || ajouterPhotos.isPending || setVideoApi.isPending || ajouterDocs.isPending ? (
+                <>
+                  <Loader2 className="animate-spin" strokeWidth={2} />
+                  {step === 5 && uploadProgress > 0
+                    ? `Upload video ${uploadProgress}%`
+                    : 'Enregistrement…'}
+                </>
+              ) : (
+                <>
+                  Continuer
+                  <ArrowRight strokeWidth={2} />
+                </>
+              )}
             </Button>
           ) : (
             <Button
               size="lg"
               className="sm:flex-[2]"
-              onClick={submit}
-              disabled={!stepValid[7] || soumettre.isPending}
+              onClick={handleFinaliser}
+              disabled={!stepValid[7] || finaliser.isPending}
             >
-              {soumettre.isPending ? (
+              {finaliser.isPending ? (
                 <>
                   <Loader2 className="animate-spin" strokeWidth={2} />
-                  {uploadProgress < 100 ? `Envoi… ${uploadProgress}%` : 'Finalisation…'}
+                  Finalisation…
                 </>
               ) : (
                 <>
