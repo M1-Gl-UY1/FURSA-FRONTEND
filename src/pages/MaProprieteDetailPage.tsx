@@ -3,18 +3,33 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import {
   AlertTriangle,
   ArrowLeft,
+  Bed,
+  Building2,
+  CalendarClock,
   CalendarDays,
+  Car,
   CheckCircle2,
   Clock,
   Coins,
+  Eye,
   FileText,
+  Globe,
+  Home as HomeIcon,
   ImageIcon,
+  LayoutGrid,
+  Link2,
   Loader2,
   MapPin,
+  PlayCircle,
   Plus,
+  Ruler,
   ShieldCheck,
-  Upload,
+  Sparkles,
+  Trees,
   TrendingUp,
+  Upload,
+  Waves,
+  Wind,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -182,6 +197,186 @@ export function MaProprieteDetailPage() {
           <p className="font-body text-earth-700 text-sm leading-relaxed whitespace-pre-line">
             {p.description}
           </p>
+        </section>
+      )}
+
+      {/* Localisation détaillée */}
+      <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+        <h2 className="font-display font-semibold text-earth text-lg mb-4 flex items-center gap-2">
+          <Globe className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
+          Localisation
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Meta icon={Globe} label="Pays">{p.pays ?? '—'}</Meta>
+          <Meta icon={MapPin} label="Ville">{p.ville ?? '—'}</Meta>
+          {p.adressePrecise && (
+            <Meta icon={MapPin} label="Adresse precise" className="sm:col-span-2">
+              {p.adressePrecise}
+            </Meta>
+          )}
+        </div>
+      </section>
+
+      {/* Caracteristiques du bien */}
+      <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+        <h2 className="font-display font-semibold text-earth text-lg mb-4 flex items-center gap-2">
+          <HomeIcon className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
+          Caracteristiques
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+          <Meta icon={Building2} label="Type de bien">{p.typeBien ?? '—'}</Meta>
+          <Meta icon={Ruler} label="Superficie">
+            {p.superficieM2 ? `${p.superficieM2} m²` : '—'}
+          </Meta>
+          <Meta icon={LayoutGrid} label="Nombre de pieces">{p.nombrePieces ?? '—'}</Meta>
+          <Meta icon={Bed} label="Nombre de chambres">{p.nombreChambres ?? '—'}</Meta>
+        </div>
+
+        {(p.hasPiscine || p.hasClimatisation || p.hasParking || p.hasAscenseur || p.hasJardin || p.hasVueMer) && (
+          <div>
+            <p className="font-body text-xs uppercase tracking-wider text-earth-500 font-semibold mb-2">Equipements</p>
+            <div className="flex flex-wrap gap-2">
+              {p.hasPiscine && <Tag icon={Waves}>Piscine</Tag>}
+              {p.hasClimatisation && <Tag icon={Wind}>Climatisation</Tag>}
+              {p.hasParking && <Tag icon={Car}>Parking</Tag>}
+              {p.hasAscenseur && <Tag icon={Building2}>Ascenseur</Tag>}
+              {p.hasJardin && <Tag icon={Trees}>Jardin</Tag>}
+              {p.hasVueMer && <Tag icon={Eye}>Vue mer</Tag>}
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* Finance detaillee */}
+      <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+        <h2 className="font-display font-semibold text-earth text-lg mb-4 flex items-center gap-2">
+          <Coins className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
+          Finance
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {p.prixVenteTotal && (
+            <Meta icon={Coins} label={`Prix total (${p.deviseLocale ?? 'devise locale'})`}>
+              {Number(p.prixVenteTotal).toLocaleString('fr-FR')} {p.deviseLocale ?? ''}
+            </Meta>
+          )}
+          {p.prixVenteTotalUsd && (
+            <Meta icon={Coins} label="Equivalent USD">
+              <Money amount={p.prixVenteTotalUsd} />
+            </Meta>
+          )}
+          {p.fractionVenduePct != null && (
+            <Meta icon={TrendingUp} label="Fraction mise en vente">
+              {p.fractionVenduePct}%
+            </Meta>
+          )}
+          <Meta icon={Coins} label="Prix par part">
+            <Money amount={p.prixUnitairePart} />
+          </Meta>
+          {p.prixInitialPart != null && Number(p.prixInitialPart) !== Number(p.prixUnitairePart) && (
+            <Meta icon={Coins} label="Prix initial par part">
+              <Money amount={p.prixInitialPart} />
+            </Meta>
+          )}
+          {p.bonusRentabiliteTotal != null && Number(p.bonusRentabiliteTotal) > 0 && (
+            <Meta icon={TrendingUp} label="Bonus rentabilite cumule">
+              +{(Number(p.bonusRentabiliteTotal) * 100).toFixed(2)}%
+            </Meta>
+          )}
+        </div>
+      </section>
+
+      {/* Exploitation */}
+      {(p.statutExploitation || p.sourceRevenu || p.revenuMensuelActuel || p.dateLivraisonPrevue) && (
+        <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+          <h2 className="font-display font-semibold text-earth text-lg mb-4 flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
+            Exploitation
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {p.statutExploitation && (
+              <Meta icon={Building2} label="Statut">{p.statutExploitation}</Meta>
+            )}
+            {p.dateLivraisonPrevue && (
+              <Meta icon={CalendarClock} label="Date de livraison prevue">
+                {new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(p.dateLivraisonPrevue))}
+              </Meta>
+            )}
+            {p.revenuMensuelActuel && Number(p.revenuMensuelActuel) > 0 && (
+              <Meta icon={Coins} label="Revenu mensuel actuel">
+                {Number(p.revenuMensuelActuel).toLocaleString('fr-FR')} {p.deviseLocale ?? ''}
+              </Meta>
+            )}
+            {p.sourceRevenu && (
+              <Meta icon={TrendingUp} label="Source des revenus">{p.sourceRevenu}</Meta>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Gestionnaire locatif si assigne */}
+      {p.gestionnaire && (
+        <section className="bg-ocean/5 border border-ocean/20 rounded-xl p-5">
+          <p className="font-body text-xs uppercase tracking-wider text-ocean font-semibold mb-2">
+            Gestion locative confiee a
+          </p>
+          <p className="font-display font-bold text-earth text-lg">{p.gestionnaire.nom}</p>
+          {p.gestionnaire.description && (
+            <p className="font-body text-earth-600 text-sm mt-1">{p.gestionnaire.description}</p>
+          )}
+        </section>
+      )}
+
+      {/* Video de visite */}
+      {p.videoUrl && (
+        <section>
+          <h2 className="font-display font-semibold text-earth text-lg mb-3 flex items-center gap-2">
+            <PlayCircle className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
+            Video de visite
+          </h2>
+          <video
+            controls
+            src={resolveFileUrl(p.videoUrl)}
+            className="w-full rounded-xl bg-sand-300 max-h-[480px]"
+          />
+        </section>
+      )}
+
+      {/* Blockchain : visible des qu'il y a un txHash */}
+      {p.transactionHash && (
+        <section className="bg-ocean/5 border border-ocean/20 rounded-xl p-5">
+          <h2 className="font-body font-semibold text-ocean text-sm mb-3 flex items-center gap-2">
+            <Link2 className="w-4 h-4" strokeWidth={2} />
+            Blockchain Sepolia
+          </h2>
+          <div className="grid sm:grid-cols-2 gap-3 text-xs font-body">
+            <div>
+              <p className="text-earth-500 uppercase tracking-wider mb-1">Transaction hash</p>
+              <a
+                href={`https://sepolia.etherscan.io/tx/${p.transactionHash}`}
+                target="_blank" rel="noopener noreferrer"
+                className="font-mono text-ocean hover:underline break-all"
+              >
+                {p.transactionHash}
+              </a>
+            </div>
+            {p.adresseContrat ? (
+              <div>
+                <p className="text-earth-500 uppercase tracking-wider mb-1">Adresse du contrat</p>
+                <a
+                  href={`https://sepolia.etherscan.io/address/${p.adresseContrat}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="font-mono text-ocean hover:underline break-all"
+                >
+                  {p.adresseContrat}
+                </a>
+              </div>
+            ) : (
+              <div>
+                <p className="text-earth-500 uppercase tracking-wider mb-1">Adresse du contrat</p>
+                <p className="text-earth-500 italic">En attente de confirmation Sepolia...</p>
+              </div>
+            )}
+          </div>
         </section>
       )}
 
@@ -594,20 +789,31 @@ function Meta({
   icon: Icon,
   label,
   children,
+  className,
 }: {
   icon: typeof CalendarDays
   label: string
   children: React.ReactNode
+  className?: string
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className={cn('flex items-center gap-3', className)}>
       <div className="w-9 h-9 rounded-md bg-white flex items-center justify-center shrink-0 border border-earth/8">
         <Icon className="w-4 h-4 text-earth-500" strokeWidth={1.75} />
       </div>
-      <div>
+      <div className="min-w-0">
         <p className="font-body text-xs text-earth-500">{label}</p>
-        <p className="font-body text-sm text-earth font-medium">{children}</p>
+        <p className="font-body text-sm text-earth font-medium break-words">{children}</p>
       </div>
     </div>
+  )
+}
+
+function Tag({ icon: Icon, children }: { icon: typeof CalendarDays; children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-earth/10 text-xs font-body font-medium text-earth">
+      <Icon className="w-3.5 h-3.5 text-terra" strokeWidth={1.75} />
+      {children}
+    </span>
   )
 }

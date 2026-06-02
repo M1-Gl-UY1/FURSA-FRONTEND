@@ -361,7 +361,159 @@ export function AdminProprieteDetailPage() {
         </section>
       )}
 
+      {/* Localisation complete */}
       <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+        <h2 className="font-display font-semibold text-earth text-lg mb-4 flex items-center gap-2">
+          <MapPin className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
+          Localisation
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <Meta icon={MapPin} label="Pays">{p.pays ?? '—'}</Meta>
+          <Meta icon={MapPin} label="Ville">{p.ville ?? '—'}</Meta>
+          {p.adressePrecise && (
+            <Meta icon={MapPin} label="Adresse precise">{p.adressePrecise}</Meta>
+          )}
+        </div>
+      </section>
+
+      {/* Type & equipements */}
+      {(p.typeBien || p.superficieM2 || p.nombrePieces || p.nombreChambres) && (
+        <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+          <h2 className="font-display font-semibold text-earth text-lg mb-4">
+            Type & equipements
+          </h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
+            <Meta icon={Building2} label="Type">{p.typeBien ?? '—'}</Meta>
+            <Meta icon={Building2} label="Surface">
+              {p.superficieM2 ? `${p.superficieM2} m²` : '—'}
+            </Meta>
+            <Meta icon={Building2} label="Pieces">{p.nombrePieces ?? '—'}</Meta>
+            <Meta icon={Building2} label="Chambres">{p.nombreChambres ?? '—'}</Meta>
+          </div>
+          <div className="flex flex-wrap gap-2 text-xs font-body text-earth-700">
+            {p.hasPiscine && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Piscine</span>}
+            {p.hasClimatisation && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Climatisation</span>}
+            {p.hasParking && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Parking</span>}
+            {p.hasAscenseur && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Ascenseur</span>}
+            {p.hasJardin && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Jardin</span>}
+            {p.hasVueMer && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Vue mer</span>}
+          </div>
+        </section>
+      )}
+
+      {/* Finance complete */}
+      <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+        <h2 className="font-display font-semibold text-earth text-lg mb-4">
+          Finance
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {p.prixVenteTotal && (
+            <Meta icon={Building2} label={`Prix total (${p.deviseLocale ?? 'devise locale'})`}>
+              {Number(p.prixVenteTotal).toLocaleString('fr-FR')} {p.deviseLocale ?? ''}
+            </Meta>
+          )}
+          {p.prixVenteTotalUsd && (
+            <Meta icon={Building2} label="Equivalent USD">
+              <Money amount={p.prixVenteTotalUsd} mono={false} />
+            </Meta>
+          )}
+          {p.fractionVenduePct != null && (
+            <Meta icon={Building2} label="Fraction mise en vente">{p.fractionVenduePct}%</Meta>
+          )}
+          {p.prixInitialPart != null && Number(p.prixInitialPart) !== Number(p.prixUnitairePart) && (
+            <Meta icon={Building2} label="Prix initial par part">
+              <Money amount={p.prixInitialPart} mono={false} />
+            </Meta>
+          )}
+          {p.bonusRentabiliteTotal != null && Number(p.bonusRentabiliteTotal) > 0 && (
+            <Meta icon={Building2} label="Bonus rentabilite">
+              +{(Number(p.bonusRentabiliteTotal) * 100).toFixed(2)}%
+            </Meta>
+          )}
+        </div>
+      </section>
+
+      {/* Exploitation */}
+      {(p.statutExploitation || p.sourceRevenu || p.revenuMensuelActuel) && (
+        <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+          <h2 className="font-display font-semibold text-earth text-lg mb-4">
+            Exploitation
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {p.statutExploitation && (
+              <Meta icon={Building2} label="Statut exploitation">{p.statutExploitation}</Meta>
+            )}
+            {p.dateLivraisonPrevue && (
+              <Meta icon={CalendarDays} label="Livraison prevue">{formatDate(p.dateLivraisonPrevue)}</Meta>
+            )}
+            {p.revenuMensuelActuel && Number(p.revenuMensuelActuel) > 0 && (
+              <Meta icon={Building2} label="Revenu mensuel">
+                {Number(p.revenuMensuelActuel).toLocaleString('fr-FR')} {p.deviseLocale ?? ''}
+              </Meta>
+            )}
+            {p.sourceRevenu && (
+              <Meta icon={Building2} label="Source des revenus">{p.sourceRevenu}</Meta>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* Certification */}
+      {(p.statutCertif && p.statutCertif !== 'NON_CERTIFIE') && (
+        <section className="bg-ocean/5 border border-ocean/20 rounded-xl p-5">
+          <h2 className="font-body font-semibold text-ocean text-sm mb-3">
+            Certification
+          </h2>
+          <div className="grid sm:grid-cols-3 gap-3 text-sm">
+            <Meta icon={Building2} label="Statut">{p.statutCertif}</Meta>
+            {p.certifSoumiseLe && (
+              <Meta icon={CalendarDays} label="Soumise le">{formatDate(p.certifSoumiseLe)}</Meta>
+            )}
+            {p.certifieLe && (
+              <Meta icon={CalendarDays} label="Certifiee le">{formatDate(p.certifieLe)}</Meta>
+            )}
+          </div>
+          {p.certifMotifRefus && (
+            <div className="mt-3 p-3 bg-error/10 border border-error/20 rounded-md">
+              <p className="text-xs font-semibold text-error mb-1">Motif du refus de certification</p>
+              <p className="font-body text-earth-700 text-xs">{p.certifMotifRefus}</p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Gestionnaire locatif */}
+      {p.gestionnaire && (
+        <section className="bg-ocean/5 border border-ocean/20 rounded-xl p-5">
+          <p className="font-body text-xs uppercase tracking-wider text-ocean font-semibold mb-2">
+            Gestion locative confiee a
+          </p>
+          <p className="font-display font-bold text-earth text-lg">{p.gestionnaire.nom}</p>
+          {p.gestionnaire.description && (
+            <p className="font-body text-earth-600 text-sm mt-1">{p.gestionnaire.description}</p>
+          )}
+        </section>
+      )}
+
+      {/* Video de visite */}
+      {p.videoUrl && (
+        <section>
+          <h2 className="font-display font-semibold text-earth text-lg mb-3">
+            Video de visite
+          </h2>
+          <video
+            controls
+            src={resolveFileUrl(p.videoUrl)}
+            className="w-full rounded-xl bg-sand-300 max-h-[480px]"
+          />
+        </section>
+      )}
+
+      {/* Meta */}
+      <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
+        <h2 className="font-display font-semibold text-earth text-lg mb-3">
+          Meta
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Meta icon={CalendarDays} label="Soumise le">
             {p.soumiseLe ? formatDate(p.soumiseLe) : '—'}
@@ -369,9 +521,12 @@ export function AdminProprieteDetailPage() {
           <Meta icon={CalendarDays} label="Créée le">
             {p.dateCreation ? formatDate(p.dateCreation) : '—'}
           </Meta>
-          <Meta icon={Building2} label="Type">
-            {p.proposeurId ? 'Soumission propriétaire' : 'Création admin direct'}
+          <Meta icon={Building2} label="Origine">
+            {p.proposeurId ? `Soumission proprietaire #${p.proposeurId}` : 'Création admin direct'}
           </Meta>
+          {p.acquisFursa && (
+            <Meta icon={Building2} label="Drapeau">Acquis FURSA</Meta>
+          )}
         </div>
       </section>
 

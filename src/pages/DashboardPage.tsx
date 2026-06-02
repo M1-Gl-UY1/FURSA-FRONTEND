@@ -195,7 +195,7 @@ export function DashboardPage() {
               value={(dashboard?.nombreProprietes ?? 0).toString()}
             />
             <MiniStat
-              label="Total parts"
+              label="Parts achetees"
               value={(dashboard?.totalParts ?? 0).toLocaleString('fr-FR')}
             />
           </div>
