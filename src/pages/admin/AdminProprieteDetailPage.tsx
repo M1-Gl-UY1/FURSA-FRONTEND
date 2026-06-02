@@ -29,7 +29,6 @@ import { Label } from '@/components/ui/label'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
-  useApprouverPropriete,
   usePublierPropriete,
   useRefuserPropriete,
   useSupprimerPropriete,
@@ -50,7 +49,6 @@ export function AdminProprieteDetailPage() {
 
   const navigate = useNavigate()
   const { data: p, isLoading, isError } = usePropriete(id)
-  const approuver = useApprouverPropriete()
   const refuser = useRefuserPropriete()
   const publier = usePublierPropriete()
   const supprimer = useSupprimerPropriete()
@@ -94,12 +92,6 @@ export function AdminProprieteDetailPage() {
   const docs = p.documents?.filter((d) => d.type === 'PDF') ?? []
   const heroPhoto = photos[0]
 
-  function approve() {
-    approuver.mutate(p!.id, {
-      onSuccess: () => toast.success('Propriété approuvée. Elle peut maintenant être publiée.'),
-      onError: (e) => toast.error(extractApiError(e, 'Approbation impossible.')),
-    })
-  }
   function publish() {
     publier.mutate(p!.id, {
       onSuccess: () => {
