@@ -15,6 +15,7 @@ import { toast } from 'sonner'
 
 import { Money } from '@/components/shared/Money'
 import { ProgressBar } from '@/components/shared/ProgressBar'
+import { PropertyGallery } from '@/components/properties/PropertyGallery'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import {
@@ -90,7 +91,6 @@ export function AdminProprieteDetailPage() {
   const fileUrl = (urlOrName: string) => resolveFileUrl(urlOrName)
   const photos = p.documents?.filter((d) => d.type === 'IMAGE') ?? []
   const docs = p.documents?.filter((d) => d.type === 'PDF') ?? []
-  const heroPhoto = photos[0]
 
   function publish() {
     publier.mutate(p!.id, {
@@ -264,9 +264,12 @@ export function AdminProprieteDetailPage() {
         </div>
       </header>
 
-      {heroPhoto && (
-        <div className="aspect-[16/9] rounded-xl overflow-hidden bg-sand-300">
-          <img src={fileUrl(heroPhoto.url)} alt={p.nom} className="w-full h-full object-cover" />
+      {/* Galerie photos : hero + miniatures cliquables (gere 0, 1 ou N photos) */}
+      {photos.length > 0 ? (
+        <PropertyGallery photos={photos.map((d) => d.url)} alt={p.nom} />
+      ) : (
+        <div className="aspect-[16/9] rounded-xl bg-sand-200 border border-earth/8 flex items-center justify-center">
+          <p className="font-body text-earth-500 text-sm">Aucune photo uploadee.</p>
         </div>
       )}
 
@@ -547,10 +550,11 @@ export function AdminProprieteDetailPage() {
         </section>
       )}
 
-      {photos.length > 1 && (
+      {/* Galerie cliquable (ouvre les photos en taille reelle dans un nouvel onglet) */}
+      {photos.length > 0 && (
         <section>
           <h2 className="font-display font-semibold text-earth text-lg mb-3">
-            Photos ({photos.length})
+            Toutes les photos ({photos.length})
           </h2>
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3">
             {photos.map((d) => (
@@ -559,9 +563,15 @@ export function AdminProprieteDetailPage() {
                 href={fileUrl(d.url)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="aspect-square rounded-md overflow-hidden bg-sand-300 hover:opacity-90"
+                title={d.sectionPhoto ?? d.nom ?? 'Photo'}
+                className="aspect-square rounded-md overflow-hidden bg-sand-300 hover:opacity-90 relative group"
               >
-                <img src={fileUrl(d.url)} alt="" className="w-full h-full object-cover" />
+                <img src={fileUrl(d.url)} alt={d.nom ?? 'Photo'} className="w-full h-full object-cover" />
+                {d.sectionPhoto && (
+                  <span className="absolute bottom-1 left-1 right-1 bg-earth/75 text-white text-[10px] font-body font-semibold px-1.5 py-0.5 rounded text-center">
+                    {d.sectionPhoto}
+                  </span>
+                )}
               </a>
             ))}
           </div>
