@@ -29,11 +29,19 @@ export function useProprietes() {
   })
 }
 
+/**
+ * Hook propriete avec polling automatique tant que le bien est en EN_TOKENISATION.
+ * Permet a l'UI admin de basculer en PUBLIEE des que le worker backend a confirme
+ * le receipt blockchain (~15-60s apres le clic "Valider").
+ */
 export function usePropriete(id: number | undefined) {
   return useQuery({
     queryKey: ['propriete', id],
     queryFn: () => fetchPropriete(id!),
     enabled: id != null,
+    refetchInterval: (query) =>
+      query.state.data?.statut === 'EN_TOKENISATION' ? 5000 : false,
+    refetchIntervalInBackground: false,
   })
 }
 

@@ -12,6 +12,8 @@ export type StatutPropriete =
   | 'EN_REVIEW'
   | 'ACCEPTEE'
   | 'REFUSEE'
+  // Tokenisation async (Phase 8 - 02/06/2026)
+  | 'EN_TOKENISATION'
   // V2 envisagé
   | 'BROUILLON'
   | 'FINANCEE'

@@ -35,6 +35,7 @@ import {
   useSupprimerPropriete,
   useToggleAcquisFursa,
   useTokeniserPropriete,
+  useValiderPropriete,
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import { fireConfetti } from '@/lib/confetti'
@@ -55,8 +56,10 @@ export function AdminProprieteDetailPage() {
   const supprimer = useSupprimerPropriete()
   const toggleAcquis = useToggleAcquisFursa()
   const tokeniser = useTokeniserPropriete()
+  const valider = useValiderPropriete()
   const [refusOpen, setRefusOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [validerOpen, setValiderOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -132,6 +135,17 @@ export function AdminProprieteDetailPage() {
   const isAcceptee = p.statut === 'ACCEPTEE'
   const isPubliee = p.statut === 'PUBLIEE'
   const isRefusee = p.statut === 'REFUSEE'
+  const isTokenisation = p.statut === 'EN_TOKENISATION'
+
+  function confirmValider() {
+    valider.mutate(p!.id, {
+      onSuccess: () => {
+        setValiderOpen(false)
+        toast.success('Propriete validee. Tokenisation en cours sur Sepolia.')
+      },
+      onError: (e) => toast.error(extractApiError(e, 'Validation impossible.')),
+    })
+  }
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -173,11 +187,14 @@ export function AdminProprieteDetailPage() {
         </div>
 
         <div className="flex flex-wrap gap-2 shrink-0">
+          {/* Workflow unifie 02/06/2026 : un seul bouton "Valider" pour EN_REVIEW.
+              Il declenche : approbation + tokenisation Sepolia + publication automatique
+              une fois la tx minee (le worker bascule en PUBLIEE en ~15-60s). */}
           {isReview && (
             <>
-              <Button onClick={approve} disabled={approuver.isPending}>
+              <Button onClick={() => setValiderOpen(true)} disabled={valider.isPending}>
                 <CheckCircle2 strokeWidth={2} />
-                Approuver
+                Valider la propriete
               </Button>
               <Button variant="outline" onClick={() => setRefusOpen(true)} className="text-error border-error/40 hover:bg-error/10">
                 <XCircle strokeWidth={2} />
@@ -185,11 +202,18 @@ export function AdminProprieteDetailPage() {
               </Button>
             </>
           )}
+          {/* Fallback workflow legacy si une propriete est en ACCEPTEE (avant V2). */}
           {isAcceptee && (
             <Button onClick={publish} disabled={publier.isPending}>
               <Send strokeWidth={2} />
               Publier
             </Button>
+          )}
+          {isTokenisation && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-ocean/10 border border-ocean/30 text-ocean">
+              <span className="w-4 h-4 rounded-full border-2 border-ocean border-t-transparent animate-spin" />
+              <span className="font-body text-sm font-semibold">Tokenisation en cours sur Sepolia...</span>
+            </div>
           )}
           {(isPubliee || isRefusee) && (
             <Button variant="outline" onClick={() => setDeleteOpen(true)} className="text-error border-error/40 hover:bg-error/10">
@@ -197,7 +221,7 @@ export function AdminProprieteDetailPage() {
               Supprimer
             </Button>
           )}
-          {/* P7 (Hugh 22/05/2026) : tokenisation manuelle Sepolia */}
+          {/* Retry manuel de la tokenisation : seulement si PUBLIEE sans tx (cas legacy) */}
           {isPubliee && !p.transactionHash && (
             <Button
               variant="outline"
@@ -258,6 +282,45 @@ export function AdminProprieteDetailPage() {
         <div className="bg-error/10 border border-error/30 rounded-xl p-5">
           <p className="font-body font-semibold text-error text-sm mb-1">Motif du refus</p>
           <p className="font-body text-earth-700 text-sm whitespace-pre-line">{p.motifRefus}</p>
+        </div>
+      )}
+
+      {/* Bloc blockchain : visible des qu'on a un txHash (donc EN_TOKENISATION ou PUBLIEE). */}
+      {p.transactionHash && (
+        <div className="bg-ocean/5 border border-ocean/20 rounded-xl p-5">
+          <p className="font-body font-semibold text-ocean text-sm mb-3 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-ocean" />
+            Blockchain Sepolia
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3 text-xs font-body">
+            <div>
+              <p className="text-earth-500 uppercase tracking-wider mb-1">Transaction hash</p>
+              <a
+                href={`https://sepolia.etherscan.io/tx/${p.transactionHash}`}
+                target="_blank" rel="noopener noreferrer"
+                className="font-mono text-ocean hover:underline break-all"
+              >
+                {p.transactionHash}
+              </a>
+            </div>
+            {p.adresseContrat ? (
+              <div>
+                <p className="text-earth-500 uppercase tracking-wider mb-1">Adresse du contrat</p>
+                <a
+                  href={`https://sepolia.etherscan.io/address/${p.adresseContrat}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="font-mono text-ocean hover:underline break-all"
+                >
+                  {p.adresseContrat}
+                </a>
+              </div>
+            ) : (
+              <div>
+                <p className="text-earth-500 uppercase tracking-wider mb-1">Adresse du contrat</p>
+                <p className="text-earth-500 italic">En attente de confirmation Sepolia...</p>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -357,6 +420,58 @@ export function AdminProprieteDetailPage() {
           </div>
         </section>
       )}
+
+      {/* Modal validation (workflow unifie) */}
+      <Dialog open={validerOpen} onOpenChange={setValiderOpen}>
+        <DialogContent className="bg-white border-earth/10 max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-earth text-xl flex items-center gap-2">
+              <CheckCircle2 className="w-5 h-5 text-success" strokeWidth={2} />
+              Valider la propriete ?
+            </DialogTitle>
+            <DialogDescription className="font-body text-earth-600 text-sm pt-2">
+              Vous etes sur le point de valider <span className="font-semibold text-earth">{p.nom}</span>.
+              Cette action est <span className="font-semibold">irreversible</span>.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 mt-3">
+            <p className="font-body font-semibold text-earth text-sm">Ce qui va se passer :</p>
+            <ol className="space-y-2 text-sm font-body text-earth-700">
+              <li className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-terra/15 text-terra text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <span>La propriete est <b>approuvee</b>.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-ocean/15 text-ocean text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <span>Un smart contract ERC-20 est <b>deploye sur Sepolia</b> (~15-60 secondes).</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="w-5 h-5 rounded-full bg-success/15 text-success text-xs font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                <span>Une fois la transaction minee, le bien passe en <b>PUBLIEE</b> et est visible publiquement.</span>
+              </li>
+            </ol>
+          </div>
+
+          <div className="bg-warning/8 border border-warning/30 rounded-md p-3 text-xs font-body text-earth-700 mt-3">
+            <p className="font-semibold text-warning mb-1">⚠ Avant de valider, verifiez :</p>
+            <ul className="list-disc list-inside space-y-0.5">
+              <li>Tous les documents legaux sont fournis et lisibles</li>
+              <li>Les photos correspondent bien au bien decrit</li>
+              <li>Le prix et le nombre de parts sont coherents</li>
+            </ul>
+          </div>
+
+          <DialogFooter className="flex-col-reverse sm:flex-row gap-2 mt-4">
+            <Button variant="outline" onClick={() => setValiderOpen(false)} disabled={valider.isPending}>
+              Annuler
+            </Button>
+            <Button onClick={confirmValider} disabled={valider.isPending}>
+              {valider.isPending ? 'Validation en cours...' : 'Valider la propriete'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal refus */}
       <RefusDialog

@@ -216,6 +216,31 @@ export function useSupprimerPropriete() {
 }
 
 /**
+ * Workflow unifie 02/06/2026 : valider une propriete EN_REVIEW = approuver + tokeniser
+ * + publier en une seule action admin. La tokenisation s'execute en async : le bien
+ * passe d'abord en EN_TOKENISATION, puis bascule automatiquement en PUBLIEE quand
+ * le worker recupere le receipt blockchain (~15-60s). L'UI doit poll le statut.
+ */
+export function useValiderPropriete() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: number) => {
+      const { data } = await api.post<ProprieteResponse>(
+        `/api/proprietes/admin/${id}/valider`
+      )
+      return data
+    },
+    onSuccess: (_d, id) => {
+      qc.invalidateQueries({ queryKey: ['proprietes'] })
+      qc.invalidateQueries({ queryKey: ['propriete', id] })
+      qc.invalidateQueries({ queryKey: ['mes-proprietes-proposees'] })
+      qc.invalidateQueries({ queryKey: ['ma-propriete-proposee', id] })
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] })
+    },
+  })
+}
+
+/**
  * P7 (Hugh 22/05/2026) : tokenisation manuelle d'une propriete sur Sepolia.
  * Deploie un smart contract ProprieteToken (ERC-20). Voir BLOCKCHAIN_INTEGRATION_FURSA.md.
  */

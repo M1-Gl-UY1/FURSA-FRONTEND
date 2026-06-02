@@ -41,14 +41,28 @@ export type PhotoStructuree = {
   section: SectionPhoto
 }
 
+/** Catégories possibles de documents légaux (cf énum CategorieDocument backend). */
+export type CategorieDocument =
+  | 'TITRE_FONCIER'
+  | 'PERMIS_CONSTRUIRE'
+  | 'CONTRAT_GESTION'
+  | 'CONTRAT_BAIL'
+  | 'RELEVE_AIRBNB'
+  | 'AUTRE'
+
+export type DocumentLegal = {
+  file: File
+  categorie: CategorieDocument
+}
+
 export type SoumissionPayload = {
   submission: SubmissionRequest
   /** Photos structurees par section (Facade, Salon, Chambre, ...). */
   photos?: PhotoStructuree[]
   /** Video de visite guidee (max 100 MB). */
   video?: File | null
-  /** Documents legaux (PDFs). Etape de certification post-creation. */
-  documents?: File[]
+  /** Documents legaux categorises (titre foncier, permis, contrat gestion/bail, ...). */
+  documents?: DocumentLegal[]
   /** Callback de progression d'upload (0-100). Pour la barre de chargement. */
   onProgress?: (percent: number) => void
 }
@@ -79,9 +93,12 @@ export function useSoumettreBien() {
         })
       }
 
-      // 4. Documents legaux
+      // 4. Documents legaux : fichier + categorie en parallele (backend zippe par index).
       if (vars.documents && vars.documents.length > 0) {
-        vars.documents.forEach((d) => formData.append('documents', d))
+        vars.documents.forEach((d) => {
+          formData.append('documents', d.file)
+          formData.append('documentCategories', d.categorie)
+        })
       }
 
       // IMPORTANT : Content-Type undefined pour que axios calcule le boundary.

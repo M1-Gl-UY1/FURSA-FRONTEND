@@ -37,6 +37,8 @@ import { useAuth } from '@/lib/auth/AuthContext'
 import { usePays, useVilles } from '@/lib/api/geo'
 import {
   useSoumettreBien,
+  type CategorieDocument,
+  type DocumentLegal,
   type PhotoStructuree,
 } from '@/lib/api/submissions'
 import type {
@@ -55,8 +57,38 @@ const STEPS = [
   'Finance',
   'Photos',
   'Vidéo',
+  'Documents légaux',
   'Récap',
 ]
+
+const MAX_DOC_SIZE = 10 * 1024 * 1024 // 10 Mo par PDF
+const DOC_TYPES = ['application/pdf']
+
+const CATEGORIES_DOC: { value: CategorieDocument; label: string; description: string }[] = [
+  { value: 'TITRE_FONCIER', label: 'Titre foncier', description: 'Preuve de propriété (obligatoire)' },
+  { value: 'PERMIS_CONSTRUIRE', label: 'Permis de construire', description: 'Obligatoire pour les biens neufs ou en construction' },
+  { value: 'CONTRAT_GESTION', label: 'Contrat de gestion locative', description: 'Pour les biens déjà rentables' },
+  { value: 'CONTRAT_BAIL', label: 'Contrat de bail', description: 'Pour les biens loués en direct' },
+  { value: 'RELEVE_AIRBNB', label: 'Relevé Airbnb / plateforme', description: 'Justificatif de revenus locatifs courts séjours' },
+  { value: 'AUTRE', label: 'Autre', description: 'Tout autre document utile (expertise, plans, etc.)' },
+]
+
+/**
+ * Valide l'etape 6 (documents legaux). Reflete exactement la regle backend
+ * (ProprieteService.soumettre cat conditionnelle) pour eviter une erreur tardive.
+ */
+function docsValides(docs: DocumentLegal[], statut: StatutExploitation | ''): boolean {
+  if (!docs || docs.length === 0) return false
+  const cats = new Set(docs.map((d) => d.categorie))
+  if (!cats.has('TITRE_FONCIER')) return false
+  if (statut === 'DEJA_RENTABLE') {
+    return cats.has('CONTRAT_GESTION') || cats.has('CONTRAT_BAIL')
+  }
+  if (statut === 'EN_CONSTRUCTION' || statut === 'NEUF') {
+    return cats.has('PERMIS_CONSTRUIRE')
+  }
+  return true
+}
 
 const MAX_VIDEO_SIZE = 100 * 1024 * 1024 // 100 Mo
 const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
@@ -94,11 +126,11 @@ type FormState = {
   fractionVenduePct: number
   nombreTotalPart: number
   rentabilitePrevue: number
-  // Etape 5 & 6
+  // Etape 5 & 6 & 7
   photos: PhotoStructuree[]
   video: File | null
-  documents: File[]
-  // Etape 7
+  documents: DocumentLegal[]
+  // Etape 8 (Recap)
   cguAccepted: boolean
   certified: boolean
 }
@@ -235,7 +267,9 @@ export function ProposerBienPage() {
       form.photos.some((p) => p.section === 'SALON'),
     // 5 — Vidéo obligatoire (Hugh)
     form.video !== null,
-    // 6 — Récap
+    // 6 — Documents légaux : titre foncier obligatoire + conditionnels selon statut
+    docsValides(form.documents, form.statutExploitation),
+    // 7 — Récap
     form.cguAccepted && form.certified,
   ]
 
@@ -409,8 +443,9 @@ export function ProposerBienPage() {
         )}
         {step === 4 && <Step4Photos form={form} update={update} />}
         {step === 5 && <Step5Video form={form} update={update} />}
-        {step === 6 && (
-          <Step6Recap
+        {step === 6 && <Step6Documents form={form} update={update} />}
+        {step === 7 && (
+          <Step7Recap
             form={form}
             update={update}
             prixUnitaire={prixUnitaire}
@@ -474,7 +509,7 @@ export function ProposerBienPage() {
               size="lg"
               className="sm:flex-[2]"
               onClick={submit}
-              disabled={!stepValid[6] || soumettre.isPending}
+              disabled={!stepValid[7] || soumettre.isPending}
             >
               {soumettre.isPending ? (
                 <>
@@ -1324,10 +1359,172 @@ function Step5Video({
 }
 
 // =============================================================================
-// Step 6 — Récap + CGV
+// Step 6 — Documents legaux (categorises)
 // =============================================================================
 
-function Step6Recap({
+function Step6Documents({
+  form,
+  update,
+}: {
+  form: FormState
+  update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+}) {
+  function addDocs(files: FileList | null) {
+    if (!files) return
+    const valid: DocumentLegal[] = []
+    Array.from(files).forEach((f) => {
+      if (!DOC_TYPES.includes(f.type)) {
+        toast.error(`${f.name} : seuls les PDF sont acceptes.`)
+        return
+      }
+      if (f.size > MAX_DOC_SIZE) {
+        toast.error(`${f.name} : taille > 10 Mo.`)
+        return
+      }
+      // Par defaut : AUTRE, l'user choisit ensuite la categorie
+      valid.push({ file: f, categorie: 'AUTRE' })
+    })
+    if (valid.length > 0) {
+      update('documents', [...form.documents, ...valid])
+    }
+  }
+
+  function removeDoc(idx: number) {
+    update('documents', form.documents.filter((_, i) => i !== idx))
+  }
+
+  function changeCategorie(idx: number, categorie: CategorieDocument) {
+    const next = [...form.documents]
+    next[idx] = { ...next[idx], categorie }
+    update('documents', next)
+  }
+
+  const cats = new Set(form.documents.map((d) => d.categorie))
+  const requisManquants: string[] = []
+  if (!cats.has('TITRE_FONCIER')) requisManquants.push('Titre foncier')
+  if (form.statutExploitation === 'DEJA_RENTABLE'
+      && !cats.has('CONTRAT_GESTION') && !cats.has('CONTRAT_BAIL')) {
+    requisManquants.push('Contrat de gestion ou bail')
+  }
+  if ((form.statutExploitation === 'EN_CONSTRUCTION' || form.statutExploitation === 'NEUF')
+      && !cats.has('PERMIS_CONSTRUIRE')) {
+    requisManquants.push('Permis de construire')
+  }
+
+  return (
+    <>
+      <h2 className="font-display font-bold text-earth text-xl mb-1 flex items-center gap-2">
+        <FileText className="w-5 h-5 text-terra" strokeWidth={1.75} />
+        Documents légaux
+      </h2>
+      <p className="font-body text-earth-600 text-sm mb-6">
+        Téléversez vos documents (PDF uniquement, 10 Mo max chacun) et choisissez la
+        catégorie de chaque document. L'admin vérifiera leur authenticité avant validation.
+      </p>
+
+      {/* Liste des minimums requis selon le statut */}
+      <div className={cn(
+        'rounded-lg border p-4 mb-5',
+        requisManquants.length > 0
+          ? 'bg-warning/10 border-warning/40'
+          : 'bg-success/10 border-success/40'
+      )}>
+        <p className={cn(
+          'font-body font-semibold text-sm mb-2',
+          requisManquants.length > 0 ? 'text-warning' : 'text-success'
+        )}>
+          {requisManquants.length > 0
+            ? `Documents obligatoires manquants (${requisManquants.length})`
+            : 'Documents obligatoires fournis'}
+        </p>
+        {requisManquants.length > 0 ? (
+          <ul className="space-y-1">
+            {requisManquants.map((r) => (
+              <li key={r} className="font-body text-xs text-earth-700 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-warning shrink-0" />
+                {r}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="font-body text-xs text-earth-600">Vous pouvez passer à l'étape suivante.</p>
+        )}
+      </div>
+
+      {/* Zone d'upload */}
+      <label
+        htmlFor="docs-upload"
+        className="block border-2 border-dashed border-earth/20 hover:border-terra/50 rounded-lg p-6 text-center cursor-pointer transition-colors mb-4 bg-white"
+      >
+        <Upload className="w-8 h-8 text-earth-400 mx-auto mb-2" strokeWidth={1.5} />
+        <p className="font-body font-semibold text-earth text-sm mb-1">
+          Cliquez pour ajouter des documents PDF
+        </p>
+        <p className="font-body text-xs text-earth-500">
+          Glissez plusieurs fichiers à la fois — vous choisirez la catégorie ensuite.
+        </p>
+        <input
+          id="docs-upload"
+          type="file"
+          accept="application/pdf"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            addDocs(e.target.files)
+            e.target.value = ''
+          }}
+        />
+      </label>
+
+      {/* Liste des docs uploadés */}
+      {form.documents.length > 0 && (
+        <ul className="space-y-2.5">
+          {form.documents.map((doc, idx) => (
+            <li
+              key={idx}
+              className="bg-white border border-earth/10 rounded-lg p-3 flex items-center gap-3"
+            >
+              <FileText className="w-5 h-5 text-error shrink-0" strokeWidth={1.75} />
+              <div className="flex-1 min-w-0">
+                <p className="font-body font-semibold text-earth text-sm truncate">
+                  {doc.file.name}
+                </p>
+                <p className="font-mono text-[11px] text-earth-500">
+                  {(doc.file.size / 1024 / 1024).toFixed(1)} Mo
+                </p>
+              </div>
+              <select
+                value={doc.categorie}
+                onChange={(e) => changeCategorie(idx, e.target.value as CategorieDocument)}
+                aria-label={`Categorie du document ${doc.file.name}`}
+                title="Choisir la categorie du document"
+                className="px-3 py-1.5 rounded-md border border-earth/15 bg-sand-50 text-earth text-xs font-body font-medium focus:border-terra focus:outline-none"
+              >
+                {CATEGORIES_DOC.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => removeDoc(idx)}
+                className="w-8 h-8 rounded-md flex items-center justify-center text-earth-500 hover:bg-error/10 hover:text-error transition-colors shrink-0"
+                aria-label="Supprimer"
+              >
+                <X className="w-4 h-4" strokeWidth={2} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
+
+// =============================================================================
+// Step 7 — Récap + CGV
+// =============================================================================
+
+function Step7Recap({
   form,
   update,
   prixUnitaire,
