@@ -59,7 +59,7 @@ import type {
   TypeBien,
 } from '@/lib/api/types'
 import { extractApiError } from '@/lib/api/errors'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
 
 const STEPS = [
   'Localisation',
@@ -87,10 +87,18 @@ const CATEGORIES_DOC: { value: CategorieDocument; label: string; description: st
 /**
  * Valide l'etape 6 (documents legaux). Reflete exactement la regle backend
  * (ProprieteService.soumettre cat conditionnelle) pour eviter une erreur tardive.
+ * Considere les docs LOCAUX (en attente d'upload) ET SERVEUR (deja sauvegardes).
  */
-function docsValides(docs: DocumentLegal[], statut: StatutExploitation | ''): boolean {
-  if (!docs || docs.length === 0) return false
-  const cats = new Set(docs.map((d) => d.categorie))
+function docsValides(
+  docs: DocumentLegal[],
+  statut: StatutExploitation | '',
+  serverDocs: { categorieDocument?: string | null }[] = [],
+): boolean {
+  const cats = new Set<string>([
+    ...docs.map((d) => d.categorie as string),
+    ...serverDocs.map((d) => d.categorieDocument ?? '').filter(Boolean),
+  ])
+  if (cats.size === 0) return false
   if (!cats.has('TITRE_FONCIER')) return false
   if (statut === 'DEJA_RENTABLE') {
     return cats.has('CONTRAT_GESTION') || cats.has('CONTRAT_BAIL')
@@ -328,6 +336,11 @@ export function ProposerBienPage() {
     setForm((s) => ({ ...s, [key]: value }))
   }
 
+  // Documents serveur deja uploades (utilises pour la validation Step4/5/6).
+  const serverDocs = brouillonData?.documents ?? []
+  const serverImages = serverDocs.filter((d) => d.type === 'IMAGE')
+  const serverPdfs = serverDocs.filter((d) => d.type === 'PDF')
+
   // ---- Validation par étape ----
   const stepValid: boolean[] = [
     // 0 — Localisation
@@ -347,13 +360,15 @@ export function ProposerBienPage() {
       form.fractionVenduePct <= 100 &&
       form.nombreTotalPart >= 1 &&
       form.rentabilitePrevue >= 0,
-    // 4 — Photos : façade + salon obligatoires
-    form.photos.some((p) => p.section === 'FACADE') &&
-      form.photos.some((p) => p.section === 'SALON'),
-    // 5 — Vidéo obligatoire (Hugh)
-    form.video !== null,
-    // 6 — Documents légaux : titre foncier obligatoire + conditionnels selon statut
-    docsValides(form.documents, form.statutExploitation),
+    // 4 — Photos : façade + salon obligatoires (combine local + serveur)
+    (form.photos.some((p) => p.section === 'FACADE')
+      || serverImages.some((d) => d.sectionPhoto === 'FACADE'))
+    && (form.photos.some((p) => p.section === 'SALON')
+      || serverImages.some((d) => d.sectionPhoto === 'SALON')),
+    // 5 — Vidéo obligatoire : locale OU serveur
+    form.video !== null || !!brouillonData?.videoUrl,
+    // 6 — Documents légaux : titre foncier obligatoire + conditionnels (combine local + serveur)
+    docsValides(form.documents, form.statutExploitation, serverPdfs),
     // 7 — Récap
     form.cguAccepted && form.certified,
   ]
@@ -690,9 +705,35 @@ export function ProposerBienPage() {
             devises={devises}
           />
         )}
-        {step === 4 && <Step4Photos form={form} update={update} />}
-        {step === 5 && <Step5Video form={form} update={update} />}
-        {step === 6 && <Step6Documents form={form} update={update} />}
+        {step === 4 && (
+          <Step4Photos
+            form={form}
+            update={update}
+            serverPhotos={brouillonData?.documents?.filter((d) => d.type === 'IMAGE') ?? []}
+            onRemoveServerMedia={handleRemoveMedia}
+          />
+        )}
+        {step === 5 && (
+          <Step5Video
+            form={form}
+            update={update}
+            serverVideoUrl={brouillonData?.videoUrl ?? null}
+            onRemoveServerVideo={async () => {
+              if (!brouillonId) return
+              // La video n'a pas d'id document distinct -> on PATCH pour la retirer
+              // Pour l'instant on signale juste que l'user doit la remplacer en uploadant une nouvelle
+              toast.info('Pour changer la video, uploadez-en une nouvelle - elle remplacera l\'ancienne.')
+            }}
+          />
+        )}
+        {step === 6 && (
+          <Step6Documents
+            form={form}
+            update={update}
+            serverDocuments={brouillonData?.documents?.filter((d) => d.type === 'PDF') ?? []}
+            onRemoveServerMedia={handleRemoveMedia}
+          />
+        )}
         {step === 7 && (
           <Step7Recap
             form={form}
@@ -1344,12 +1385,25 @@ function Step3Finance({
 // Step 4 — Photos structurées
 // =============================================================================
 
+type ServerDoc = {
+  id: number
+  nom: string | null
+  url: string | null
+  type?: string
+  sectionPhoto?: SectionPhoto | null
+  categorieDocument?: string | null
+}
+
 function Step4Photos({
   form,
   update,
+  serverPhotos = [],
+  onRemoveServerMedia,
 }: {
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  serverPhotos?: ServerDoc[]
+  onRemoveServerMedia?: (mediaId: number) => Promise<void> | void
 }) {
   // Sections requises selon le type de bien et équipements
   const sectionsRequises: { section: SectionPhoto; label: string; required: boolean }[] =
@@ -1404,8 +1458,11 @@ function Step4Photos({
   // Aide visuelle en temps reel : count + poids total + check obligatoires.
   const totalBytes = form.photos.reduce((acc, p) => acc + (p.file?.size ?? 0), 0)
   const totalMo = totalBytes / (1024 * 1024)
+  // hasFacade/hasSalon : combine serveur + local (pour la validation visuelle).
   const hasFacade = form.photos.some((p) => p.section === 'FACADE')
+    || serverPhotos.some((d) => d.sectionPhoto === 'FACADE')
   const hasSalon = form.photos.some((p) => p.section === 'SALON')
+    || serverPhotos.some((d) => d.sectionPhoto === 'SALON')
 
   return (
     <>
@@ -1419,6 +1476,43 @@ function Step4Photos({
       <p className="font-body text-earth-500 text-xs mb-4">
         Formats acceptés : JPG, PNG, WebP · <strong>4 Mo max</strong> par photo.
       </p>
+
+      {/* Photos deja uploadees (au serveur lors d'une session precedente) */}
+      {serverPhotos.length > 0 && (
+        <div className="mb-5 p-4 rounded-lg bg-success/8 border border-success/30">
+          <p className="font-body text-xs uppercase tracking-wider text-success font-semibold mb-2">
+            ✓ Photos deja sauvegardees ({serverPhotos.length})
+          </p>
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+            {serverPhotos.map((p) => (
+              <div key={p.id} className="relative group aspect-square rounded-md overflow-hidden bg-sand-200 border border-earth/8">
+                <img
+                  src={resolveFileUrl(p.url ?? '')}
+                  alt={p.nom ?? 'Photo'}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+                {p.sectionPhoto && (
+                  <span className="absolute bottom-0 left-0 right-0 bg-earth/75 text-white text-[9px] font-body font-semibold px-1 py-0.5 text-center truncate">
+                    {p.sectionPhoto}
+                  </span>
+                )}
+                {onRemoveServerMedia && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveServerMedia(p.id)}
+                    aria-label="Supprimer cette photo"
+                    title="Supprimer"
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-error text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <X className="w-3 h-3" strokeWidth={2} />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Mini-dashboard temps reel : count + taille + obligatoires */}
       {form.photos.length > 0 && (
@@ -1529,9 +1623,13 @@ function Step4Photos({
 function Step5Video({
   form,
   update,
+  serverVideoUrl = null,
+  onRemoveServerVideo,
 }: {
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  serverVideoUrl?: string | null
+  onRemoveServerVideo?: () => Promise<void> | void
 }) {
   function handleVideo(file: File | null) {
     if (!file) {
@@ -1563,6 +1661,30 @@ function Step5Video({
         du bien. Cela permet à l'admin de faire une validation préalable et aux
         investisseurs de se projeter.
       </p>
+
+      {/* Video deja uploadee sur le serveur (depuis session precedente) */}
+      {serverVideoUrl && !form.video && (
+        <div className="mb-5 p-4 rounded-lg bg-success/8 border border-success/30">
+          <p className="font-body text-xs uppercase tracking-wider text-success font-semibold mb-3">
+            ✓ Video deja sauvegardee
+          </p>
+          <video
+            controls
+            src={resolveFileUrl(serverVideoUrl)}
+            className="w-full rounded-md bg-sand-300 max-h-[300px]"
+          />
+          {onRemoveServerVideo && (
+            <button
+              type="button"
+              onClick={() => { void onRemoveServerVideo() }}
+              className="mt-3 inline-flex items-center gap-1.5 text-xs font-body text-earth-600 hover:text-error"
+            >
+              <X className="w-3 h-3" strokeWidth={2} />
+              Remplacer cette vidéo
+            </button>
+          )}
+        </div>
+      )}
 
       {!form.video ? (
         <label
@@ -1632,9 +1754,13 @@ function Step5Video({
 function Step6Documents({
   form,
   update,
+  serverDocuments = [],
+  onRemoveServerMedia,
 }: {
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
+  serverDocuments?: ServerDoc[]
+  onRemoveServerMedia?: (mediaId: number) => Promise<void> | void
 }) {
   function addDocs(files: FileList | null) {
     if (!files) return
@@ -1666,7 +1792,11 @@ function Step6Documents({
     update('documents', next)
   }
 
-  const cats = new Set(form.documents.map((d) => d.categorie))
+  // Combine local + serveur pour la validation des categories obligatoires.
+  const cats = new Set<string>([
+    ...form.documents.map((d) => d.categorie as string),
+    ...serverDocuments.map((d) => d.categorieDocument ?? '').filter(Boolean),
+  ])
   const requisManquants: string[] = []
   if (!cats.has('TITRE_FONCIER')) requisManquants.push('Titre foncier')
   if (form.statutExploitation === 'DEJA_RENTABLE'
@@ -1688,6 +1818,45 @@ function Step6Documents({
         Téléversez vos documents (PDF uniquement, 10 Mo max chacun) et choisissez la
         catégorie de chaque document. L'admin vérifiera leur authenticité avant validation.
       </p>
+
+      {/* Documents deja uploades sur le serveur (session precedente) */}
+      {serverDocuments.length > 0 && (
+        <div className="mb-5 p-4 rounded-lg bg-success/8 border border-success/30">
+          <p className="font-body text-xs uppercase tracking-wider text-success font-semibold mb-2">
+            ✓ Documents deja sauvegardes ({serverDocuments.length})
+          </p>
+          <ul className="space-y-2">
+            {serverDocuments.map((d) => (
+              <li key={d.id} className="bg-white border border-earth/10 rounded-lg p-3 flex items-center gap-3">
+                <FileText className="w-5 h-5 text-error shrink-0" strokeWidth={1.75} />
+                <div className="flex-1 min-w-0">
+                  <a
+                    href={resolveFileUrl(d.url ?? '')}
+                    target="_blank" rel="noopener noreferrer"
+                    className="font-body font-semibold text-earth text-sm hover:text-terra truncate block"
+                  >
+                    {d.nom ?? 'Document'}
+                  </a>
+                  {d.categorieDocument && (
+                    <p className="font-mono text-[11px] text-earth-500">{d.categorieDocument}</p>
+                  )}
+                </div>
+                {onRemoveServerMedia && (
+                  <button
+                    type="button"
+                    onClick={() => onRemoveServerMedia(d.id)}
+                    aria-label="Supprimer ce document"
+                    title="Supprimer"
+                    className="w-8 h-8 rounded-md flex items-center justify-center text-earth-500 hover:bg-error/10 hover:text-error transition-colors shrink-0"
+                  >
+                    <X className="w-4 h-4" strokeWidth={2} />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Liste des minimums requis selon le statut */}
       <div className={cn(
