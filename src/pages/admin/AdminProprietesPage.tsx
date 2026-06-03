@@ -8,14 +8,14 @@ import { Money } from '@/components/shared/Money'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useProprietes } from '@/lib/api/proprietes'
+import { useAdminProprietes } from '@/lib/api/proprietes'
 import type { ProprieteResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
 
 type Tab = 'a-valider' | 'toutes' | 'publiees' | 'refusees'
 
 export function AdminProprietesPage() {
-  const { data, isLoading } = useProprietes()
+  const { data, isLoading } = useAdminProprietes()
   const [searchParams, setSearchParams] = useSearchParams()
   const tabParam = searchParams.get('onglet') as Tab | null
   const [tab, setTab] = useState<Tab>(tabParam ?? 'a-valider')

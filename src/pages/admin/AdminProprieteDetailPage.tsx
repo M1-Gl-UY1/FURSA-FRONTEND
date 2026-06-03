@@ -39,7 +39,7 @@ import {
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import { fireConfetti } from '@/lib/confetti'
-import { calculatePartsVendues, calculatePourcentageVendu, usePropriete } from '@/lib/api/proprietes'
+import { calculatePartsVendues, calculatePourcentageVendu, useAdminPropriete } from '@/lib/api/proprietes'
 import { resolveFileUrl } from '@/lib/utils'
 
 export function AdminProprieteDetailPage() {
@@ -49,7 +49,7 @@ export function AdminProprieteDetailPage() {
   if (Number.isNaN(id)) return <Navigate to="/admin/proprietes" replace />
 
   const navigate = useNavigate()
-  const { data: p, isLoading, isError } = usePropriete(id)
+  const { data: p, isLoading, isError } = useAdminPropriete(id)
   const refuser = useRefuserPropriete()
   const publier = usePublierPropriete()
   const supprimer = useSupprimerPropriete()

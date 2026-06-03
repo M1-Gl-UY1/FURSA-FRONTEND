@@ -30,6 +30,39 @@ export function useProprietes() {
 }
 
 /**
+ * Hook admin : liste TOUTES les proprietes (sauf BROUILLON) avec tous les statuts.
+ * Endpoint protege par ROLE_ADMIN. A utiliser dans AdminProprietesPage pour voir
+ * les biens EN_REVIEW, ACCEPTEE, EN_TOKENISATION, REFUSEE en plus des PUBLIEE.
+ */
+export function useAdminProprietes() {
+  return useQuery({
+    queryKey: ['proprietes', 'admin'],
+    queryFn: async () => {
+      const { data } = await api.get<ProprieteResponse[]>('/api/proprietes/admin/all')
+      return data
+    },
+  })
+}
+
+/**
+ * Hook admin detail : accede a une propriete quel que soit son statut.
+ * Polling auto tant que EN_TOKENISATION (cf usePropriete classique).
+ */
+export function useAdminPropriete(id: number | undefined) {
+  return useQuery({
+    queryKey: ['propriete', 'admin', id],
+    queryFn: async () => {
+      const { data } = await api.get<ProprieteResponse>(`/api/proprietes/admin/${id}`)
+      return data
+    },
+    enabled: id != null && Number.isFinite(id),
+    refetchInterval: (query) =>
+      query.state.data?.statut === 'EN_TOKENISATION' ? 5000 : false,
+    refetchIntervalInBackground: false,
+  })
+}
+
+/**
  * Hook propriete avec polling automatique tant que le bien est en EN_TOKENISATION.
  * Permet a l'UI admin de basculer en PUBLIEE des que le worker backend a confirme
  * le receipt blockchain (~15-60s apres le clic "Valider").
