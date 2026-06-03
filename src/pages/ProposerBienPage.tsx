@@ -581,7 +581,6 @@ export function ProposerBienPage() {
    * uploades du brouillon en cours). A brancher sur les boutons de suppression
    * dans les sous-composants Photos/Video/Documents.
    */
-  // @ts-expect-error : utilise par futurs handlers UI sur les medias deja uploades
   async function handleRemoveMedia(mediaId: number) {
     if (brouillonId == null) return
     try {
@@ -1387,10 +1386,10 @@ function Step3Finance({
 
 type ServerDoc = {
   id: number
-  nom: string | null
-  url: string | null
+  nom?: string | null
+  url?: string | null
   type?: string
-  sectionPhoto?: SectionPhoto | null
+  sectionPhoto?: string | null
   categorieDocument?: string | null
 }
 

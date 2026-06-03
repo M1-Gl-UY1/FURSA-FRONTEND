@@ -101,6 +101,8 @@ export type DocumentResponse = {
   dateUpload?: string
   /** Phase Certification : null pour les documents légaux PDF, sinon section photo. */
   sectionPhoto?: string | null
+  /** Categorie du document legal (TITRE_FONCIER, PERMIS_CONSTRUIRE, ...). Null pour les images. */
+  categorieDocument?: string | null
 }
 
 export type ProprieteResponse = {
