@@ -16,6 +16,8 @@ export type BrouillonPatch = Partial<{
   description: string
 
   typeBien: TypeBien
+  /** V2 G.3 (04/06/2026) : code admin-configurable. Prime sur l'enum si fourni. */
+  typeBienCode: string
   nombrePieces: number
   nombreChambres: number
   superficieM2: number

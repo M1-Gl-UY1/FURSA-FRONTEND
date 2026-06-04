@@ -17,6 +17,7 @@ import { AdminEscrowsPage } from '@/pages/admin/AdminEscrowsPage'
 import { AdminRetraitsPage } from '@/pages/admin/AdminRetraitsPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
 import { AdminEquipementsPage } from '@/pages/admin/AdminEquipementsPage'
+import { AdminTypesBienPage } from '@/pages/admin/AdminTypesBienPage'
 import { AdminDistributionPage } from '@/pages/admin/AdminDistributionPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
 import { AdminKycPage } from '@/pages/admin/AdminKycPage'
@@ -166,6 +167,7 @@ function AdminRoutes() {
           <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
           <Route path="/admin/devise-rate" element={<AdminDeviseRatesPage />} />
           <Route path="/admin/equipements" element={<AdminEquipementsPage />} />
+          <Route path="/admin/types-bien" element={<AdminTypesBienPage />} />
           <Route path="/admin/distribution" element={<AdminDistributionPage />} />
           <Route path="/admin/dividendes" element={<AdminDividendesPage />} />
         </Route>

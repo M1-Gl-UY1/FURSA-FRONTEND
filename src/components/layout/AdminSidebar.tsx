@@ -69,6 +69,7 @@ const groups: NavGroup[] = [
   {
     label: 'Configuration',
     items: [
+      { label: 'Types de bien', to: '/admin/types-bien', icon: Building2 },
       { label: 'Équipements', to: '/admin/equipements', icon: Wrench },
     ],
   },

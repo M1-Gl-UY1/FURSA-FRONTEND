@@ -65,8 +65,16 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
     return ageMs >= 0 && ageMs < 7 * 24 * 60 * 60 * 1000
   })()
   const isFunded = pourcentage >= 100
-  const TypeIcon = propriete.typeBien ? TYPE_ICONS[propriete.typeBien] : null
-  const typeLabel = propriete.typeBien ? TYPE_LABELS[propriete.typeBien] : null
+  // V2 G.3 : resolution typeBienCode (admin-configurable) -> icone + label.
+  // Fallback sur l'enum legacy si typeBienCode non fourni (vieux client).
+  const typeCode = propriete.typeBienCode ?? propriete.typeBien ?? null
+  const TypeIcon =
+    typeCode && (typeCode in TYPE_ICONS)
+      ? TYPE_ICONS[typeCode as TypeBien]
+      : null
+  const typeLabel =
+    propriete.typeBienLabel
+    ?? (typeCode && (typeCode in TYPE_LABELS) ? TYPE_LABELS[typeCode as TypeBien] : typeCode)
 
   return (
     <Link

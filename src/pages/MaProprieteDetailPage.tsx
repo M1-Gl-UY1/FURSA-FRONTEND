@@ -224,7 +224,7 @@ export function MaProprieteDetailPage() {
           Caracteristiques
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-          <Meta icon={Building2} label="Type de bien">{p.typeBien ?? '—'}</Meta>
+          <Meta icon={Building2} label="Type de bien">{p.typeBienLabel ?? p.typeBien ?? '—'}</Meta>
           <Meta icon={Ruler} label="Superficie">
             {p.superficieM2 ? `${p.superficieM2} m²` : '—'}
           </Meta>

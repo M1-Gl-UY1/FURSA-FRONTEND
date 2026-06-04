@@ -104,7 +104,9 @@ export function OpportunitesPage() {
           p.description?.toLowerCase().includes(q)
       )
     }
-    if (typeBien) arr = arr.filter((p) => p.typeBien === typeBien)
+    // V2 G.3 : filtre sur typeBienCode (source de verite admin-configurable),
+    // fallback sur l'enum typeBien pour les biens crees avant la migration.
+    if (typeBien) arr = arr.filter((p) => (p.typeBienCode ?? p.typeBien) === typeBien)
     if (pays) arr = arr.filter((p) => p.pays === pays)
     if (statutExp) arr = arr.filter((p) => p.statutExploitation === statutExp)
     if (equipements.length > 0) {

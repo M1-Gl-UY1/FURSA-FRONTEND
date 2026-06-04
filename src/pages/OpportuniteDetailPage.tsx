@@ -197,10 +197,11 @@ export function OpportuniteDetailPage() {
                   Certifié Fursa
                 </span>
               )}
-              {propriete.typeBien && (
+              {(propriete.typeBienLabel || propriete.typeBien) && (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-terra/10 text-terra font-body text-xs font-semibold">
                   <Home className="w-3.5 h-3.5" strokeWidth={2} />
-                  {TYPE_BIEN_LABELS[propriete.typeBien]}
+                  {propriete.typeBienLabel
+                    ?? (propriete.typeBien ? TYPE_BIEN_LABELS[propriete.typeBien] : '')}
                 </span>
               )}
               {propriete.statutExploitation === 'EN_CONSTRUCTION' && (
@@ -778,8 +779,11 @@ type Carac = { icon: LucideIcon; label: string; value: string }
 
 function collectCaracteristiques(p: ProprieteResponse): Carac[] {
   const out: Carac[] = []
-  if (p.typeBien) {
-    out.push({ icon: Home, label: 'Type', value: TYPE_BIEN_LABELS[p.typeBien] })
+  // V2 G.3 : typeBienLabel resolu cote backend (legacy + custom). Fallback
+  // sur l'enum legacy pour les vieux clients qui n'envoient pas typeBienLabel.
+  const typeLabel = p.typeBienLabel ?? (p.typeBien ? TYPE_BIEN_LABELS[p.typeBien] : null)
+  if (typeLabel) {
+    out.push({ icon: Home, label: 'Type', value: typeLabel })
   }
   if (p.nombrePieces != null && p.nombrePieces > 0) {
     out.push({ icon: LayoutGrid, label: 'Pièces', value: String(p.nombrePieces) })

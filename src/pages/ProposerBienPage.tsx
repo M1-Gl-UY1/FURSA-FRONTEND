@@ -4,11 +4,8 @@ import {
   AlertCircle,
   ArrowLeft,
   ArrowRight,
-  BedDouble,
-  Building,
   Building2,
   Camera,
-  Castle,
   CheckCircle2,
   Coins,
   Edit,
@@ -53,6 +50,8 @@ import {
   type BrouillonPatch,
 } from '@/lib/api/brouillon'
 import { useEquipements, type EquipementResponse } from '@/lib/api/equipements'
+import { useTypesBien, type TypeBienResponse } from '@/lib/api/typesBien'
+import { getTypeBienMeta } from '@/lib/typeBienMeta'
 import type {
   SectionPhoto,
   SourceRevenu,
@@ -124,7 +123,12 @@ type FormState = {
   adressePrecise: string
   description: string
   // Etape 2
-  typeBien: TypeBien | ''
+  /**
+   * V2 G.3 (04/06/2026) : code du type de bien (string), pour accepter les
+   * codes custom admin (LOFT, MAISON_DE_VILLE, ...) en plus des 7 historiques.
+   * Remplace l'ancien champ {@code typeBien: TypeBien | ''}.
+   */
+  typeBienCode: string
   nombrePieces: number
   nombreChambres: number
   superficieM2: number
@@ -162,7 +166,7 @@ const INITIAL: FormState = {
   villeManuelle: '',
   adressePrecise: '',
   description: '',
-  typeBien: '',
+  typeBienCode: '',
   nombrePieces: 1,
   nombreChambres: 1,
   superficieM2: 50,
@@ -183,14 +187,18 @@ const INITIAL: FormState = {
   certified: false,
 }
 
-const TYPE_BIEN_OPTIONS: { value: TypeBien; label: string; icon: typeof HomeIcon }[] = [
-  { value: 'VILLA', label: 'Villa', icon: Castle },
-  { value: 'APPARTEMENT', label: 'Appartement', icon: Building },
-  { value: 'STUDIO', label: 'Studio', icon: HomeIcon },
-  { value: 'PENTHOUSE', label: 'Penthouse', icon: Sparkles },
-  { value: 'DUPLEX', label: 'Duplex', icon: Building2 },
-  { value: 'IMMEUBLE', label: 'Immeuble', icon: Building2 },
-  { value: 'CHAMBRE', label: 'Chambre', icon: BedDouble },
+// V2 G.3 (04/06/2026) : la liste des types de bien est desormais chargee
+// dynamiquement via useTypesBien() (admin-configurable). TYPE_BIEN_OPTIONS
+// hardcode a ete retire. Un fallback minimal (les 7 codes historiques)
+// reste disponible via lib/typeBienMeta.ts si l'API est indisponible.
+const TYPES_BIEN_FALLBACK: TypeBienResponse[] = [
+  { id: -1, code: 'VILLA', label: 'Villa', icone: 'Castle', ordre: 10, actif: true, exigeChambres: true },
+  { id: -2, code: 'APPARTEMENT', label: 'Appartement', icone: 'Building', ordre: 20, actif: true, exigeChambres: true },
+  { id: -3, code: 'STUDIO', label: 'Studio', icone: 'Home', ordre: 30, actif: true, exigeChambres: false },
+  { id: -4, code: 'PENTHOUSE', label: 'Penthouse', icone: 'Sparkles', ordre: 40, actif: true, exigeChambres: true },
+  { id: -5, code: 'DUPLEX', label: 'Duplex', icone: 'Building2', ordre: 50, actif: true, exigeChambres: true },
+  { id: -6, code: 'IMMEUBLE', label: 'Immeuble', icone: 'Building2', ordre: 60, actif: true, exigeChambres: true },
+  { id: -7, code: 'CHAMBRE', label: 'Chambre', icone: 'BedDouble', ordre: 70, actif: true, exigeChambres: false },
 ]
 
 // V2 G.1 (04/06/2026) : la liste des equipements est desormais chargee
@@ -322,7 +330,12 @@ export function ProposerBienPage() {
       ville: brouillonData.ville ?? s.ville,
       adressePrecise: brouillonData.adressePrecise ?? s.adressePrecise,
       description: brouillonData.description ?? s.description,
-      typeBien: (brouillonData.typeBien as TypeBien) ?? s.typeBien,
+      // V2 G.3 : prefere typeBienCode (source de verite) puis fallback sur
+      // l'enum typeBien (brouillons crees avant la migration 026).
+      typeBienCode:
+        (brouillonData as { typeBienCode?: string | null }).typeBienCode
+        ?? (brouillonData.typeBien as string | undefined)
+        ?? s.typeBienCode,
       nombrePieces: brouillonData.nombrePieces ?? s.nombrePieces,
       nombreChambres: brouillonData.nombreChambres ?? s.nombreChambres,
       superficieM2: brouillonData.superficieM2 ?? s.superficieM2,
@@ -382,7 +395,7 @@ export function ProposerBienPage() {
     // 0 — Localisation
     form.nom.trim().length >= 3 && !!form.pays && (!!form.ville || !!form.villeManuelle.trim()),
     // 1 — Type & équipements
-    form.typeBien !== '' && form.nombrePieces >= 1 && form.superficieM2 >= 1,
+    form.typeBienCode !== '' && form.nombrePieces >= 1 && form.superficieM2 >= 1,
     // 2 — Statut
     form.statutExploitation !== '' &&
       (form.statutExploitation !== 'DEJA_RENTABLE' ||
@@ -439,7 +452,8 @@ export function ProposerBienPage() {
           adressePrecise: form.adressePrecise.trim() || undefined,
           localisation: `${villeFinal}, ${form.pays}`,
           description: form.description.trim() || undefined,
-          typeBien: form.typeBien as TypeBien,
+          typeBien: form.typeBienCode as TypeBien,
+          typeBienCode: form.typeBienCode || undefined,
           nombrePieces: form.nombrePieces || null,
           nombreChambres: form.nombreChambres || null,
           superficieM2: form.superficieM2 || null,
@@ -507,7 +521,8 @@ export function ProposerBienPage() {
         }
       case 1:
         return {
-          typeBien: (form.typeBien || undefined) as TypeBien | undefined,
+          typeBien: (form.typeBienCode || undefined) as TypeBien | undefined,
+          typeBienCode: form.typeBienCode || undefined,
           nombrePieces: form.nombrePieces || undefined,
           nombreChambres: form.nombreChambres || undefined,
           superficieM2: form.superficieM2 || undefined,
@@ -1010,6 +1025,14 @@ function Step1Type({
   form: FormState
   update: <K extends keyof FormState>(key: K, value: FormState[K]) => void
 }) {
+  // V2 G.3 (04/06/2026) : chargement dynamique des types via l'API admin.
+  const { data: typesApi, isLoading: typesLoading, isError: typesError } = useTypesBien()
+  const typesList = (!typesError && typesApi && typesApi.length > 0) ? typesApi : TYPES_BIEN_FALLBACK
+  // exigeChambres : on cherche le type selectionne. Defaut true (sécurité :
+  // pour un code custom inconnu de l'API, on demande quand même les chambres).
+  const exigeChambres =
+    typesList.find((t) => t.code === form.typeBienCode)?.exigeChambres ?? true
+
   return (
     <>
       <h2 className="font-display font-bold text-earth text-xl mb-1 flex items-center gap-2">
@@ -1023,28 +1046,36 @@ function Step1Type({
       <div className="space-y-6">
         <div>
           <Label className="mb-3 block">Type de bien <span className="text-error">*</span></Label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {TYPE_BIEN_OPTIONS.map((opt) => {
-              const Icon = opt.icon
-              const active = form.typeBien === opt.value
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => update('typeBien', opt.value)}
-                  className={cn(
-                    'flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-[1.5px] font-body text-xs font-semibold transition-colors',
-                    active
-                      ? 'border-terra bg-terra/10 text-terra'
-                      : 'border-sand-400 text-earth-600 hover:border-terra/40'
-                  )}
-                >
-                  <Icon className="w-5 h-5" strokeWidth={1.75} />
-                  {opt.label}
-                </button>
-              )
-            })}
-          </div>
+          {typesLoading ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <Skeleton key={i} className="h-20 w-full" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {typesList.map((opt) => {
+                const Icon = getTypeBienMeta(opt.code, typesList)?.icon ?? HomeIcon
+                const active = form.typeBienCode === opt.code
+                return (
+                  <button
+                    key={opt.code}
+                    type="button"
+                    onClick={() => update('typeBienCode', opt.code)}
+                    className={cn(
+                      'flex flex-col items-center justify-center gap-2 p-4 rounded-lg border-[1.5px] font-body text-xs font-semibold transition-colors',
+                      active
+                        ? 'border-terra bg-terra/10 text-terra'
+                        : 'border-sand-400 text-earth-600 hover:border-terra/40'
+                    )}
+                  >
+                    <Icon className="w-5 h-5" strokeWidth={1.75} />
+                    {opt.label}
+                  </button>
+                )
+              })}
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-3 gap-3">
@@ -1058,7 +1089,7 @@ function Step1Type({
               onChange={(e) => update('nombrePieces', parseInt(e.target.value, 10) || 0)}
             />
           </div>
-          {form.typeBien !== 'STUDIO' && form.typeBien !== 'CHAMBRE' && (
+          {exigeChambres && (
             <div className="space-y-2">
               <Label htmlFor="chambres">Nb chambres</Label>
               <Input
@@ -1163,6 +1194,13 @@ function EquipementsRecap({ codes }: { codes: string[] }) {
   const { data: apiList } = useEquipements()
   if (!codes || codes.length === 0) return <>—</>
   return <>{codes.map((c) => labelOfEquipement(c, apiList)).join(', ')}</>
+}
+
+/** V2 G.3 : affichage du libelle d'un code type de bien dans le Recap. */
+function TypeBienRecap({ code }: { code: string }) {
+  const { data: apiList } = useTypesBien()
+  if (!code) return <>—</>
+  return <>{getTypeBienMeta(code, apiList)?.label ?? code}</>
 }
 
 // =============================================================================
@@ -1484,6 +1522,12 @@ function Step4Photos({
   serverPhotos?: ServerDoc[]
   onRemoveServerMedia?: (mediaId: number) => Promise<void> | void
 }) {
+  // V2 G.3 : exigeChambres pilote l'inclusion de la section CHAMBRE.
+  const { data: typesApi } = useTypesBien()
+  const typesList = typesApi && typesApi.length > 0 ? typesApi : TYPES_BIEN_FALLBACK
+  const exigeChambres =
+    typesList.find((t) => t.code === form.typeBienCode)?.exigeChambres ?? true
+
   // Sections requises selon le type de bien et équipements
   const sectionsRequises: { section: SectionPhoto; label: string; required: boolean }[] =
     useMemo(() => {
@@ -1492,7 +1536,7 @@ function Step4Photos({
         { section: 'SALON', label: 'Salon', required: true },
         { section: 'CUISINE', label: 'Cuisine', required: false },
       ]
-      if (form.typeBien !== 'STUDIO' && form.typeBien !== 'CHAMBRE') {
+      if (exigeChambres) {
         base.push({ section: 'CHAMBRE', label: 'Chambres', required: false })
       }
       base.push({ section: 'SALLE_DE_BAIN', label: 'Salle de bain', required: false })
@@ -1505,7 +1549,7 @@ function Step4Photos({
       base.push({ section: 'EXTERIEUR', label: 'Extérieur / jardin', required: false })
       base.push({ section: 'AUTRE', label: 'Autres photos', required: false })
       return base
-    }, [form.typeBien, form.equipementsCodes])
+    }, [exigeChambres, form.equipementsCodes])
 
   function addPhotos(section: SectionPhoto, files: FileList | null) {
     if (!files) return
@@ -2087,7 +2131,7 @@ function Step7Recap({
         </RecapSection>
 
         <RecapSection title="Type" onEdit={() => onEditStep(1)}>
-          <Row label="Type">{form.typeBien}</Row>
+          <Row label="Type"><TypeBienRecap code={form.typeBienCode} /></Row>
           <Row label="Surface">{form.superficieM2} m²</Row>
           <Row label="Pièces">{form.nombrePieces}{form.nombreChambres ? ` (${form.nombreChambres} chambres)` : ''}</Row>
           <Row label="Équipements">

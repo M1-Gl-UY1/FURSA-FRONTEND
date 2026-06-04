@@ -136,6 +136,10 @@ export type ProprieteResponse = {
   ville?: string | null
   adressePrecise?: string | null
   typeBien?: TypeBien | null
+  /** V2 G.3 : code admin-configurable (peut etre un code custom hors enum). */
+  typeBienCode?: string | null
+  /** V2 G.3 : libelle resolu cote backend (ex "Villa", "Loft"). */
+  typeBienLabel?: string | null
   nombrePieces?: number | null
   nombreChambres?: number | null
   superficieM2?: number | null
@@ -295,7 +299,9 @@ export type SubmissionRequest = {
   adressePrecise?: string
   localisation?: string
   description?: string
-  typeBien: TypeBien
+  typeBien?: TypeBien | null
+  /** V2 G.3 : code admin-configurable (prime sur l'enum). */
+  typeBienCode?: string
   nombrePieces?: number | null
   nombreChambres?: number | null
   superficieM2?: number | null

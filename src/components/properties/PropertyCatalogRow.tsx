@@ -39,7 +39,11 @@ export function PropertyCatalogRow({ propriete }: Props) {
   const partsTotales = propriete.nombreTotalPart ?? propriete.partsTotales ?? 0
   const isTrending = pourcentage >= 50 && pourcentage < 100
   const isFunded = pourcentage >= 100
-  const typeLabel = propriete.typeBien ? TYPE_LABELS[propriete.typeBien] : null
+  // V2 G.3 : typeBienLabel resolu cote backend si dispo, sinon legacy mapping.
+  const typeCode = propriete.typeBienCode ?? propriete.typeBien ?? null
+  const typeLabel =
+    propriete.typeBienLabel
+    ?? (typeCode && (typeCode in TYPE_LABELS) ? TYPE_LABELS[typeCode as TypeBien] : typeCode)
 
   return (
     <Link

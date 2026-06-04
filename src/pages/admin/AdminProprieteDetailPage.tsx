@@ -374,13 +374,13 @@ export function AdminProprieteDetailPage() {
       </section>
 
       {/* Type & equipements */}
-      {(p.typeBien || p.superficieM2 || p.nombrePieces || p.nombreChambres) && (
+      {(p.typeBien || p.typeBienCode || p.superficieM2 || p.nombrePieces || p.nombreChambres) && (
         <section className="bg-sand-100 rounded-xl border border-earth/5 p-5 sm:p-6">
           <h2 className="font-display font-semibold text-earth text-lg mb-4">
             Type & equipements
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-3">
-            <Meta icon={Building2} label="Type">{p.typeBien ?? '—'}</Meta>
+            <Meta icon={Building2} label="Type">{p.typeBienLabel ?? p.typeBien ?? '—'}</Meta>
             <Meta icon={Building2} label="Surface">
               {p.superficieM2 ? `${p.superficieM2} m²` : '—'}
             </Meta>
