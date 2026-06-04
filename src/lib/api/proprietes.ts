@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from './client'
 import type { HistoriquePrixPartResponse, ProgressionResponse, ProprieteResponse } from './types'
@@ -40,6 +40,30 @@ export function useAdminProprietes() {
     queryFn: async () => {
       const { data } = await api.get<ProprieteResponse[]>('/api/proprietes/admin/all')
       return data
+    },
+  })
+}
+
+/**
+ * Hook : modifier ma propriete (proposeur). Le backend filtre les champs
+ * autorises selon le statut : EN_REVIEW/ACCEPTEE -> tout sauf prix/parts ;
+ * EN_TOKENISATION/PUBLIEE -> nom + description uniquement ; REFUSEE -> bloque ;
+ * BROUILLON -> utiliser PATCH /brouillon/{id}.
+ */
+export function useModifierMaPropriete() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, patch }: { id: number; patch: import('./brouillon').BrouillonPatch }) => {
+      const { data } = await api.patch<ProprieteResponse>(
+        `/api/proprietes/me/${id}`,
+        patch
+      )
+      return data
+    },
+    onSuccess: (_d, { id }) => {
+      qc.invalidateQueries({ queryKey: ['propriete', id] })
+      qc.invalidateQueries({ queryKey: ['ma-propriete-proposee', id] })
+      qc.invalidateQueries({ queryKey: ['mes-proprietes-proposees'] })
     },
   })
 }

@@ -7,11 +7,9 @@ import {
   Building2,
   CalendarClock,
   CalendarDays,
-  Car,
   CheckCircle2,
   Clock,
   Coins,
-  Eye,
   FileText,
   Globe,
   Home as HomeIcon,
@@ -25,11 +23,8 @@ import {
   Ruler,
   ShieldCheck,
   Sparkles,
-  Trees,
   TrendingUp,
   Upload,
-  Waves,
-  Wind,
   X,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -46,6 +41,8 @@ import {
 } from '@/lib/api/certification'
 import { useMesRevenus, useStatutDeclaration } from '@/lib/api/revenus'
 import { useMaProprieteProposee } from '@/lib/api/submissions'
+import { useEquipements } from '@/lib/api/equipements'
+import { getEquipementsMetaList } from '@/lib/equipementsMeta'
 import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 import { extractApiError } from '@/lib/api/errors'
 import type { ProprieteResponse } from '@/lib/api/types'
@@ -108,18 +105,21 @@ export function MaProprieteDetailPage() {
       </Link>
 
       {/* Header bien */}
-      <header>
-        <div className="flex items-center flex-wrap gap-2 mb-2">
-          <StatusBadge status={p.statut} />
-          {isPubliee && <DeclarationBadgeForPropriete proprieteId={id} />}
+      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center flex-wrap gap-2 mb-2">
+            <StatusBadge status={p.statut} />
+            {isPubliee && <DeclarationBadgeForPropriete proprieteId={id} />}
+          </div>
+          <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-2">
+            {p.nom}
+          </h1>
+          <p className="flex items-center gap-1.5 text-earth-600 text-sm font-body">
+            <MapPin className="w-4 h-4" strokeWidth={1.75} />
+            {p.localisation}
+          </p>
         </div>
-        <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-2">
-          {p.nom}
-        </h1>
-        <p className="flex items-center gap-1.5 text-earth-600 text-sm font-body">
-          <MapPin className="w-4 h-4" strokeWidth={1.75} />
-          {p.localisation}
-        </p>
+        <ModifierProprieteButton propriete={p} />
       </header>
 
       {/* Bandeau statut */}
@@ -232,19 +232,7 @@ export function MaProprieteDetailPage() {
           <Meta icon={Bed} label="Nombre de chambres">{p.nombreChambres ?? '—'}</Meta>
         </div>
 
-        {(p.hasPiscine || p.hasClimatisation || p.hasParking || p.hasAscenseur || p.hasJardin || p.hasVueMer) && (
-          <div>
-            <p className="font-body text-xs uppercase tracking-wider text-earth-500 font-semibold mb-2">Equipements</p>
-            <div className="flex flex-wrap gap-2">
-              {p.hasPiscine && <Tag icon={Waves}>Piscine</Tag>}
-              {p.hasClimatisation && <Tag icon={Wind}>Climatisation</Tag>}
-              {p.hasParking && <Tag icon={Car}>Parking</Tag>}
-              {p.hasAscenseur && <Tag icon={Building2}>Ascenseur</Tag>}
-              {p.hasJardin && <Tag icon={Trees}>Jardin</Tag>}
-              {p.hasVueMer && <Tag icon={Eye}>Vue mer</Tag>}
-            </div>
-          </div>
-        )}
+        <EquipementsList codes={p.equipementsCodes ?? null} />
       </section>
 
       {/* Finance detaillee */}
@@ -815,5 +803,168 @@ function Tag({ icon: Icon, children }: { icon: typeof CalendarDays; children: Re
       <Icon className="w-3.5 h-3.5 text-terra" strokeWidth={1.75} />
       {children}
     </span>
+  )
+}
+
+/**
+ * V2 G.1 (04/06/2026) : affiche les equipements d'un bien depuis ses codes
+ * (admin-configurables). Resout les labels et icones via getEquipementsMetaList
+ * (legacy + API).
+ */
+function EquipementsList({ codes }: { codes: string[] | null }) {
+  const { data: apiList } = useEquipements()
+  if (!codes || codes.length === 0) return null
+  const items = getEquipementsMetaList(codes, apiList)
+  if (items.length === 0) return null
+  return (
+    <div>
+      <p className="font-body text-xs uppercase tracking-wider text-earth-500 font-semibold mb-2">Equipements</p>
+      <div className="flex flex-wrap gap-2">
+        {items.map((eq) => (
+          <Tag key={eq.code} icon={eq.icon}>{eq.label}</Tag>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// =============================================================================
+// Bouton "Modifier" + modal (Phase E - 04/06/2026)
+// =============================================================================
+
+import { Edit3 } from 'lucide-react'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { useModifierMaPropriete } from '@/lib/api/proprietes'
+import type { BrouillonPatch } from '@/lib/api/brouillon'
+
+function ModifierProprieteButton({ propriete: p }: { propriete: ProprieteResponse }) {
+  const [open, setOpen] = useState(false)
+  const modifier = useModifierMaPropriete()
+  const [form, setForm] = useState<{ nom: string; description: string }>(() => ({
+    nom: p.nom ?? '',
+    description: p.description ?? '',
+  }))
+
+  // BROUILLON : modification via le wizard auto-save (-> redirection)
+  if (p.statut === 'BROUILLON') {
+    return (
+      <Button asChild variant="outline">
+        <Link to={`/proposer-un-bien/${p.id}`}>
+          <Edit3 className="w-4 h-4" strokeWidth={1.75} />
+          Continuer la soumission
+        </Link>
+      </Button>
+    )
+  }
+
+  // REFUSEE : doit re-soumettre, pas de modification possible
+  if (p.statut === 'REFUSEE') {
+    return (
+      <Button asChild>
+        <Link to="/proposer-un-bien">
+          <Edit3 className="w-4 h-4" strokeWidth={1.75} />
+          Soumettre à nouveau
+        </Link>
+      </Button>
+    )
+  }
+
+  // Apres tokenisation : seuls nom + description sont modifiables.
+  const isAfterTokenisation = p.statut === 'EN_TOKENISATION'
+    || p.statut === 'PUBLIEE'
+    || p.statut === 'EN_ATTENTE'
+
+  function handleSave() {
+    const patch: BrouillonPatch = {
+      nom: form.nom.trim() || undefined,
+      description: form.description.trim() || undefined,
+    }
+    modifier.mutate(
+      { id: p.id, patch },
+      {
+        onSuccess: () => {
+          toast.success('Modifications enregistrées.')
+          setOpen(false)
+        },
+        onError: (err: unknown) => {
+          toast.error(extractApiError(err, 'Modification impossible.'))
+        },
+      }
+    )
+  }
+
+  return (
+    <>
+      <Button variant="outline" onClick={() => setOpen(true)}>
+        <Edit3 className="w-4 h-4" strokeWidth={1.75} />
+        Modifier
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="bg-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-display text-earth text-xl">
+              Modifier la propriété
+            </DialogTitle>
+            <DialogDescription className="font-body text-earth-600 text-sm">
+              {isAfterTokenisation ? (
+                <>Après tokenisation, seuls le <strong>nom</strong> et la <strong>description</strong> sont modifiables. Les autres caractéristiques sont figées on-chain.</>
+              ) : (
+                <>Vous pouvez modifier le nom et la description. Les caractéristiques (type, équipements, finance) sont à modifier via le wizard de re-soumission si nécessaire.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="font-body text-sm font-semibold text-earth block mb-1.5">
+                Nom du bien
+              </label>
+              <input
+                type="text"
+                value={form.nom}
+                onChange={(e) => setForm({ ...form, nom: e.target.value })}
+                maxLength={120}
+                placeholder="Ex : Villa Paje vue mer"
+                title="Nom du bien"
+                aria-label="Nom du bien"
+                className="w-full px-3 py-2 rounded-md border-[1.5px] border-sand-400 bg-white text-sm text-earth font-body focus:border-terra focus:ring-2 focus:ring-terra/15 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="font-body text-sm font-semibold text-earth block mb-1.5">
+                Description
+              </label>
+              <textarea
+                value={form.description}
+                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                rows={6}
+                maxLength={2000}
+                placeholder="Décrivez le bien : emplacement, équipements, atouts pour un investisseur..."
+                title="Description du bien"
+                aria-label="Description du bien"
+                className="w-full px-3 py-2 rounded-md border-[1.5px] border-sand-400 bg-white text-sm text-earth font-body focus:border-terra focus:ring-2 focus:ring-terra/15 focus:outline-none resize-vertical"
+              />
+              <p className="text-xs text-earth-500 mt-1">{form.description.length} / 2000 caractères</p>
+            </div>
+          </div>
+
+          <DialogFooter className="mt-4 gap-2">
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={modifier.isPending}>
+              Annuler
+            </Button>
+            <Button onClick={handleSave} disabled={modifier.isPending || !form.nom.trim()}>
+              {modifier.isPending ? 'Enregistrement...' : 'Enregistrer'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

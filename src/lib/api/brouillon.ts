@@ -25,6 +25,8 @@ export type BrouillonPatch = Partial<{
   hasAscenseur: boolean
   hasJardin: boolean
   hasVueMer: boolean
+  /** V2 G.1 (04/06/2026) : equipements admin-configurables. Prime sur les hasXxx si fourni. */
+  equipementsCodes: string[]
 
   statutExploitation: StatutExploitation
   dateLivraisonPrevue: string

@@ -53,13 +53,18 @@ const TYPE_BIEN_OPTIONS: { value: TypeBien; label: string; icon: typeof HomeIcon
   { value: 'CHAMBRE', label: 'Chambre', icon: BedDouble },
 ]
 
-const EQUIPEMENTS_OPTIONS: { key: string; label: string }[] = [
-  { key: 'hasVueMer', label: '🌊 Vue mer' },
-  { key: 'hasPiscine', label: '🏊 Piscine' },
-  { key: 'hasClimatisation', label: '❄ Climatisation' },
-  { key: 'hasJardin', label: '🌿 Jardin' },
-  { key: 'hasParking', label: '🅿 Parking' },
-  { key: 'hasAscenseur', label: '🛗 Ascenseur' },
+// V2 G.1 (04/06/2026) : filtres par code d'equipement (et non plus par
+// booleen hasXxx). Les codes correspondent aux codes des entites Equipement
+// admin-configurables (cf migration 025). Cette liste reste statique pour
+// preserver l'UX (emojis + ordre) ; les equipements custom crees par l'admin
+// ne sont pas encore filtrables ici (a faire dans une iteration ulterieure).
+const EQUIPEMENTS_OPTIONS: { code: string; label: string }[] = [
+  { code: 'VUE_MER', label: '🌊 Vue mer' },
+  { code: 'PISCINE', label: '🏊 Piscine' },
+  { code: 'CLIMATISATION', label: '❄ Climatisation' },
+  { code: 'JARDIN', label: '🌿 Jardin' },
+  { code: 'PARKING', label: '🅿 Parking' },
+  { code: 'ASCENSEUR', label: '🛗 Ascenseur' },
 ]
 
 /**
@@ -103,8 +108,9 @@ export function OpportunitesPage() {
     if (pays) arr = arr.filter((p) => p.pays === pays)
     if (statutExp) arr = arr.filter((p) => p.statutExploitation === statutExp)
     if (equipements.length > 0) {
+      // V2 G.1 : filtre sur equipementsCodes (codes admin-configurables).
       arr = arr.filter((p) =>
-        equipements.every((key) => Boolean((p as unknown as Record<string, unknown>)[key]))
+        equipements.every((code) => (p.equipementsCodes ?? []).includes(code))
       )
     }
     const maxP = parseFloat(maxPrix)
@@ -366,10 +372,10 @@ export function OpportunitesPage() {
               <div className="flex flex-wrap gap-1.5">
                 {EQUIPEMENTS_OPTIONS.map((eq) => (
                   <FilterChip
-                    key={eq.key}
+                    key={eq.code}
                     small
-                    active={equipements.includes(eq.key)}
-                    onClick={() => toggleEquipement(eq.key)}
+                    active={equipements.includes(eq.code)}
+                    onClick={() => toggleEquipement(eq.code)}
                   >
                     {eq.label}
                   </FilterChip>

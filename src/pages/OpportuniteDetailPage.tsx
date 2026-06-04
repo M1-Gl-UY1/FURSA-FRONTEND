@@ -17,12 +17,7 @@ import {
   Bed,
   Ruler,
   LayoutGrid,
-  Waves,
-  Wind,
-  Car,
   Building2,
-  Trees,
-  Eye,
   PlayCircle,
   Sparkles,
   CalendarClock,
@@ -57,6 +52,8 @@ import {
   usePropriete,
 } from '@/lib/api/proprietes'
 import { useAuth } from '@/lib/auth/AuthContext'
+import { useEquipements } from '@/lib/api/equipements'
+import { getEquipementsMetaList } from '@/lib/equipementsMeta'
 import { resolveFileUrl } from '@/lib/utils'
 import type { ProprieteResponse, TypeBien } from '@/lib/api/types'
 
@@ -123,7 +120,8 @@ export function OpportuniteDetailPage() {
   const sansParts = (propriete.partsDisponibles ?? 0) <= 0
   const sparklineValues = (historiquePrix ?? []).map((h) => h.prixUnitaire)
 
-  const equipements = collectEquipements(propriete)
+  // V2 G.1 : source unique = equipementsCodes (resolu via le helper meta).
+  const equipements = useEquipementsForDisplay(propriete.equipementsCodes ?? null)
   const caracteristiques = collectCaracteristiques(propriete)
   const isCertifie = propriete.certifie === true || propriete.statutCertif === 'CERTIFIE'
 
@@ -797,15 +795,17 @@ function collectCaracteristiques(p: ProprieteResponse): Carac[] {
 
 type Equip = { icon: LucideIcon; label: string }
 
-function collectEquipements(p: ProprieteResponse): Equip[] {
-  const out: Equip[] = []
-  if (p.hasPiscine) out.push({ icon: Waves, label: 'Piscine' })
-  if (p.hasClimatisation) out.push({ icon: Wind, label: 'Climatisation' })
-  if (p.hasParking) out.push({ icon: Car, label: 'Parking' })
-  if (p.hasAscenseur) out.push({ icon: Building2, label: 'Ascenseur' })
-  if (p.hasJardin) out.push({ icon: Trees, label: 'Jardin' })
-  if (p.hasVueMer) out.push({ icon: Eye, label: 'Vue mer' })
-  return out
+/**
+ * V2 G.1 (04/06/2026) : resout les equipements via l'API (codes admin-
+ * configurables) puis applique les meta legacy (icones lucide) pour les
+ * 6 codes historiques.
+ */
+function useEquipementsForDisplay(codes: string[] | null): Equip[] {
+  const { data: apiList } = useEquipements()
+  return getEquipementsMetaList(codes, apiList).map((eq) => ({
+    icon: eq.icon,
+    label: eq.label,
+  }))
 }
 
 // --- Sous-composants ---

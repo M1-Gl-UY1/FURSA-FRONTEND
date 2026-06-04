@@ -52,6 +52,7 @@ import {
   useSupprimerMediaBrouillon,
   type BrouillonPatch,
 } from '@/lib/api/brouillon'
+import { useEquipements, type EquipementResponse } from '@/lib/api/equipements'
 import type {
   SectionPhoto,
   SourceRevenu,
@@ -127,12 +128,12 @@ type FormState = {
   nombrePieces: number
   nombreChambres: number
   superficieM2: number
-  hasPiscine: boolean
-  hasClimatisation: boolean
-  hasParking: boolean
-  hasAscenseur: boolean
-  hasJardin: boolean
-  hasVueMer: boolean
+  /**
+   * V2 G.1 (04/06/2026) : equipements admin-configurables.
+   * Liste de codes selectionnes (ex ["PISCINE", "PARKING"]). Source de verite
+   * unique (remplace les 6 booleens has* historiques).
+   */
+  equipementsCodes: string[]
   // Etape 3
   statutExploitation: StatutExploitation | ''
   /** P8b : ISO date string. Obligatoire si statutExploitation = EN_CONSTRUCTION. */
@@ -165,12 +166,7 @@ const INITIAL: FormState = {
   nombrePieces: 1,
   nombreChambres: 1,
   superficieM2: 50,
-  hasPiscine: false,
-  hasClimatisation: false,
-  hasParking: false,
-  hasAscenseur: false,
-  hasJardin: false,
-  hasVueMer: false,
+  equipementsCodes: [],
   statutExploitation: '',
   dateLivraisonPrevue: '',
   revenuMensuelActuel: 0,
@@ -197,14 +193,54 @@ const TYPE_BIEN_OPTIONS: { value: TypeBien; label: string; icon: typeof HomeIcon
   { value: 'CHAMBRE', label: 'Chambre', icon: BedDouble },
 ]
 
-const EQUIPEMENTS: { key: keyof FormState; label: string }[] = [
-  { key: 'hasPiscine', label: 'Piscine' },
-  { key: 'hasClimatisation', label: 'Climatisation' },
-  { key: 'hasParking', label: 'Parking' },
-  { key: 'hasAscenseur', label: 'Ascenseur' },
-  { key: 'hasJardin', label: 'Jardin' },
-  { key: 'hasVueMer', label: 'Vue mer' },
+// V2 G.1 (04/06/2026) : la liste des equipements est desormais chargee
+// dynamiquement via useEquipements() (admin-configurable). La constante
+// EQUIPEMENTS hardcodee a ete retiree. On garde toutefois un fallback
+// minimal (les 6 codes historiques) pour ne pas bloquer l'UI si l'API
+// est indisponible.
+const EQUIPEMENTS_FALLBACK: { code: string; label: string }[] = [
+  { code: 'PISCINE', label: 'Piscine' },
+  { code: 'CLIMATISATION', label: 'Climatisation' },
+  { code: 'PARKING', label: 'Parking' },
+  { code: 'ASCENSEUR', label: 'Ascenseur' },
+  { code: 'JARDIN', label: 'Jardin' },
+  { code: 'VUE_MER', label: 'Vue mer' },
 ]
+
+/** Renvoie le label affichable d'un code equipement (api > fallback > code brut). */
+function labelOfEquipement(
+  code: string,
+  apiList: { code: string; label: string }[] | undefined
+): string {
+  return (
+    apiList?.find((e) => e.code === code)?.label
+    ?? EQUIPEMENTS_FALLBACK.find((e) => e.code === code)?.label
+    ?? code
+  )
+}
+
+/**
+ * Reconstruit la liste de codes equipementsCodes depuis les anciens booleens
+ * has_xxx, pour la retro-compat lors de l'hydratation d'un brouillon serveur
+ * qui ne possede pas encore le champ equipementsCodes.
+ */
+function codesFromLegacyBooleans(b: {
+  hasPiscine?: boolean | null
+  hasClimatisation?: boolean | null
+  hasParking?: boolean | null
+  hasAscenseur?: boolean | null
+  hasJardin?: boolean | null
+  hasVueMer?: boolean | null
+}): string[] {
+  const out: string[] = []
+  if (b.hasPiscine) out.push('PISCINE')
+  if (b.hasClimatisation) out.push('CLIMATISATION')
+  if (b.hasParking) out.push('PARKING')
+  if (b.hasAscenseur) out.push('ASCENSEUR')
+  if (b.hasJardin) out.push('JARDIN')
+  if (b.hasVueMer) out.push('VUE_MER')
+  return out
+}
 
 // Persistance : on sauvegarde les champs texte/nombre/bool dans localStorage
 // pour ne pas perdre la progression au refresh. Les File (photos/video/documents)
@@ -290,12 +326,12 @@ export function ProposerBienPage() {
       nombrePieces: brouillonData.nombrePieces ?? s.nombrePieces,
       nombreChambres: brouillonData.nombreChambres ?? s.nombreChambres,
       superficieM2: brouillonData.superficieM2 ?? s.superficieM2,
-      hasPiscine: brouillonData.hasPiscine ?? s.hasPiscine,
-      hasClimatisation: brouillonData.hasClimatisation ?? s.hasClimatisation,
-      hasParking: brouillonData.hasParking ?? s.hasParking,
-      hasAscenseur: brouillonData.hasAscenseur ?? s.hasAscenseur,
-      hasJardin: brouillonData.hasJardin ?? s.hasJardin,
-      hasVueMer: brouillonData.hasVueMer ?? s.hasVueMer,
+      // V2 G.1 : priorite a equipementsCodes du serveur si fourni,
+      // sinon fallback construction depuis les anciens booleens hasXxx.
+      equipementsCodes:
+        brouillonData.equipementsCodes && brouillonData.equipementsCodes.length > 0
+          ? brouillonData.equipementsCodes
+          : codesFromLegacyBooleans(brouillonData),
       statutExploitation: (brouillonData.statutExploitation as StatutExploitation) ?? s.statutExploitation,
       dateLivraisonPrevue: brouillonData.dateLivraisonPrevue ?? s.dateLivraisonPrevue,
       revenuMensuelActuel: Number(brouillonData.revenuMensuelActuel ?? s.revenuMensuelActuel),
@@ -407,12 +443,7 @@ export function ProposerBienPage() {
           nombrePieces: form.nombrePieces || null,
           nombreChambres: form.nombreChambres || null,
           superficieM2: form.superficieM2 || null,
-          hasPiscine: form.hasPiscine,
-          hasClimatisation: form.hasClimatisation,
-          hasParking: form.hasParking,
-          hasAscenseur: form.hasAscenseur,
-          hasJardin: form.hasJardin,
-          hasVueMer: form.hasVueMer,
+          equipementsCodes: form.equipementsCodes,
           statutExploitation: form.statutExploitation as StatutExploitation,
           dateLivraisonPrevue:
             form.statutExploitation === 'EN_CONSTRUCTION' && form.dateLivraisonPrevue
@@ -480,12 +511,7 @@ export function ProposerBienPage() {
           nombrePieces: form.nombrePieces || undefined,
           nombreChambres: form.nombreChambres || undefined,
           superficieM2: form.superficieM2 || undefined,
-          hasPiscine: form.hasPiscine,
-          hasClimatisation: form.hasClimatisation,
-          hasParking: form.hasParking,
-          hasAscenseur: form.hasAscenseur,
-          hasJardin: form.hasJardin,
-          hasVueMer: form.hasVueMer,
+          equipementsCodes: form.equipementsCodes,
         }
       case 2:
         return {
@@ -1056,33 +1082,87 @@ function Step1Type({
           </div>
         </div>
 
-        <div>
-          <Label className="mb-3 block">Équipements disponibles</Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {EQUIPEMENTS.map((eq) => {
-              const checked = form[eq.key] as boolean
-              return (
-                <button
-                  key={eq.key}
-                  type="button"
-                  onClick={() => update(eq.key as 'hasPiscine', !checked as never)}
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2.5 rounded-md border-[1.5px] font-body text-sm font-medium transition-colors',
-                    checked
-                      ? 'border-success bg-success/10 text-success'
-                      : 'border-sand-400 text-earth-600 hover:border-success/40'
-                  )}
-                >
-                  <Checkbox checked={checked} className="pointer-events-none" />
-                  {eq.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
+        <EquipementsGrille
+          selected={form.equipementsCodes}
+          onToggle={(code) => {
+            const next = form.equipementsCodes.includes(code)
+              ? form.equipementsCodes.filter((c) => c !== code)
+              : [...form.equipementsCodes, code]
+            update('equipementsCodes', next)
+          }}
+        />
       </div>
     </>
   )
+}
+
+/**
+ * V2 G.1 (04/06/2026) : grille dynamique des equipements (admin-configurable).
+ * Charge la liste via useEquipements(), affiche un placeholder pendant le
+ * chargement et un fallback statique en cas d'erreur reseau (les 6 historiques)
+ * pour ne pas bloquer le wizard.
+ */
+function EquipementsGrille({
+  selected,
+  onToggle,
+}: {
+  selected: string[]
+  onToggle: (code: string) => void
+}) {
+  const { data: equipements, isLoading, isError } = useEquipements()
+
+  const FALLBACK: EquipementResponse[] = useMemo(() => ([
+    { id: -1, code: 'PISCINE', label: 'Piscine', icone: null, ordre: 10, actif: true },
+    { id: -2, code: 'CLIMATISATION', label: 'Climatisation', icone: null, ordre: 20, actif: true },
+    { id: -3, code: 'PARKING', label: 'Parking', icone: null, ordre: 30, actif: true },
+    { id: -4, code: 'ASCENSEUR', label: 'Ascenseur', icone: null, ordre: 40, actif: true },
+    { id: -5, code: 'JARDIN', label: 'Jardin', icone: null, ordre: 50, actif: true },
+    { id: -6, code: 'VUE_MER', label: 'Vue mer', icone: null, ordre: 60, actif: true },
+  ]), [])
+
+  const list = (!isError && equipements && equipements.length > 0) ? equipements : FALLBACK
+
+  return (
+    <div>
+      <Label className="mb-3 block">Équipements disponibles</Label>
+      {isLoading ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton key={i} className="h-10 w-full" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {list.map((eq) => {
+            const checked = selected.includes(eq.code)
+            return (
+              <button
+                key={eq.code}
+                type="button"
+                onClick={() => onToggle(eq.code)}
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2.5 rounded-md border-[1.5px] font-body text-sm font-medium transition-colors',
+                  checked
+                    ? 'border-success bg-success/10 text-success'
+                    : 'border-sand-400 text-earth-600 hover:border-success/40'
+                )}
+              >
+                <Checkbox checked={checked} className="pointer-events-none" />
+                {eq.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Affichage simple des labels d'equipements (utilise dans le Recap final). */
+function EquipementsRecap({ codes }: { codes: string[] }) {
+  const { data: apiList } = useEquipements()
+  if (!codes || codes.length === 0) return <>—</>
+  return <>{codes.map((c) => labelOfEquipement(c, apiList)).join(', ')}</>
 }
 
 // =============================================================================
@@ -1416,16 +1496,16 @@ function Step4Photos({
         base.push({ section: 'CHAMBRE', label: 'Chambres', required: false })
       }
       base.push({ section: 'SALLE_DE_BAIN', label: 'Salle de bain', required: false })
-      if (form.hasPiscine) {
+      if (form.equipementsCodes.includes('PISCINE')) {
         base.push({ section: 'PISCINE', label: 'Piscine', required: false })
       }
-      if (form.hasVueMer) {
+      if (form.equipementsCodes.includes('VUE_MER')) {
         base.push({ section: 'VUE', label: 'Vue mer', required: false })
       }
       base.push({ section: 'EXTERIEUR', label: 'Extérieur / jardin', required: false })
       base.push({ section: 'AUTRE', label: 'Autres photos', required: false })
       return base
-    }, [form.typeBien, form.hasPiscine, form.hasVueMer])
+    }, [form.typeBien, form.equipementsCodes])
 
   function addPhotos(section: SectionPhoto, files: FileList | null) {
     if (!files) return
@@ -2011,7 +2091,7 @@ function Step7Recap({
           <Row label="Surface">{form.superficieM2} m²</Row>
           <Row label="Pièces">{form.nombrePieces}{form.nombreChambres ? ` (${form.nombreChambres} chambres)` : ''}</Row>
           <Row label="Équipements">
-            {EQUIPEMENTS.filter((e) => form[e.key]).map((e) => e.label).join(', ') || '—'}
+            <EquipementsRecap codes={form.equipementsCodes} />
           </Row>
         </RecapSection>
 

@@ -40,6 +40,8 @@ import {
 import { extractApiError } from '@/lib/api/errors'
 import { fireConfetti } from '@/lib/confetti'
 import { calculatePartsVendues, calculatePourcentageVendu, useAdminPropriete } from '@/lib/api/proprietes'
+import { useEquipements } from '@/lib/api/equipements'
+import { getEquipementsMetaList } from '@/lib/equipementsMeta'
 import { resolveFileUrl } from '@/lib/utils'
 
 export function AdminProprieteDetailPage() {
@@ -385,14 +387,7 @@ export function AdminProprieteDetailPage() {
             <Meta icon={Building2} label="Pieces">{p.nombrePieces ?? '—'}</Meta>
             <Meta icon={Building2} label="Chambres">{p.nombreChambres ?? '—'}</Meta>
           </div>
-          <div className="flex flex-wrap gap-2 text-xs font-body text-earth-700">
-            {p.hasPiscine && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Piscine</span>}
-            {p.hasClimatisation && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Climatisation</span>}
-            {p.hasParking && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Parking</span>}
-            {p.hasAscenseur && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Ascenseur</span>}
-            {p.hasJardin && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Jardin</span>}
-            {p.hasVueMer && <span className="px-2.5 py-1 bg-white rounded-full border border-earth/10">Vue mer</span>}
-          </div>
+          <AdminEquipementsChips codes={p.equipementsCodes ?? null} />
         </section>
       )}
 
@@ -685,6 +680,24 @@ function Kpi({ label, value }: { label: string; value: React.ReactNode }) {
       <p className="font-mono font-semibold text-earth text-base sm:text-lg tabular-nums">
         {value}
       </p>
+    </div>
+  )
+}
+
+function AdminEquipementsChips({ codes }: { codes: string[] | null }) {
+  const { data: apiList } = useEquipements()
+  const items = getEquipementsMetaList(codes, apiList)
+  if (items.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-2 text-xs font-body text-earth-700">
+      {items.map((eq) => (
+        <span
+          key={eq.code}
+          className="px-2.5 py-1 bg-white rounded-full border border-earth/10"
+        >
+          {eq.label}
+        </span>
+      ))}
     </div>
   )
 }

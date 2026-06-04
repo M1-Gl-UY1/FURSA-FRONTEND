@@ -178,10 +178,10 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
             {propriete.nombreChambres && propriete.nombreChambres > 0 && (
               <Chip icon={BedDouble} label={`${propriete.nombreChambres} ch.`} />
             )}
-            {propriete.hasVueMer && <Chip icon={Waves} label="Vue mer" highlight />}
-            {propriete.hasPiscine && <Chip label="🏊 Piscine" />}
-            {propriete.hasClimatisation && <Chip label="❄ Clim" />}
-            {propriete.hasJardin && <Chip label="🌿 Jardin" />}
+            {propriete.equipementsCodes?.includes('VUE_MER') && <Chip icon={Waves} label="Vue mer" highlight />}
+            {propriete.equipementsCodes?.includes('PISCINE') && <Chip label="🏊 Piscine" />}
+            {propriete.equipementsCodes?.includes('CLIMATISATION') && <Chip label="❄ Clim" />}
+            {propriete.equipementsCodes?.includes('JARDIN') && <Chip label="🌿 Jardin" />}
           </div>
         )}
 
@@ -229,13 +229,11 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
 }
 
 function hasCaracteristiques(p: ProprieteResponse): boolean {
+  const codes = p.equipementsCodes ?? []
   return !!(
     (p.superficieM2 && p.superficieM2 > 0) ||
     (p.nombreChambres && p.nombreChambres > 0) ||
-    p.hasVueMer ||
-    p.hasPiscine ||
-    p.hasClimatisation ||
-    p.hasJardin
+    codes.length > 0
   )
 }
 

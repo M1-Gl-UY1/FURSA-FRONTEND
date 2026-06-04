@@ -135,17 +135,17 @@ export function PropertyCatalogRow({ propriete }: Props) {
               {propriete.nombreChambres} ch.
             </span>
           )}
-          {propriete.hasPiscine && (
+          {propriete.equipementsCodes?.includes('PISCINE') && (
             <span className="inline-flex items-center bg-sand-200 text-earth-600 font-body text-[10px] font-medium rounded-full px-2 py-0.5">
               Piscine
             </span>
           )}
-          {propriete.hasVueMer && (
+          {propriete.equipementsCodes?.includes('VUE_MER') && (
             <span className="inline-flex items-center bg-ocean/15 text-ocean font-body text-[10px] font-medium rounded-full px-2 py-0.5">
               Vue mer
             </span>
           )}
-          {propriete.hasJardin && (
+          {propriete.equipementsCodes?.includes('JARDIN') && (
             <span className="inline-flex items-center bg-sand-200 text-earth-600 font-body text-[10px] font-medium rounded-full px-2 py-0.5">
               Jardin
             </span>

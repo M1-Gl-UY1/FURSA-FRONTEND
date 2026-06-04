@@ -16,6 +16,7 @@ import {
   Users,
   Banknote,
   WalletCards,
+  Wrench,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -63,6 +64,12 @@ const groups: NavGroup[] = [
       { label: 'Taux change', to: '/admin/devise-rate', icon: DollarSign },
       { label: 'Distribution', to: '/admin/distribution', icon: HandCoins },
       { label: 'Dividendes', to: '/admin/dividendes', icon: Coins },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { label: 'Équipements', to: '/admin/equipements', icon: Wrench },
     ],
   },
 ]

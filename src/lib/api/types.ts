@@ -145,6 +145,12 @@ export type ProprieteResponse = {
   hasAscenseur?: boolean | null
   hasJardin?: boolean | null
   hasVueMer?: boolean | null
+  /**
+   * V2 G.1 (04/06/2026) : codes des equipements admin-configurables.
+   * Union des booleens hasXxx et des entites Equipement liees au bien.
+   * Source de verite frontend pour l'affichage des equipements.
+   */
+  equipementsCodes?: string[] | null
   statutExploitation?: StatutExploitation | null
   /** P8b (Hugh 25/05/2026) : date prevue de livraison si EN_CONSTRUCTION. ISO date string. */
   dateLivraisonPrevue?: string | null
@@ -299,6 +305,8 @@ export type SubmissionRequest = {
   hasAscenseur?: boolean
   hasJardin?: boolean
   hasVueMer?: boolean
+  /** V2 G.1 : codes des equipements admin-configurables (remplace progressivement les booleens hasXxx). */
+  equipementsCodes?: string[]
   statutExploitation: StatutExploitation
   /** P8b (Hugh 25/05/2026) : obligatoire si statutExploitation = EN_CONSTRUCTION. ISO date. */
   dateLivraisonPrevue?: string | null
