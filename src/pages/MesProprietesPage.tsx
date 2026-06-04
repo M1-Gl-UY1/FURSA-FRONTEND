@@ -337,14 +337,18 @@ function ProprieteCard({
   const isCertifie = p.certifie === true || p.statutCertif === 'CERTIFIE'
 
   return (
-    <article className="bg-white rounded-xl border border-earth/8 overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 flex flex-col">
+    <Link
+      to={`/mes-proprietes/${p.id}`}
+      aria-label={`Voir le détail de ${p.nom}`}
+      className="group block bg-white rounded-xl border border-earth/8 overflow-hidden shadow-card hover:shadow-card-hover transition-all duration-300 hover:-translate-y-0.5 flex flex-col focus:outline-none focus-visible:ring-2 focus-visible:ring-terra focus-visible:ring-offset-2"
+    >
       {/* Image */}
       <div className="relative aspect-[16/10] overflow-hidden bg-sand-300">
         <img
           src={imageUrl}
           alt={p.nom}
           loading="lazy"
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-[1.02]"
         />
         <div className="absolute top-3 left-3 flex flex-col gap-2 items-start">
           <StatusBadge status={p.statut} />
@@ -368,12 +372,9 @@ function ProprieteCard({
 
       {/* Contenu */}
       <div className="p-5 flex-1 flex flex-col">
-        <Link
-          to={`/mes-proprietes/${p.id}`}
-          className="font-display font-bold text-earth text-base sm:text-lg mb-1 line-clamp-1 hover:text-terra transition-colors"
-        >
+        <h3 className="font-display font-bold text-earth text-base sm:text-lg mb-1 line-clamp-1 group-hover:text-terra transition-colors">
           {p.nom}
-        </Link>
+        </h3>
         <p className="flex items-center gap-1 text-earth-500 text-xs font-body mb-4">
           <MapPin className="w-3 h-3" strokeWidth={1.75} />
           {p.localisation}
@@ -424,7 +425,13 @@ function ProprieteCard({
           {isRefusee && p.motifRefus && (
             <button
               type="button"
-              onClick={onShowRefus}
+              onClick={(e) => {
+                // La carte entiere est un Link, on stoppe la navigation pour
+                // ne pas ouvrir le detail quand l'user clique sur le motif.
+                e.preventDefault()
+                e.stopPropagation()
+                onShowRefus()
+              }}
               className="w-full text-left bg-error/8 border border-error/20 rounded-md p-3 hover:bg-error/12 transition-colors"
             >
               <p className="font-body text-error text-xs font-semibold mb-1">
@@ -449,7 +456,7 @@ function ProprieteCard({
           )}
         </div>
       </div>
-    </article>
+    </Link>
   )
 }
 

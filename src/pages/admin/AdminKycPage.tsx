@@ -55,7 +55,7 @@ export function AdminKycPage() {
     <div className="space-y-6">
       <header>
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
-          Vérification d'identité (KYC)
+          Vérification d'identité
         </h1>
         <p className="font-body text-earth-600 text-sm">
           Examinez les dossiers soumis par les investisseurs avant qu'ils puissent investir.

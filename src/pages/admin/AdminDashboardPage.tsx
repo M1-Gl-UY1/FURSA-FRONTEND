@@ -52,7 +52,7 @@ export function AdminDashboardPage() {
               to="/admin/kyc"
               icon={IdCard}
               count={kycPending}
-              label={`Dossier${kycPending > 1 ? 's' : ''} KYC à examiner`}
+              label={`Vérification${kycPending > 1 ? 's' : ''} à examiner`}
               tone="warning"
             />
           )}

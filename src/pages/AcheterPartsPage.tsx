@@ -404,7 +404,7 @@ function Step1Selection({
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-5 h-5 text-warning" strokeWidth={1.75} />
             <p className="font-body text-sm text-earth-700">
-              <strong>KYC requis</strong> avant tout investissement.
+              <strong>Vérification d'identité requise</strong> avant tout investissement.
             </p>
           </div>
           <Button asChild size="sm" variant="outline">

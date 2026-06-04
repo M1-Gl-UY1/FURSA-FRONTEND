@@ -146,7 +146,7 @@ export function WalletPage() {
             />
             <KpiStatic
               label="Devise"
-              value={wallet?.devise ?? 'USD'}
+              value={wallet?.devise ?? 'EUR'}
               icon={WalletIcon}
               iconBg="bg-gold/15"
               iconColor="text-gold-600"
@@ -360,7 +360,9 @@ function RechargerTab() {
     useState<(typeof RECHARGE_METHODES)[number]['value']>('MOBILE_MONEY')
 
   const montantNum = parseFloat(montant)
-  const valid = !Number.isNaN(montantNum) && montantNum >= 1 && montantNum <= 10000
+  // Pas de plafond : un investisseur peut recharger autant qu'il veut.
+  // Seul minimum : 1 (eviter les saisies a 0).
+  const valid = !Number.isNaN(montantNum) && montantNum >= 1
 
   function submit() {
     if (!valid) return
@@ -422,12 +424,11 @@ function RechargerTab() {
 
         {/* Montant */}
         <div className="space-y-2">
-          <Label htmlFor="montant-recharge">Montant (USD)</Label>
+          <Label htmlFor="montant-recharge">Montant (EUR)</Label>
           <Input
             id="montant-recharge"
             type="number"
             min={1}
-            max={10000}
             step={1}
             value={montant}
             onChange={(e) => setMontant(e.target.value)}
@@ -453,7 +454,7 @@ function RechargerTab() {
           </div>
           {montant !== '' && !valid && (
             <p className="font-body text-xs text-error">
-              Le montant doit être compris entre 1 et 10 000.
+              Le montant doit être d'au moins 1 €.
             </p>
           )}
         </div>
@@ -467,7 +468,7 @@ function RechargerTab() {
           ) : (
             <>
               <CheckCircle2 strokeWidth={2} />
-              Recharger {valid ? `${montantNum.toLocaleString('fr-FR')} USD` : ''}
+              Recharger {valid ? `${montantNum.toLocaleString('fr-FR')} €` : ''}
             </>
           )}
         </Button>

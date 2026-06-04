@@ -85,7 +85,7 @@ export function AnnonceDetailPage() {
         onSuccess: (res) => {
           setOpen(false)
           toast.success(
-            `${res.nombreDePartsAchetees} parts achetées pour ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(res.montantTotal)}.`
+            `${res.nombreDePartsAchetees} parts achetées pour ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(res.montantTotal)}.`
           )
           navigate('/portefeuille')
         },

@@ -98,7 +98,7 @@ export function ComptePage() {
               <Row label="Identifiant" value={`#${user.id}`} mono />
               <Row label="Rôle" value={user.role} />
               <div>
-                <p className="font-body text-xs text-earth-500 mb-1">Statut KYC</p>
+                <p className="font-body text-xs text-earth-500 mb-1">Vérification d'identité</p>
                 {user.isVerified ? (
                   <span className="inline-flex items-center gap-1 text-success text-xs font-semibold">
                     <ShieldCheck className="w-4 h-4" strokeWidth={1.75} /> Vérifié

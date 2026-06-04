@@ -1,8 +1,11 @@
 import { cn } from '@/lib/utils'
 
-// Decision Hugh 22/05/2026 : USD est la devise de base de FURSA (vs EUR avant).
+// Decision 04/06/2026 : EUR est la devise d'affichage par defaut pour les
+// investisseurs (audience euro-africaine, lisibilite). Le backend continue
+// de stocker en USD techniquement (conversion implicite a venir cote service
+// quand un taux EUR-USD sera configurable).
 // Override possible via VITE_DEFAULT_CURRENCY pour les tests / staging.
-const DEFAULT_CURRENCY = (import.meta.env.VITE_DEFAULT_CURRENCY as string) ?? 'USD'
+const DEFAULT_CURRENCY = (import.meta.env.VITE_DEFAULT_CURRENCY as string) ?? 'EUR'
 const DEFAULT_LOCALE = (import.meta.env.VITE_DEFAULT_LOCALE as string) ?? 'fr-FR'
 
 type MoneyProps = {

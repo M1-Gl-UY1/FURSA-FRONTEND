@@ -104,7 +104,7 @@ function formatMonthLong(value: string): string {
 function formatEur(n: number): string {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'EUR',
     maximumFractionDigits: 0,
   }).format(n)
 }

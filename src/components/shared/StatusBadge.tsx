@@ -4,6 +4,7 @@ type StatusKey =
   // Propriété
   | 'BROUILLON'
   | 'EN_REVIEW'
+  | 'EN_TOKENISATION'
   | 'ACCEPTEE'
   | 'PUBLIEE'
   | 'FINANCEE'
@@ -23,6 +24,13 @@ type StatusKey =
   // Dividende / Revenu
   | 'DISTRIBUE'
   | 'REFUSE'
+  // Verification d'identite (anciennement KYC)
+  | 'NONE'
+  | 'PENDING'
+  | 'IN_REVIEW'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'EXPIRED'
 
 type StatusConfig = {
   label: string
@@ -32,13 +40,14 @@ type StatusConfig = {
 
 const STATUS_MAP: Record<StatusKey, StatusConfig> = {
   // Propriété
-  BROUILLON:   { label: 'Brouillon',   className: 'bg-sand-300 text-earth-700' },
-  EN_REVIEW:   { label: 'En examen',   className: 'bg-warning/15 text-warning' },
-  ACCEPTEE:    { label: 'Acceptée',    className: 'bg-ocean/15 text-ocean' },
-  PUBLIEE:     { label: 'Publiée',     className: 'bg-success/15 text-success' },
-  FINANCEE:    { label: 'Financée',    className: 'bg-gold/20 text-gold-700' },
-  CLOTUREE:    { label: 'Clôturée',    className: 'bg-earth/10 text-earth-600' },
-  REFUSEE:     { label: 'Refusée',     className: 'bg-error/15 text-error' },
+  BROUILLON:        { label: 'Brouillon',          className: 'bg-sand-300 text-earth-700' },
+  EN_REVIEW:        { label: 'En examen',          className: 'bg-warning/15 text-warning' },
+  EN_TOKENISATION:  { label: 'Tokenisation en cours', className: 'bg-ocean/15 text-ocean' },
+  ACCEPTEE:         { label: 'Acceptée',           className: 'bg-ocean/15 text-ocean' },
+  PUBLIEE:          { label: 'Publiée',            className: 'bg-success/15 text-success' },
+  FINANCEE:         { label: 'Financée',           className: 'bg-gold/20 text-gold-700' },
+  CLOTUREE:         { label: 'Clôturée',           className: 'bg-earth/10 text-earth-600' },
+  REFUSEE:          { label: 'Refusée',            className: 'bg-error/15 text-error' },
 
   // Paiement / Transaction
   EN_ATTENTE:  { label: 'En attente',  className: 'bg-warning/15 text-warning' },
@@ -56,6 +65,14 @@ const STATUS_MAP: Record<StatusKey, StatusConfig> = {
   // Dividende / Revenu
   DISTRIBUE:   { label: 'Distribué',   className: 'bg-gold/20 text-gold-700' },
   REFUSE:      { label: 'Refusé',      className: 'bg-error/15 text-error' },
+
+  // Verification d'identite (anciennement KYC)
+  NONE:        { label: 'Non vérifiée', className: 'bg-sand-300 text-earth-600' },
+  PENDING:     { label: 'En attente',   className: 'bg-warning/15 text-warning' },
+  IN_REVIEW:   { label: 'En examen',    className: 'bg-ocean/15 text-ocean' },
+  APPROVED:    { label: 'Vérifiée',     className: 'bg-success/15 text-success' },
+  REJECTED:    { label: 'Refusée',      className: 'bg-error/15 text-error' },
+  EXPIRED:     { label: 'Expirée',      className: 'bg-earth/10 text-earth-600' },
 }
 
 type StatusBadgeProps = {

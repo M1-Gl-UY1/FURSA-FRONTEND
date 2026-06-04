@@ -39,8 +39,12 @@ export function WizardStepper({ steps, current, className }: WizardStepperProps)
                 )}
               </div>
               <span
+                title={label}
                 className={cn(
-                  'font-body text-[11px] sm:text-xs font-semibold text-center max-w-[80px] sm:max-w-[120px]',
+                  'font-body text-[11px] sm:text-xs font-semibold text-center',
+                  // Largeur fixe = espacement uniforme. Truncate + tooltip natif
+                  // au hover affiche le texte complet sans casser le layout.
+                  'w-[72px] sm:w-[104px] truncate whitespace-nowrap',
                   (isDone || isCurrent) ? 'text-earth' : 'text-earth-500'
                 )}
               >

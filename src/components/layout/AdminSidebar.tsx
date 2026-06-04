@@ -50,7 +50,7 @@ const groups: NavGroup[] = [
       { label: 'Certifications', to: '/admin/certifications', icon: ShieldCheck },
       { label: 'Utilisateurs', to: '/admin/utilisateurs', icon: Users },
       { label: 'Wallets', to: '/admin/wallets', icon: WalletCards },
-      { label: 'KYC', to: '/admin/kyc', icon: IdCard },
+      { label: 'Vérifications identité', to: '/admin/kyc', icon: IdCard },
     ],
   },
   {

@@ -20,6 +20,7 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { Money } from '@/components/shared/Money'
+import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -85,7 +86,7 @@ export function AdminUserDetailPage() {
 
   function handleApproveKyc() {
     valider.mutate(id, {
-      onSuccess: () => toast.success('KYC validé.'),
+      onSuccess: () => toast.success('Identité vérifiée.'),
       onError: (e) => toast.error(extractApiError(e, 'Validation impossible.')),
     })
   }
@@ -178,7 +179,7 @@ export function AdminUserDetailPage() {
             {!user.isVerified && !isDeleted && (
               <Button size="sm" onClick={handleApproveKyc} disabled={valider.isPending}>
                 <ShieldCheck strokeWidth={2} className="w-4 h-4" />
-                Valider KYC
+                Valider l'identité
               </Button>
             )}
             {isDeleted ? (
@@ -460,11 +461,11 @@ function RolePill({ role }: { role: string }) {
 function KycPill({ verified }: { verified?: boolean } = {}) {
   return verified ? (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-success/15 text-success">
-      <ShieldCheck className="w-3 h-3" strokeWidth={2} /> KYC vérifié
+      <ShieldCheck className="w-3 h-3" strokeWidth={2} /> Identité vérifiée
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-warning/15 text-warning">
-      <ShieldX className="w-3 h-3" strokeWidth={2} /> KYC en attente
+      <ShieldX className="w-3 h-3" strokeWidth={2} /> Identité en attente
     </span>
   )
 }
@@ -478,16 +479,7 @@ function DeletedPill() {
 }
 
 function StatutPill({ statut }: { statut: string }) {
-  const map: Record<string, string> = {
-    VALIDE: 'bg-success/10 text-success',
-    SUCCES: 'bg-success/10 text-success',
-    EN_ATTENTE: 'bg-ocean/10 text-ocean',
-    ECHEC: 'bg-error/10 text-error',
-    REMBOURSEMENT: 'bg-warning/10 text-warning',
-  }
-  return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold', map[statut] ?? 'bg-earth/10 text-earth-600')}>
-      {statut}
-    </span>
-  )
+  // Delegue au StatusBadge global qui a les traductions FR complètes.
+  // Avant : affichait le statut brut en anglais ('PENDING', 'IN_REVIEW', ...).
+  return <StatusBadge status={statut} size="sm" />
 }

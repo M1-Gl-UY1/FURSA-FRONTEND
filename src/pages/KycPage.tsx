@@ -22,6 +22,7 @@ import { WizardStepper } from '@/components/shared/WizardStepper'
 import { useKycMe, useKycSubmit } from '@/lib/api/kyc'
 import { extractApiError } from '@/lib/api/errors'
 import type { KycSubmitData, SourceFonds } from '@/lib/api/types'
+import { cn } from '@/lib/utils'
 
 const STEPS = ['Identité', 'Documents', 'Déclaration', 'Récap']
 
@@ -70,7 +71,7 @@ export function KycPage() {
         <CheckCircle2 className="w-12 h-12 text-success mx-auto mb-4" strokeWidth={1.5} />
         <h2 className="font-display font-bold text-earth text-xl mb-2">Identité vérifiée</h2>
         <p className="font-body text-earth-600 text-sm mb-6">
-          Votre dossier KYC est déjà approuvé. Vous pouvez investir librement.
+          Votre identité est déjà vérifiée. Vous pouvez investir librement.
         </p>
         <Button asChild>
           <Link to="/opportunites">Voir les opportunités</Link>
@@ -114,7 +115,7 @@ export function KycPage() {
       </Link>
 
       <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-2">
-        Vérification d'identité (KYC)
+        Vérification d'identité
       </h1>
       <p className="font-body text-earth-600 text-sm mb-8">
         Obligatoire pour pouvoir investir. Vos données restent strictement confidentielles et
@@ -187,8 +188,38 @@ function Step1Identite({
   onChange: (f: KycSubmitData) => void
   onContinue: () => void
 }) {
+  // Age minimum 18 ans (majeur, exigence reglementaire AML).
+  // Maximum 100 ans pour eviter les fausses saisies.
+  const MIN_AGE = 18
+  const MAX_AGE = 100
+  function computeAge(iso: string): number | null {
+    if (!iso) return null
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return null
+    const now = new Date()
+    let age = now.getFullYear() - d.getFullYear()
+    const m = now.getMonth() - d.getMonth()
+    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--
+    return age
+  }
+  const age = computeAge(form.dateNaissance)
+  const ageError = age != null
+    ? (age < MIN_AGE
+        ? `Vous devez avoir au moins ${MIN_AGE} ans (vous en avez ${age}).`
+        : age > MAX_AGE
+          ? 'Date de naissance invalide.'
+          : null)
+    : null
+  const ageOk = age != null && age >= MIN_AGE && age <= MAX_AGE
+
   const isValid =
-    form.nationalite.trim() && form.dateNaissance && form.paysResidence.trim() && form.adresse.trim().length > 5
+    form.nationalite.trim() && ageOk && form.paysResidence.trim() && form.adresse.trim().length > 5
+
+  // Date max = aujourd'hui moins 18 ans, pour que le picker n'autorise pas de selectionner
+  // une date qui rendrait l'user mineur (en plus du check ageError).
+  const maxBirthDate = new Date()
+  maxBirthDate.setFullYear(maxBirthDate.getFullYear() - MIN_AGE)
+  const maxBirthIso = maxBirthDate.toISOString().slice(0, 10)
 
   return (
     <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8">
@@ -210,14 +241,32 @@ function Step1Identite({
         </div>
         <div>
           <Label htmlFor="dateNaissance">Date de naissance</Label>
+          <p className="font-body text-xs text-earth-500 mt-1">
+            Vous devez avoir au moins {MIN_AGE} ans pour investir sur FURSA.
+          </p>
           <Input
             id="dateNaissance"
             type="date"
             value={form.dateNaissance}
             onChange={(e) => onChange({ ...form, dateNaissance: e.target.value })}
-            max={new Date().toISOString().slice(0, 10)}
-            className="mt-2"
+            max={maxBirthIso}
+            aria-invalid={ageError != null}
+            className={cn(
+              'mt-2',
+              ageError && 'border-error focus:border-error focus:ring-error/30'
+            )}
           />
+          {ageError && (
+            <p className="font-body text-xs text-error mt-1.5 inline-flex items-center gap-1">
+              <span className="inline-block w-1 h-1 rounded-full bg-error" />
+              {ageError}
+            </p>
+          )}
+          {!ageError && age != null && (
+            <p className="font-body text-xs text-success mt-1.5">
+              ✓ {age} ans
+            </p>
+          )}
         </div>
         <div>
           <Label htmlFor="paysResidence">Pays de résidence</Label>
@@ -537,7 +586,7 @@ function KycWaitingScreen({ submission }: { submission: { id: number; submittedA
       </div>
       <h1 className="font-display font-bold text-earth text-2xl mb-2">Dossier en cours d'examen</h1>
       <p className="font-body text-earth-600 text-sm mb-8 max-w-md mx-auto">
-        Votre dossier KYC a été soumis le {new Date(submission.submittedAt).toLocaleDateString('fr-FR')}.
+        Votre dossier de vérification a été soumis le {new Date(submission.submittedAt).toLocaleDateString('fr-FR')}.
         Un agent FURSA va l'examiner dans les 24 à 72h. Vous recevrez une notification dès la décision.
       </p>
       <div className="bg-white rounded-lg border border-earth/8 p-5 max-w-md mx-auto mb-6 text-left">

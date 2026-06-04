@@ -115,7 +115,7 @@ function getConfig(statut: string, motifRefus: string | null) {
         Icon: CheckCircle2,
         iconClass: 'text-success',
         bgClass: 'bg-success/10 border-success/30',
-        title: 'Statut KYC',
+        title: 'Vérification d\'identité',
         description: null,
         cta: null,
         ctaVariant: undefined,

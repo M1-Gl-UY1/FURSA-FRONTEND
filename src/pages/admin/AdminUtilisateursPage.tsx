@@ -35,7 +35,7 @@ export function AdminUtilisateursPage() {
 
   function approveKyc(id: number) {
     valider.mutate(id, {
-      onSuccess: () => toast.success('KYC validé.'),
+      onSuccess: () => toast.success('Identité vérifiée.'),
       onError: (e) => toast.error(extractApiError(e, 'Validation impossible.')),
     })
   }
@@ -116,7 +116,7 @@ export function AdminUtilisateursPage() {
     },
     {
       key: 'isVerified',
-      label: 'KYC',
+      label: 'Identité',
       align: 'center',
       sortAccessor: (u) => (u.isVerified ? 1 : 0),
       render: (u) =>
@@ -149,7 +149,7 @@ export function AdminUtilisateursPage() {
               onClick={() => approveKyc(u.id)}
               disabled={valider.isPending}
             >
-              Valider KYC
+              Valider l'identité
             </Button>
           )}
           {u.role !== 'ADMIN' && (
@@ -222,11 +222,11 @@ export function AdminUtilisateursPage() {
         <FilterSelect
           value={kycFilter}
           onChange={(v) => setKycFilter(v as KycFilter)}
-          ariaLabel="Filtrer par statut KYC"
+          ariaLabel="Filtrer par statut de vérification"
           options={[
-            { value: 'ALL', label: 'Tous KYC' },
-            { value: 'VERIFIED', label: 'KYC vérifié' },
-            { value: 'PENDING', label: 'KYC en attente' },
+            { value: 'ALL', label: 'Toutes vérifications' },
+            { value: 'VERIFIED', label: 'Identité vérifiée' },
+            { value: 'PENDING', label: 'Identité en attente' },
           ]}
         />
         {hasActiveFilter && (
