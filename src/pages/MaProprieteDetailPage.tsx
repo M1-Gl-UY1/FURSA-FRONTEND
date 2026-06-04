@@ -464,10 +464,18 @@ export function MaProprieteDetailPage() {
                   <div className="w-10 h-10 rounded-md bg-ocean/10 flex items-center justify-center shrink-0">
                     <FileText className="w-5 h-5 text-ocean" strokeWidth={1.75} />
                   </div>
-                  <span className="flex-1 truncate font-body text-earth text-sm">
-                    {d.nom ?? d.fileName ?? d.url}
-                  </span>
-                  <span className="text-earth-500 text-xs">Ouvrir</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="truncate font-body text-earth text-sm">
+                      {d.nom ?? d.fileName ?? d.url}
+                    </p>
+                    {/* V2 G.2 : label resolu cote backend. */}
+                    {(d.categorieDocumentLabel || d.categorieDocument) && (
+                      <p className="font-body text-[11px] text-earth-500">
+                        {d.categorieDocumentLabel ?? d.categorieDocument}
+                      </p>
+                    )}
+                  </div>
+                  <span className="text-earth-500 text-xs shrink-0">Ouvrir</span>
                 </a>
               </li>
             ))}

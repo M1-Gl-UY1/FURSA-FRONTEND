@@ -50,9 +50,15 @@ export type CategorieDocument =
   | 'RELEVE_AIRBNB'
   | 'AUTRE'
 
+/**
+ * V2 G.2 (04/06/2026) : la categorie est passee en string pour supporter
+ * les codes custom crees par l'admin (ASSURANCE_HABITATION, DIAGNOSTIC_DPE...).
+ * Les 6 codes historiques de CategorieDocument restent acceptes (string
+ * compatible).
+ */
 export type DocumentLegal = {
   file: File
-  categorie: CategorieDocument
+  categorie: string
 }
 
 export type SoumissionPayload = {

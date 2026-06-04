@@ -6,6 +6,7 @@ import {
   Coins,
   CreditCard,
   DollarSign,
+  FileText,
   HandCoins,
   IdCard,
   LayoutDashboard,
@@ -71,6 +72,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Types de bien', to: '/admin/types-bien', icon: Building2 },
       { label: 'Équipements', to: '/admin/equipements', icon: Wrench },
+      { label: 'Catégories doc.', to: '/admin/categories-document', icon: FileText },
     ],
   },
 ]

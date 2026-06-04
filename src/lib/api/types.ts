@@ -103,6 +103,13 @@ export type DocumentResponse = {
   sectionPhoto?: string | null
   /** Categorie du document legal (TITRE_FONCIER, PERMIS_CONSTRUIRE, ...). Null pour les images. */
   categorieDocument?: string | null
+  /**
+   * V2 G.2 (04/06/2026) : code admin-configurable (peut etre un code custom
+   * hors enum, ex ASSURANCE_HABITATION). Source de verite frontend.
+   */
+  categorieDocumentCode?: string | null
+  /** V2 G.2 : libelle resolu cote backend (ex "Titre foncier", "Assurance habitation"). */
+  categorieDocumentLabel?: string | null
 }
 
 export type ProprieteResponse = {

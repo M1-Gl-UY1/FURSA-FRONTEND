@@ -34,7 +34,6 @@ import { useAuth } from '@/lib/auth/AuthContext'
 import { usePays, useVilles } from '@/lib/api/geo'
 import {
   useSoumettreBien,
-  type CategorieDocument,
   type DocumentLegal,
   type PhotoStructuree,
 } from '@/lib/api/submissions'
@@ -52,6 +51,8 @@ import {
 import { useEquipements, type EquipementResponse } from '@/lib/api/equipements'
 import { useTypesBien, type TypeBienResponse } from '@/lib/api/typesBien'
 import { getTypeBienMeta } from '@/lib/typeBienMeta'
+import { useCategoriesDocument } from '@/lib/api/categoriesDocument'
+import { getCategorieDocumentMeta } from '@/lib/categorieDocumentMeta'
 import type {
   SectionPhoto,
   SourceRevenu,
@@ -75,13 +76,17 @@ const STEPS = [
 const MAX_DOC_SIZE = 10 * 1024 * 1024 // 10 Mo par PDF
 const DOC_TYPES = ['application/pdf']
 
-const CATEGORIES_DOC: { value: CategorieDocument; label: string; description: string }[] = [
-  { value: 'TITRE_FONCIER', label: 'Titre foncier', description: 'Preuve de propriété (obligatoire)' },
-  { value: 'PERMIS_CONSTRUIRE', label: 'Permis de construire', description: 'Obligatoire pour les biens neufs ou en construction' },
-  { value: 'CONTRAT_GESTION', label: 'Contrat de gestion locative', description: 'Pour les biens déjà rentables' },
-  { value: 'CONTRAT_BAIL', label: 'Contrat de bail', description: 'Pour les biens loués en direct' },
-  { value: 'RELEVE_AIRBNB', label: 'Relevé Airbnb / plateforme', description: 'Justificatif de revenus locatifs courts séjours' },
-  { value: 'AUTRE', label: 'Autre', description: 'Tout autre document utile (expertise, plans, etc.)' },
+// V2 G.2 (04/06/2026) : la liste des categories de document est desormais
+// chargee dynamiquement via useCategoriesDocument(). La constante hardcodee
+// a ete retiree. Un fallback minimal (les 6 codes historiques) reste
+// disponible pour ne pas bloquer le wizard si l'API est indisponible.
+const CATEGORIES_DOC_FALLBACK: { code: string; label: string; description: string }[] = [
+  { code: 'TITRE_FONCIER', label: 'Titre foncier', description: 'Preuve de propriété (obligatoire)' },
+  { code: 'PERMIS_CONSTRUIRE', label: 'Permis de construire', description: 'Obligatoire pour les biens neufs ou en construction' },
+  { code: 'CONTRAT_GESTION', label: 'Contrat de gestion locative', description: 'Pour les biens déjà rentables' },
+  { code: 'CONTRAT_BAIL', label: 'Contrat de bail', description: 'Pour les biens loués en direct' },
+  { code: 'RELEVE_AIRBNB', label: 'Relevé Airbnb / plateforme', description: 'Justificatif de revenus locatifs courts séjours' },
+  { code: 'AUTRE', label: 'Autre', description: 'Tout autre document utile (expertise, plans, etc.)' },
 ]
 
 /**
@@ -1885,6 +1890,12 @@ function Step6Documents({
   serverDocuments?: ServerDoc[]
   onRemoveServerMedia?: (mediaId: number) => Promise<void> | void
 }) {
+  // V2 G.2 (04/06/2026) : chargement dynamique des categories via l'API admin.
+  const { data: catsApi, isError: catsError } = useCategoriesDocument()
+  const catsList = (!catsError && catsApi && catsApi.length > 0)
+    ? catsApi.map((c) => ({ code: c.code, label: c.label, description: c.description ?? '' }))
+    : CATEGORIES_DOC_FALLBACK
+
   function addDocs(files: FileList | null) {
     if (!files) return
     const valid: DocumentLegal[] = []
@@ -1909,7 +1920,7 @@ function Step6Documents({
     update('documents', form.documents.filter((_, i) => i !== idx))
   }
 
-  function changeCategorie(idx: number, categorie: CategorieDocument) {
+  function changeCategorie(idx: number, categorie: string) {
     const next = [...form.documents]
     next[idx] = { ...next[idx], categorie }
     update('documents', next)
@@ -1961,7 +1972,9 @@ function Step6Documents({
                     {d.nom ?? 'Document'}
                   </a>
                   {d.categorieDocument && (
-                    <p className="font-mono text-[11px] text-earth-500">{d.categorieDocument}</p>
+                    <p className="font-body text-[11px] text-earth-500">
+                      {getCategorieDocumentMeta(d.categorieDocument, catsApi)?.label ?? d.categorieDocument}
+                    </p>
                   )}
                 </div>
                 {onRemoveServerMedia && (
@@ -2054,24 +2067,24 @@ function Step6Documents({
               </div>
               <select
                 value={doc.categorie}
-                onChange={(e) => changeCategorie(idx, e.target.value as CategorieDocument)}
+                onChange={(e) => changeCategorie(idx, e.target.value)}
                 aria-label={`Categorie du document ${doc.file.name}`}
                 title="Choisir la categorie du document"
                 className="px-3 py-1.5 rounded-md border border-earth/15 bg-sand-50 text-earth text-xs font-body font-medium focus:border-terra focus:outline-none"
               >
-                {CATEGORIES_DOC.map((c) => {
+                {catsList.map((c) => {
                   // Categories deja prises par d'autres documents (local OU serveur),
                   // en excluant la categorie du doc courant pour qu'il puisse rester
                   // selectionne. AUTRE reste toujours disponible (pour les docs multiples
                   // qui ne rentrent pas dans une categorie precise).
-                  const dejaPrise = c.value !== 'AUTRE' && c.value !== doc.categorie && (
-                    form.documents.some((d, i) => i !== idx && d.categorie === c.value)
-                    || serverDocuments.some((sd) => sd.categorieDocument === c.value)
+                  const dejaPrise = c.code !== 'AUTRE' && c.code !== doc.categorie && (
+                    form.documents.some((d, i) => i !== idx && d.categorie === c.code)
+                    || serverDocuments.some((sd) => sd.categorieDocument === c.code)
                   )
                   return (
                     <option
-                      key={c.value}
-                      value={c.value}
+                      key={c.code}
+                      value={c.code}
                       disabled={dejaPrise}
                     >
                       {c.label}{dejaPrise ? ' (déjà fourni)' : ''}
