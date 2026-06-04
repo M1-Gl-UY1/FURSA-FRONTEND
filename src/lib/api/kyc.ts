@@ -122,3 +122,21 @@ export function useAdminKycReject() {
     },
   })
 }
+
+/**
+ * Revoque une verification deja approuvee (passe APPROVED -> REJECTED + motif).
+ * L'investisseur perd isVerified=true et doit re-soumettre.
+ */
+export function useAdminKycRevoke() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, motif }: { id: number; motif: string }) => {
+      const { data } = await api.post<KycAdminResponse>(`/api/admin/kyc/${id}/revoke`, { motif })
+      return data
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'kyc'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
+    },
+  })
+}

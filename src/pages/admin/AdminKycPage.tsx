@@ -25,6 +25,7 @@ import {
   useAdminKycDetail,
   useAdminKycList,
   useAdminKycReject,
+  useAdminKycRevoke,
   useAdminKycStats,
 } from '@/lib/api/kyc'
 import { extractApiError } from '@/lib/api/errors'
@@ -161,8 +162,11 @@ function AdminKycDetail({ id, onBack }: { id: number; onBack: () => void }) {
   const { data: kyc, isLoading } = useAdminKycDetail(id)
   const approveMutation = useAdminKycApprove()
   const rejectMutation = useAdminKycReject()
+  const revokeMutation = useAdminKycRevoke()
   const [showRejectDialog, setShowRejectDialog] = useState(false)
+  const [showRevokeDialog, setShowRevokeDialog] = useState(false)
   const [motif, setMotif] = useState('')
+  const [motifRevoke, setMotifRevoke] = useState('')
 
   if (isLoading || !kyc) {
     return <Skeleton className="h-96 w-full" />
@@ -193,6 +197,24 @@ function AdminKycDetail({ id, onBack }: { id: number; onBack: () => void }) {
           onBack()
         },
         onError: (err) => toast.error(extractApiError(err, 'Refus impossible')),
+      }
+    )
+  }
+
+  function handleRevoke() {
+    if (motifRevoke.trim().length < 5) {
+      toast.error('Motif obligatoire (minimum 5 caractères)')
+      return
+    }
+    revokeMutation.mutate(
+      { id, motif: motifRevoke.trim() },
+      {
+        onSuccess: () => {
+          toast.success(`Vérification #${id} révoquée. L'investisseur devra re-soumettre.`)
+          setShowRevokeDialog(false)
+          onBack()
+        },
+        onError: (err) => toast.error(extractApiError(err, 'Révocation impossible')),
       }
     )
   }
@@ -292,6 +314,27 @@ function AdminKycDetail({ id, onBack }: { id: number; onBack: () => void }) {
         </section>
       )}
 
+      {/* Si deja approuve : permet la revocation avec motif */}
+      {kyc.statut === 'APPROVED' && (
+        <section className="bg-white rounded-xl border border-warning/30 p-5">
+          <h2 className="font-display font-bold text-earth text-base mb-2">Révoquer la vérification</h2>
+          <p className="font-body text-earth-600 text-sm mb-3">
+            Si vous détectez un problème (fraude, document expiré, sanction internationale, etc.),
+            vous pouvez révoquer la vérification. L'investisseur perdra son accès aux investissements
+            et devra re-soumettre des documents corrigés.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setShowRevokeDialog(true)}
+            disabled={revokeMutation.isPending}
+            className="text-warning border-warning/40 hover:bg-warning/10"
+          >
+            <ShieldX strokeWidth={2} />
+            Révoquer cette vérification
+          </Button>
+        </section>
+      )}
+
       {/* Modal refus */}
       {showRejectDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-earth/40 backdrop-blur-sm">
@@ -316,6 +359,52 @@ function AdminKycDetail({ id, onBack }: { id: number; onBack: () => void }) {
               </Button>
               <Button onClick={handleReject} disabled={rejectMutation.isPending || motif.trim().length < 5}>
                 {rejectMutation.isPending ? 'Envoi...' : 'Confirmer le refus'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal revocation (sur dossier APPROVED) */}
+      {showRevokeDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-earth/40 backdrop-blur-sm">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-card-hover">
+            <div className="flex items-center gap-2 mb-3">
+              <ShieldX className="w-5 h-5 text-warning" strokeWidth={1.75} />
+              <h3 className="font-display font-bold text-earth text-lg">Révoquer la vérification</h3>
+            </div>
+            <p className="font-body text-earth-600 text-sm mb-3">
+              <strong className="text-earth">{kyc.investisseurPrenom} {kyc.investisseurNom}</strong> perdra
+              immédiatement son accès aux investissements et à la soumission de biens.
+              Il sera notifié et pourra re-soumettre une nouvelle vérification.
+            </p>
+            <div className="bg-warning/10 border border-warning/30 rounded-md p-3 mb-4 text-xs font-body text-earth-700">
+              ⚠ Cette action est <strong>irréversible</strong> tant que l'utilisateur ne re-soumet pas une nouvelle vérification valide.
+            </div>
+            <label className="font-body text-sm font-semibold text-earth block mb-2">
+              Motif de révocation
+            </label>
+            <textarea
+              value={motifRevoke}
+              onChange={(e) => setMotifRevoke(e.target.value)}
+              placeholder="Ex: Document d'identité signalé comme frauduleux suite à un signalement externe."
+              className="w-full min-h-[100px] mb-4 rounded-md border-[1.5px] border-sand-400 bg-white px-3 py-2 text-sm text-earth font-body placeholder:text-earth-400 focus-visible:outline-none focus-visible:border-ocean focus-visible:ring-2 focus-visible:ring-ocean/15"
+              maxLength={500}
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => { setShowRevokeDialog(false); setMotifRevoke('') }}
+                disabled={revokeMutation.isPending}
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleRevoke}
+                disabled={revokeMutation.isPending || motifRevoke.trim().length < 5}
+                className="bg-warning hover:bg-warning/90"
+              >
+                {revokeMutation.isPending ? 'Révocation...' : 'Révoquer'}
               </Button>
             </div>
           </div>

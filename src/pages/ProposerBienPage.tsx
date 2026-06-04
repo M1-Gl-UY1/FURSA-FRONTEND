@@ -1935,9 +1935,25 @@ function Step6Documents({
                 title="Choisir la categorie du document"
                 className="px-3 py-1.5 rounded-md border border-earth/15 bg-sand-50 text-earth text-xs font-body font-medium focus:border-terra focus:outline-none"
               >
-                {CATEGORIES_DOC.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
+                {CATEGORIES_DOC.map((c) => {
+                  // Categories deja prises par d'autres documents (local OU serveur),
+                  // en excluant la categorie du doc courant pour qu'il puisse rester
+                  // selectionne. AUTRE reste toujours disponible (pour les docs multiples
+                  // qui ne rentrent pas dans une categorie precise).
+                  const dejaPrise = c.value !== 'AUTRE' && c.value !== doc.categorie && (
+                    form.documents.some((d, i) => i !== idx && d.categorie === c.value)
+                    || serverDocuments.some((sd) => sd.categorieDocument === c.value)
+                  )
+                  return (
+                    <option
+                      key={c.value}
+                      value={c.value}
+                      disabled={dejaPrise}
+                    >
+                      {c.label}{dejaPrise ? ' (déjà fourni)' : ''}
+                    </option>
+                  )
+                })}
               </select>
               <button
                 type="button"
