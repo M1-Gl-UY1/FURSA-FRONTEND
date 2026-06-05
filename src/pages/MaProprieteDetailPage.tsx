@@ -418,12 +418,20 @@ export function MaProprieteDetailPage() {
       </section>
 
       {/* Photos */}
-      {photos.length > 0 && (
-        <section>
-          <h2 className="font-display font-semibold text-earth text-lg mb-3 flex items-center gap-2">
+      <section>
+        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+          <h2 className="font-display font-semibold text-earth text-lg flex items-center gap-2">
             <ImageIcon className="w-5 h-5 text-earth-500" strokeWidth={1.75} />
             Photos ({photos.length})
           </h2>
+          {/* V2 G.7 (05/06/2026) : bouton d'ajout post-tokenisation. */}
+          {(p.statut === 'ACCEPTEE'
+            || p.statut === 'EN_TOKENISATION'
+            || p.statut === 'PUBLIEE') && (
+            <AjouterPhotosButton proprieteId={p.id} />
+          )}
+        </div>
+        {photos.length > 0 ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {photos.map((d) => (
               <a
@@ -442,8 +450,12 @@ export function MaProprieteDetailPage() {
               </a>
             ))}
           </div>
-        </section>
-      )}
+        ) : (
+          <p className="font-body text-sm text-earth-500 italic">
+            Aucune photo encore. Utilisez le bouton « Ajouter des photos » ci-dessus pour enrichir la fiche.
+          </p>
+        )}
+      </section>
 
       {/* Documents */}
       {docs.length > 0 && (
@@ -840,7 +852,7 @@ function EquipementsList({ codes }: { codes: string[] | null }) {
 // Bouton "Modifier" + modal (Phase E - 04/06/2026)
 // =============================================================================
 
-import { Edit3 } from 'lucide-react'
+import { Edit3, Upload as UploadIcon } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -849,8 +861,139 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { useModifierMaPropriete } from '@/lib/api/proprietes'
+import { Input } from '@/components/ui/input'
+import { useAjouterPhotosPostTokenisation, useModifierMaPropriete } from '@/lib/api/proprietes'
+import { useSectionsPhoto } from '@/lib/api/sectionsPhoto'
 import type { BrouillonPatch } from '@/lib/api/brouillon'
+
+// =============================================================================
+// V2 G.7 (05/06/2026) : Bouton "Ajouter des photos" post-tokenisation
+// =============================================================================
+
+function AjouterPhotosButton({ proprieteId }: { proprieteId: number }) {
+  const [open, setOpen] = useState(false)
+  const [files, setFiles] = useState<File[]>([])
+  const [section, setSection] = useState<string>('')
+  const { data: sectionsApi } = useSectionsPhoto()
+  const ajouter = useAjouterPhotosPostTokenisation()
+
+  const sectionsList = sectionsApi && sectionsApi.length > 0
+    ? sectionsApi
+    : [
+        { code: 'FACADE', label: 'Façade avant' },
+        { code: 'SALON', label: 'Salon' },
+        { code: 'CUISINE', label: 'Cuisine' },
+        { code: 'CHAMBRE', label: 'Chambres' },
+        { code: 'SALLE_DE_BAIN', label: 'Salle de bain' },
+        { code: 'PISCINE', label: 'Piscine' },
+        { code: 'EXTERIEUR', label: 'Extérieur / jardin' },
+        { code: 'VUE', label: 'Vue' },
+        { code: 'AUTRE', label: 'Autres photos' },
+      ]
+
+  function reset() {
+    setFiles([])
+    setSection('')
+  }
+
+  function submit() {
+    if (files.length === 0) {
+      toast.error('Sélectionnez au moins une photo.')
+      return
+    }
+    if (!section) {
+      toast.error('Choisissez la section pour ces photos.')
+      return
+    }
+    ajouter.mutate(
+      {
+        proprieteId,
+        photos: files,
+        sections: files.map(() => section),
+      },
+      {
+        onSuccess: () => {
+          toast.success(`${files.length} photo(s) ajoutée(s)`)
+          reset()
+          setOpen(false)
+        },
+        onError: (err) =>
+          toast.error(extractApiError(err, 'Upload impossible.')),
+      }
+    )
+  }
+
+  return (
+    <>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)} className="gap-2">
+        <Plus className="w-4 h-4" />
+        Ajouter des photos
+      </Button>
+
+      <Dialog open={open} onOpenChange={(v) => { if (!v) reset(); setOpen(v) }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UploadIcon className="w-5 h-5 text-terra" />
+              Ajouter des photos
+            </DialogTitle>
+            <DialogDescription>
+              Enrichissez votre fiche avec de nouvelles photos.
+              Toutes les photos sélectionnées seront classées dans la même section.
+              Refaites plusieurs uploads pour des sections différentes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <label htmlFor="apb-section" className="font-body text-sm font-semibold text-earth">
+                Section <span className="text-error">*</span>
+              </label>
+              <select
+                id="apb-section"
+                value={section}
+                onChange={(e) => setSection(e.target.value)}
+                className="w-full h-10 rounded-md border-[1.5px] border-sand-400 bg-white px-3 text-sm font-body text-earth"
+              >
+                <option value="">— Choisir —</option>
+                {sectionsList.map((s) => (
+                  <option key={s.code} value={s.code}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="apb-files" className="font-body text-sm font-semibold text-earth">
+                Photos (JPG / PNG / WEBP) <span className="text-error">*</span>
+              </label>
+              <Input
+                id="apb-files"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+              />
+              {files.length > 0 && (
+                <p className="font-body text-xs text-earth-500">
+                  {files.length} fichier(s) sélectionné(s) ({(files.reduce((s, f) => s + f.size, 0) / 1024 / 1024).toFixed(1)} Mo total)
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { reset(); setOpen(false) }} disabled={ajouter.isPending}>
+              Annuler
+            </Button>
+            <Button onClick={submit} disabled={ajouter.isPending}>
+              {ajouter.isPending ? 'Envoi...' : 'Uploader'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  )
+}
 
 function ModifierProprieteButton({ propriete: p }: { propriete: ProprieteResponse }) {
   const [open, setOpen] = useState(false)

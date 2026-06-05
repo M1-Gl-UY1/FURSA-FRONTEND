@@ -17,6 +17,7 @@ import {
   Users,
   Banknote,
   Camera,
+  Settings,
   WalletCards,
   Wrench,
 } from 'lucide-react'
@@ -75,6 +76,7 @@ const groups: NavGroup[] = [
       { label: 'Équipements', to: '/admin/equipements', icon: Wrench },
       { label: 'Catégories doc.', to: '/admin/categories-document', icon: FileText },
       { label: 'Sections photo', to: '/admin/sections-photo', icon: Camera },
+      { label: 'Paramètres', to: '/admin/settings', icon: Settings },
     ],
   },
 ]

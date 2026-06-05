@@ -69,6 +69,41 @@ export function useModifierMaPropriete() {
 }
 
 /**
+ * V2 G.7 (05/06/2026) : ajout de photos a un bien deja accepte / tokenise / publie.
+ * Le bien doit appartenir au caller (verifie cote backend). Refuse si statut
+ * EN_REVIEW ou REFUSEE.
+ */
+export function useAjouterPhotosPostTokenisation() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (args: {
+      proprieteId: number
+      photos: File[]
+      sections: string[]
+    }) => {
+      const formData = new FormData()
+      for (const photo of args.photos) {
+        formData.append('photos', photo)
+      }
+      for (const section of args.sections) {
+        formData.append('sections', section)
+      }
+      const { data } = await api.post<ProprieteResponse>(
+        `/api/proprietes/${args.proprieteId}/medias/photos`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      )
+      return data
+    },
+    onSuccess: (_d, args) => {
+      qc.invalidateQueries({ queryKey: ['propriete', args.proprieteId] })
+      qc.invalidateQueries({ queryKey: ['ma-propriete-proposee', args.proprieteId] })
+      qc.invalidateQueries({ queryKey: ['mes-proprietes-proposees'] })
+    },
+  })
+}
+
+/**
  * Hook admin detail : accede a une propriete quel que soit son statut.
  * Polling auto tant que EN_TOKENISATION (cf usePropriete classique).
  */
