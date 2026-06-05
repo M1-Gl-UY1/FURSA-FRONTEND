@@ -53,8 +53,8 @@ import { useTypesBien, type TypeBienResponse } from '@/lib/api/typesBien'
 import { getTypeBienMeta } from '@/lib/typeBienMeta'
 import { useCategoriesDocument } from '@/lib/api/categoriesDocument'
 import { getCategorieDocumentMeta } from '@/lib/categorieDocumentMeta'
+import { useSectionsPhoto } from '@/lib/api/sectionsPhoto'
 import type {
-  SectionPhoto,
   SourceRevenu,
   StatutExploitation,
   TypeBien,
@@ -1513,7 +1513,11 @@ type ServerDoc = {
   url?: string | null
   type?: string
   sectionPhoto?: string | null
+  /** V2 G.4 : label resolu cote backend (legacy + custom). */
+  sectionPhotoLabel?: string | null
   categorieDocument?: string | null
+  /** V2 G.2 : label resolu cote backend (legacy + custom). */
+  categorieDocumentLabel?: string | null
 }
 
 function Step4Photos({
@@ -1533,30 +1537,44 @@ function Step4Photos({
   const exigeChambres =
     typesList.find((t) => t.code === form.typeBienCode)?.exigeChambres ?? true
 
-  // Sections requises selon le type de bien et équipements
-  const sectionsRequises: { section: SectionPhoto; label: string; required: boolean }[] =
+  // V2 G.4 (05/06/2026) : chargement dynamique des sections via l'API.
+  // Pour les 9 codes historiques on applique les regles conditionnelles
+  // (CHAMBRE si exigeChambres, PISCINE/VUE si equipement). Pour les codes
+  // custom crees par l'admin, ils apparaissent toujours, avec leur flag
+  // `requise` de la BDD.
+  const { data: sectionsApi, isError: sectionsError } = useSectionsPhoto()
+  const sectionsRequises: { section: string; label: string; required: boolean }[] =
     useMemo(() => {
-      const base: { section: SectionPhoto; label: string; required: boolean }[] = [
-        { section: 'FACADE', label: 'Façade avant', required: true },
-        { section: 'SALON', label: 'Salon', required: true },
-        { section: 'CUISINE', label: 'Cuisine', required: false },
+      const fallback = [
+        { code: 'FACADE', label: 'Façade avant', requise: true },
+        { code: 'SALON', label: 'Salon', requise: true },
+        { code: 'CUISINE', label: 'Cuisine', requise: false },
+        { code: 'CHAMBRE', label: 'Chambres', requise: false },
+        { code: 'SALLE_DE_BAIN', label: 'Salle de bain', requise: false },
+        { code: 'PISCINE', label: 'Piscine', requise: false },
+        { code: 'EXTERIEUR', label: 'Extérieur / jardin', requise: false },
+        { code: 'VUE', label: 'Vue', requise: false },
+        { code: 'AUTRE', label: 'Autres photos', requise: false },
       ]
-      if (exigeChambres) {
-        base.push({ section: 'CHAMBRE', label: 'Chambres', required: false })
-      }
-      base.push({ section: 'SALLE_DE_BAIN', label: 'Salle de bain', required: false })
-      if (form.equipementsCodes.includes('PISCINE')) {
-        base.push({ section: 'PISCINE', label: 'Piscine', required: false })
-      }
-      if (form.equipementsCodes.includes('VUE_MER')) {
-        base.push({ section: 'VUE', label: 'Vue mer', required: false })
-      }
-      base.push({ section: 'EXTERIEUR', label: 'Extérieur / jardin', required: false })
-      base.push({ section: 'AUTRE', label: 'Autres photos', required: false })
-      return base
-    }, [exigeChambres, form.equipementsCodes])
+      const source = (!sectionsError && sectionsApi && sectionsApi.length > 0)
+        ? sectionsApi
+        : fallback
+      return source
+        .filter((s) => {
+          // Logique conditionnelle preservee pour les 9 codes historiques.
+          if (s.code === 'CHAMBRE' && !exigeChambres) return false
+          if (s.code === 'PISCINE' && !form.equipementsCodes.includes('PISCINE')) return false
+          if (s.code === 'VUE' && !form.equipementsCodes.includes('VUE_MER')) return false
+          return true
+        })
+        .map((s) => ({
+          section: s.code,
+          label: s.label,
+          required: s.requise === true,
+        }))
+    }, [sectionsApi, sectionsError, exigeChambres, form.equipementsCodes])
 
-  function addPhotos(section: SectionPhoto, files: FileList | null) {
+  function addPhotos(section: string, files: FileList | null) {
     if (!files) return
     const accepted: PhotoStructuree[] = []
     for (const f of Array.from(files)) {
@@ -1622,7 +1640,7 @@ function Step4Photos({
                 />
                 {p.sectionPhoto && (
                   <span className="absolute bottom-0 left-0 right-0 bg-earth/75 text-white text-[9px] font-body font-semibold px-1 py-0.5 text-center truncate">
-                    {p.sectionPhoto}
+                    {p.sectionPhotoLabel ?? p.sectionPhoto}
                   </span>
                 )}
                 {onRemoveServerMedia && (

@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './client'
 import type {
   ProprieteResponse,
-  SectionPhoto,
   SubmissionRequest,
 } from './types'
 
@@ -36,9 +35,14 @@ export function useMaProprieteProposee(id: number | undefined) {
 // Soumission nouveau bien (refonte Hugh 22/05/2026)
 // =============================================================================
 
+/**
+ * V2 G.4 (05/06/2026) : la section est passee en string pour supporter
+ * les codes custom crees par l'admin (TERRASSE, GARAGE, BALCON...).
+ * Les 9 codes historiques de SectionPhoto restent acceptes.
+ */
 export type PhotoStructuree = {
   file: File
-  section: SectionPhoto
+  section: string
 }
 
 /** Catégories possibles de documents légaux (cf énum CategorieDocument backend). */

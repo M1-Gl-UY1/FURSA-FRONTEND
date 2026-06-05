@@ -566,13 +566,14 @@ export function AdminProprieteDetailPage() {
                 href={fileUrl(d.url)}
                 target="_blank"
                 rel="noopener noreferrer"
-                title={d.sectionPhoto ?? d.nom ?? 'Photo'}
+                title={d.sectionPhotoLabel ?? d.sectionPhoto ?? d.nom ?? 'Photo'}
                 className="aspect-square rounded-md overflow-hidden bg-sand-300 hover:opacity-90 relative group"
               >
                 <img src={fileUrl(d.url)} alt={d.nom ?? 'Photo'} className="w-full h-full object-cover" />
                 {d.sectionPhoto && (
                   <span className="absolute bottom-1 left-1 right-1 bg-earth/75 text-white text-[10px] font-body font-semibold px-1.5 py-0.5 rounded text-center">
-                    {d.sectionPhoto}
+                    {/* V2 G.4 : label resolu cote backend (legacy + custom). */}
+                    {d.sectionPhotoLabel ?? d.sectionPhoto}
                   </span>
                 )}
               </a>

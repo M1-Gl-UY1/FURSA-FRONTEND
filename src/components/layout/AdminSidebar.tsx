@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Users,
   Banknote,
+  Camera,
   WalletCards,
   Wrench,
 } from 'lucide-react'
@@ -73,6 +74,7 @@ const groups: NavGroup[] = [
       { label: 'Types de bien', to: '/admin/types-bien', icon: Building2 },
       { label: 'Équipements', to: '/admin/equipements', icon: Wrench },
       { label: 'Catégories doc.', to: '/admin/categories-document', icon: FileText },
+      { label: 'Sections photo', to: '/admin/sections-photo', icon: Camera },
     ],
   },
 ]

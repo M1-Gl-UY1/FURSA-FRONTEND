@@ -101,6 +101,13 @@ export type DocumentResponse = {
   dateUpload?: string
   /** Phase Certification : null pour les documents légaux PDF, sinon section photo. */
   sectionPhoto?: string | null
+  /**
+   * V2 G.4 (05/06/2026) : code admin-configurable (peut etre un code custom
+   * hors enum, ex TERRASSE). Source de verite frontend.
+   */
+  sectionPhotoCode?: string | null
+  /** V2 G.4 : libelle resolu cote backend (ex "Façade avant", "Terrasse"). */
+  sectionPhotoLabel?: string | null
   /** Categorie du document legal (TITRE_FONCIER, PERMIS_CONSTRUIRE, ...). Null pour les images. */
   categorieDocument?: string | null
   /**
