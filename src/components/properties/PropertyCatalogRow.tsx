@@ -97,7 +97,8 @@ export function PropertyCatalogRow({ propriete }: Props) {
                   {typeLabel}
                 </span>
               )}
-              {propriete.certifie && (
+              {/* V2 I (06/06/2026) : badge "Certifié" base sur statut === PUBLIEE. */}
+              {propriete.statut === 'PUBLIEE' && (
                 <span className="inline-flex items-center gap-0.5 text-success text-[10px] font-semibold">
                   <BadgeCheck className="w-3 h-3" strokeWidth={2} />
                   Certifié

@@ -334,7 +334,8 @@ function ProprieteCard({
 
   const isRefusee = p.statut === 'REFUSEE'
   const isPubliee = p.statut === 'PUBLIEE'
-  const isCertifie = p.certifie === true || p.statutCertif === 'CERTIFIE'
+  // V2 I (06/06/2026) : badge "Certifié" = bien PUBLIEE (valide par l'admin).
+  const isCertifie = p.statut === 'PUBLIEE'
 
   return (
     <Link

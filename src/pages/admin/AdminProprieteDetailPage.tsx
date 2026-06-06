@@ -448,29 +448,7 @@ export function AdminProprieteDetailPage() {
         </section>
       )}
 
-      {/* Certification */}
-      {(p.statutCertif && p.statutCertif !== 'NON_CERTIFIE') && (
-        <section className="bg-ocean/5 border border-ocean/20 rounded-xl p-5">
-          <h2 className="font-body font-semibold text-ocean text-sm mb-3">
-            Certification
-          </h2>
-          <div className="grid sm:grid-cols-3 gap-3 text-sm">
-            <Meta icon={Building2} label="Statut">{p.statutCertif}</Meta>
-            {p.certifSoumiseLe && (
-              <Meta icon={CalendarDays} label="Soumise le">{formatDate(p.certifSoumiseLe)}</Meta>
-            )}
-            {p.certifieLe && (
-              <Meta icon={CalendarDays} label="Certifiee le">{formatDate(p.certifieLe)}</Meta>
-            )}
-          </div>
-          {p.certifMotifRefus && (
-            <div className="mt-3 p-3 bg-error/10 border border-error/20 rounded-md">
-              <p className="text-xs font-semibold text-error mb-1">Motif du refus de certification</p>
-              <p className="font-body text-earth-700 text-xs">{p.certifMotifRefus}</p>
-            </div>
-          )}
-        </section>
-      )}
+      {/* V2 I (06/06/2026) : section Certification supprimee. Voir DEPRECATIONS.md. */}
 
       {/* Gestionnaire locatif */}
       {p.gestionnaire && (

@@ -122,7 +122,9 @@ export function PropertyCatalogCard({ propriete }: PropertyCatalogCardProps) {
               Acquis FURSA
             </span>
           )}
-          {propriete.certifie && (
+          {/* V2 I (06/06/2026) : phase Certification supprimee.
+              Badge "Certifié" base sur statut === PUBLIEE (= valide par l'admin). */}
+          {propriete.statut === 'PUBLIEE' && (
             <span className="inline-flex items-center bg-white/90 text-success text-[10px] font-semibold font-body rounded-full px-2 py-0.5 shadow-sm">
               ✓ Certifié
             </span>

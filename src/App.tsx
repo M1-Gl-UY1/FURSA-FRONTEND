@@ -12,7 +12,6 @@ import { adminOrigin, investisseurOrigin, isAdminHost } from '@/lib/hosts'
 import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
 import { AdminDeclarationsStatutPage } from '@/pages/admin/AdminDeclarationsStatutPage'
-import { AdminCertificationsPage } from '@/pages/admin/AdminCertificationsPage'
 import { AdminEscrowsPage } from '@/pages/admin/AdminEscrowsPage'
 import { AdminRetraitsPage } from '@/pages/admin/AdminRetraitsPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
@@ -161,7 +160,6 @@ function AdminRoutes() {
           <Route path="/admin/declarations" element={<AdminDeclarationsStatutPage />} />
           <Route path="/admin/escrows" element={<AdminEscrowsPage />} />
           <Route path="/admin/retraits" element={<AdminRetraitsPage />} />
-          <Route path="/admin/certifications" element={<AdminCertificationsPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />
           <Route path="/admin/utilisateurs/:id" element={<AdminUserDetailPage />} />
           <Route path="/admin/wallets" element={<AdminWalletsPage />} />

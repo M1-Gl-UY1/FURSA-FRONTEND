@@ -125,33 +125,28 @@ export function AcheterPartsPage() {
   const partsMax = propriete.partsDisponibles ?? 0
   const isPubliee = propriete.statut === 'PUBLIEE'
   const isCollecteAnnulee = escrow?.statut === 'ANNULEE'
-  // Phase Certification (Hugh 22/05/2026) : bien doit etre CERTIFIE pour pouvoir acheter
-  const isCertifie = propriete.statutCertif === 'CERTIFIE'
-  const certifEnReview = propriete.statutCertif === 'EN_REVIEW'
 
-  if (!isPubliee || partsMax <= 0 || isCollecteAnnulee || !isCertifie) {
+  // V2 I (06/06/2026) : phase Certification supprimee. Une propriete
+  // PUBLIEE est directement achetable (l'admin a deja valide le dossier
+  // lors du passage en ACCEPTEE).
+
+  if (!isPubliee || partsMax <= 0 || isCollecteAnnulee) {
     return (
       <div className="max-w-2xl mx-auto py-12 text-center">
         <AlertTriangle className="w-12 h-12 text-warning mx-auto mb-4" strokeWidth={1.5} />
         <h2 className="font-display font-bold text-earth text-xl mb-2">
           {isCollecteAnnulee
             ? 'Collecte annulée'
-            : !isCertifie
-              ? 'Propriété non certifiée'
-              : partsMax <= 0
-                ? 'Plus de parts disponibles'
-                : 'Propriété non disponible'}
+            : partsMax <= 0
+              ? 'Plus de parts disponibles'
+              : 'Propriété non disponible'}
         </h2>
         <p className="font-body text-earth-600 text-sm mb-6 max-w-md mx-auto">
           {isCollecteAnnulee
             ? 'La collecte de cette propriété a été annulée. Les investisseurs ont été remboursés.'
-            : !isCertifie
-              ? certifEnReview
-                ? "Les documents légaux de cette propriété sont en cours de vérification par notre équipe. L'achat sera ouvert dès certification."
-                : "Les documents légaux de cette propriété n'ont pas encore été certifiés par notre équipe. L'achat est bloqué tant que le propriétaire n'a pas fourni les preuves nécessaires."
-              : partsMax <= 0
-                ? 'Ce bien est entièrement financé. Consultez le marché secondaire.'
-                : "Cette propriété n'est pas ouverte à l'achat pour le moment."}
+            : partsMax <= 0
+              ? 'Ce bien est entièrement financé. Consultez le marché secondaire.'
+              : "Cette propriété n'est pas ouverte à l'achat pour le moment."}
         </p>
         <Button asChild>
           <Link to="/opportunites">Voir les opportunités</Link>

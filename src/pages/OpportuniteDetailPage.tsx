@@ -123,7 +123,9 @@ export function OpportuniteDetailPage() {
   // V2 G.1 : source unique = equipementsCodes (resolu via le helper meta).
   const equipements = useEquipementsForDisplay(propriete.equipementsCodes ?? null)
   const caracteristiques = collectCaracteristiques(propriete)
-  const isCertifie = propriete.certifie === true || propriete.statutCertif === 'CERTIFIE'
+  // V2 I (06/06/2026) : phase Certification supprimee. Le badge "Certifié Fursa"
+  // est maintenant base sur statut === PUBLIEE (= bien valide par l'admin).
+  const isCertifie = propriete.statut === 'PUBLIEE'
 
   function share() {
     const url = window.location.href

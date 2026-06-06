@@ -486,7 +486,8 @@ export type StatutPossession = 'PENDING' | 'ACTIVE' | 'ANNULEE'
 
 export type PossessionResponse = {
   id: number
-  proprieteId?: number
+  /** Bugfix 06/06/2026 : ajoute au backend, devient obligatoire ici. */
+  proprieteId: number
   proprieteNom: string
   localisation: string
   nombreDeParts: number

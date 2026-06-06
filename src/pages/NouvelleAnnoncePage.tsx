@@ -334,11 +334,9 @@ function findProprieteIdFromName(
   return annonces?.find((a) => a.proprieteNom === nom)?.proprieteId ?? null
 }
 
-// Fallback : récupérer via l'API propriétés (le seed garantit qu'on les trouve par nom)
-function findProprieteIdFromPossession(_p: PossessionResponse): number | null {
-  // V1 : faute d'avoir proprieteId dans PossessionResponse, on lit depuis le cache des annonces.
-  // À corriger backend en V2 (ajouter proprieteId au PossessionResponse).
-  // Workaround temporaire : on lit depuis le DTO si disponible (cast)
-  const anyP = _p as PossessionResponse & { proprieteId?: number }
-  return anyP.proprieteId ?? null
+// Bugfix 06/06/2026 : PossessionResponse expose maintenant proprieteId
+// directement (backend MarchePrimaireService). Plus besoin de hack via cache
+// annonces.
+function findProprieteIdFromPossession(p: PossessionResponse): number | null {
+  return p.proprieteId ?? null
 }
