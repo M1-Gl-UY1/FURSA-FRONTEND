@@ -20,6 +20,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { WizardStepper } from '@/components/shared/WizardStepper'
 import { useKycMe, useKycSubmit } from '@/lib/api/kyc'
+import { useSettingInt } from '@/lib/api/settings'
 import { extractApiError } from '@/lib/api/errors'
 import type { KycSubmitData, SourceFonds } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
@@ -188,10 +189,11 @@ function Step1Identite({
   onChange: (f: KycSubmitData) => void
   onContinue: () => void
 }) {
-  // Age minimum 18 ans (majeur, exigence reglementaire AML).
-  // Maximum 100 ans pour eviter les fausses saisies.
-  const MIN_AGE = 18
-  const MAX_AGE = 100
+  // V2 H.4 (06/06/2026) : age min/max charges dynamiquement depuis
+  // app_setting (admin-configurable). Defaut 18/100 si endpoint public
+  // injoignable (fallback safe).
+  const MIN_AGE = useSettingInt('kyc.age_minimum', 18)
+  const MAX_AGE = useSettingInt('kyc.age_maximum', 100)
   function computeAge(iso: string): number | null {
     if (!iso) return null
     const d = new Date(iso)

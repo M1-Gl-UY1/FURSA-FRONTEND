@@ -28,9 +28,16 @@ export type AppSettingResponse = {
 
 const BASE = '/api/app-settings'
 const KEY_ADMIN = ['app-settings', 'admin'] as const
+const KEY_PUBLIC = ['app-settings', 'public'] as const
 
 export async function fetchAdminAppSettings(): Promise<AppSettingResponse[]> {
   const { data } = await api.get<AppSettingResponse[]>(`${BASE}/admin`)
+  return data
+}
+
+/** V2 H.4 (06/06/2026) : settings publics whitelistes (limites fichiers, age KYC). */
+export async function fetchPublicAppSettings(): Promise<AppSettingResponse[]> {
+  const { data } = await api.get<AppSettingResponse[]>(`${BASE}/public`)
   return data
 }
 
@@ -40,6 +47,31 @@ export function useAdminAppSettings() {
     queryFn: fetchAdminAppSettings,
     staleTime: 30_000,
   })
+}
+
+/**
+ * V2 H.4 (06/06/2026) : hook pour le wizard et la page KYC.
+ * Whitelist backend : limites tailles fichiers + age KYC min/max.
+ * Long staleTime (10 min) car ces valeurs bougent rarement.
+ */
+export function usePublicAppSettings() {
+  return useQuery({
+    queryKey: KEY_PUBLIC,
+    queryFn: fetchPublicAppSettings,
+    staleTime: 10 * 60_000,
+  })
+}
+
+/**
+ * Helper : recupere un setting public typed integer, avec fallback.
+ * Utile dans les composants qui veulent du nombre direct sans .find() manuel.
+ */
+export function useSettingInt(cle: string, defaultValue: number): number {
+  const { data } = usePublicAppSettings()
+  const found = data?.find((s) => s.cle === cle)
+  if (!found) return defaultValue
+  const n = parseInt(found.valeur, 10)
+  return Number.isFinite(n) ? n : defaultValue
 }
 
 export function useModifierAppSetting() {

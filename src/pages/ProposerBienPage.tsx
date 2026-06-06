@@ -54,6 +54,7 @@ import { getTypeBienMeta } from '@/lib/typeBienMeta'
 import { useCategoriesDocument } from '@/lib/api/categoriesDocument'
 import { getCategorieDocumentMeta } from '@/lib/categorieDocumentMeta'
 import { useSectionsPhoto } from '@/lib/api/sectionsPhoto'
+import { useSettingInt } from '@/lib/api/settings'
 import type {
   SourceRevenu,
   StatutExploitation,
@@ -73,7 +74,8 @@ const STEPS = [
   'Récap',
 ]
 
-const MAX_DOC_SIZE = 10 * 1024 * 1024 // 10 Mo par PDF
+// V2 H.4 (06/06/2026) : MAX_DOC_SIZE retire, limite lue dynamiquement via
+// useSettingInt('file.max_size_pdf_mo', 10) dans Step6Documents.
 const DOC_TYPES = ['application/pdf']
 
 // V2 G.2 (04/06/2026) : la liste des categories de document est desormais
@@ -90,34 +92,72 @@ const CATEGORIES_DOC_FALLBACK: { code: string; label: string; description: strin
 ]
 
 /**
- * Valide l'etape 6 (documents legaux). Reflete exactement la regle backend
- * (ProprieteService.soumettre cat conditionnelle) pour eviter une erreur tardive.
- * Considere les docs LOCAUX (en attente d'upload) ET SERVEUR (deja sauvegardes).
+ * V2 H.5 (06/06/2026) : calcule dynamiquement les labels des categories de
+ * documents obligatoires manquantes, en s'appuyant sur regleObligation des
+ * categories admin-configurables. Reflete la logique backend
+ * (CategorieDocumentRefService.validerObligations) pour un feedback immediat
+ * dans le wizard, avant le finaliser.
+ *
+ * <p>Si {@code catsApi} est null/vide (API indispo), fallback sur la logique
+ * historique hardcodee : TITRE_FONCIER toujours, PERMIS_CONSTRUIRE si NEUF/
+ * EN_CONSTRUCTION, CONTRAT_GESTION ou CONTRAT_BAIL si DEJA_RENTABLE.
  */
-function docsValides(
+function computeRequisManquants(
   docs: DocumentLegal[],
   statut: StatutExploitation | '',
   serverDocs: { categorieDocument?: string | null }[] = [],
-): boolean {
-  const cats = new Set<string>([
+  catsApi?: { code: string; label: string; actif: boolean; regleObligation: string }[] | null,
+): string[] {
+  const codesPresents = new Set<string>([
     ...docs.map((d) => d.categorie as string),
     ...serverDocs.map((d) => d.categorieDocument ?? '').filter(Boolean),
   ])
-  if (cats.size === 0) return false
-  if (!cats.has('TITRE_FONCIER')) return false
-  if (statut === 'DEJA_RENTABLE') {
-    return cats.has('CONTRAT_GESTION') || cats.has('CONTRAT_BAIL')
+  const manquants: string[] = []
+
+  if (catsApi && catsApi.length > 0) {
+    // 1. TOUJOURS
+    for (const c of catsApi) {
+      if (c.regleObligation === 'TOUJOURS' && c.actif && !codesPresents.has(c.code)) {
+        manquants.push(c.label)
+      }
+    }
+    // 2. SI_NEUF_OU_CONSTRUCTION
+    if (statut === 'NEUF' || statut === 'EN_CONSTRUCTION') {
+      for (const c of catsApi) {
+        if (c.regleObligation === 'SI_NEUF_OU_CONSTRUCTION' && c.actif && !codesPresents.has(c.code)) {
+          manquants.push(c.label)
+        }
+      }
+    }
+    // 3. SI_DEJA_RENTABLE : groupe, au moins UN
+    if (statut === 'DEJA_RENTABLE') {
+      const groupe = catsApi.filter((c) => c.regleObligation === 'SI_DEJA_RENTABLE' && c.actif)
+      const aucunFourni = groupe.length > 0 && groupe.every((c) => !codesPresents.has(c.code))
+      if (aucunFourni) {
+        manquants.push(groupe.map((c) => c.label).join(' OU ') + ' (au moins un)')
+      }
+    }
+    return manquants
   }
-  if (statut === 'EN_CONSTRUCTION' || statut === 'NEUF') {
-    return cats.has('PERMIS_CONSTRUIRE')
+
+  // Fallback hardcode (API indispo)
+  if (!codesPresents.has('TITRE_FONCIER')) manquants.push('Titre foncier')
+  if ((statut === 'NEUF' || statut === 'EN_CONSTRUCTION')
+      && !codesPresents.has('PERMIS_CONSTRUIRE')) {
+    manquants.push('Permis de construire')
   }
-  return true
+  if (statut === 'DEJA_RENTABLE'
+      && !codesPresents.has('CONTRAT_GESTION')
+      && !codesPresents.has('CONTRAT_BAIL')) {
+    manquants.push('Contrat de gestion OU Contrat de bail (au moins un)')
+  }
+  return manquants
 }
 
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024 // 100 Mo
+// V2 H.4 (06/06/2026) : MAX_VIDEO_SIZE / MAX_PHOTO_SIZE retires, limites
+// lues dynamiquement via useSettingInt dans Step5Video / Step4Photos.
 const VIDEO_TYPES = ['video/mp4', 'video/quicktime', 'video/webm']
 const PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp']
-const MAX_PHOTO_SIZE = 4 * 1024 * 1024 // 4 Mo par photo (limite imposee Hugh)
 
 type FormState = {
   // Etape 1
@@ -363,6 +403,8 @@ export function ProposerBienPage() {
   }, [brouillonData])
 
   const { data: paysList, isLoading: paysLoading } = usePays()
+  // V2 H.5 : categories de documents pour validation dynamique des obligations.
+  const { data: catsApiTopLevel } = useCategoriesDocument()
   const { data: villesList } = useVilles(form.pays || null)
 
   // Auto-set devise locale quand pays change
@@ -421,8 +463,8 @@ export function ProposerBienPage() {
       || serverImages.some((d) => d.sectionPhoto === 'SALON')),
     // 5 — Vidéo obligatoire : locale OU serveur
     form.video !== null || !!brouillonData?.videoUrl,
-    // 6 — Documents légaux : titre foncier obligatoire + conditionnels (combine local + serveur)
-    docsValides(form.documents, form.statutExploitation, serverPdfs),
+    // 6 — Documents légaux : valide si aucun manquant selon regleObligation dynamique.
+    computeRequisManquants(form.documents, form.statutExploitation, serverPdfs, catsApiTopLevel).length === 0,
     // 7 — Récap
     form.cguAccepted && form.certified,
   ]
@@ -1574,6 +1616,10 @@ function Step4Photos({
         }))
     }, [sectionsApi, sectionsError, exigeChambres, form.equipementsCodes])
 
+  // V2 H.4 (06/06/2026) : limite image dynamique via app_setting public.
+  const maxPhotoMo = useSettingInt('file.max_size_image_mo', 4)
+  const maxPhotoBytes = maxPhotoMo * 1024 * 1024
+
   function addPhotos(section: string, files: FileList | null) {
     if (!files) return
     const accepted: PhotoStructuree[] = []
@@ -1582,10 +1628,10 @@ function Step4Photos({
         toast.error(`Format non supporté : ${f.name}`)
         continue
       }
-      if (f.size > MAX_PHOTO_SIZE) {
+      if (f.size > maxPhotoBytes) {
         const sizeMo = (f.size / (1024 * 1024)).toFixed(1)
         toast.error(
-          `Photo "${f.name}" rejetée : ${sizeMo} Mo. Taille maximum autorisée : 4 Mo. Compressez l'image (TinyPNG, Squoosh...) puis recommencez.`
+          `Photo "${f.name}" rejetée : ${sizeMo} Mo. Taille maximum autorisée : ${maxPhotoMo} Mo. Compressez l'image (TinyPNG, Squoosh...) puis recommencez.`
         )
         continue
       }
@@ -1777,6 +1823,10 @@ function Step5Video({
   serverVideoUrl?: string | null
   onRemoveServerVideo?: () => Promise<void> | void
 }) {
+  // V2 H.4 (06/06/2026) : limite video dynamique via app_setting public.
+  const maxVideoMo = useSettingInt('file.max_size_video_mo', 100)
+  const maxVideoBytes = maxVideoMo * 1024 * 1024
+
   function handleVideo(file: File | null) {
     if (!file) {
       update('video', null)
@@ -1786,10 +1836,10 @@ function Step5Video({
       toast.error('Format vidéo non supporté. MP4, MOV ou WebM.')
       return
     }
-    if (file.size > MAX_VIDEO_SIZE) {
+    if (file.size > maxVideoBytes) {
       const sizeMo = (file.size / (1024 * 1024)).toFixed(1)
       toast.error(
-        `Vidéo trop lourde : ${sizeMo} Mo. Taille maximum autorisée : 100 Mo. Compressez la vidéo (HandBrake, format MP4 720p) avant de réessayer.`
+        `Vidéo trop lourde : ${sizeMo} Mo. Taille maximum autorisée : ${maxVideoMo} Mo. Compressez la vidéo (HandBrake, format MP4 720p) avant de réessayer.`
       )
       return
     }
@@ -1914,6 +1964,10 @@ function Step6Documents({
     ? catsApi.map((c) => ({ code: c.code, label: c.label, description: c.description ?? '' }))
     : CATEGORIES_DOC_FALLBACK
 
+  // V2 H.4 (06/06/2026) : limite PDF dynamique via app_setting public.
+  const maxDocMo = useSettingInt('file.max_size_pdf_mo', 10)
+  const maxDocBytes = maxDocMo * 1024 * 1024
+
   function addDocs(files: FileList | null) {
     if (!files) return
     const valid: DocumentLegal[] = []
@@ -1922,8 +1976,8 @@ function Step6Documents({
         toast.error(`${f.name} : seuls les PDF sont acceptes.`)
         return
       }
-      if (f.size > MAX_DOC_SIZE) {
-        toast.error(`${f.name} : taille > 10 Mo.`)
+      if (f.size > maxDocBytes) {
+        toast.error(`${f.name} : taille > ${maxDocMo} Mo.`)
         return
       }
       // Par defaut : AUTRE, l'user choisit ensuite la categorie
@@ -1944,21 +1998,15 @@ function Step6Documents({
     update('documents', next)
   }
 
-  // Combine local + serveur pour la validation des categories obligatoires.
-  const cats = new Set<string>([
-    ...form.documents.map((d) => d.categorie as string),
-    ...serverDocuments.map((d) => d.categorieDocument ?? '').filter(Boolean),
-  ])
-  const requisManquants: string[] = []
-  if (!cats.has('TITRE_FONCIER')) requisManquants.push('Titre foncier')
-  if (form.statutExploitation === 'DEJA_RENTABLE'
-      && !cats.has('CONTRAT_GESTION') && !cats.has('CONTRAT_BAIL')) {
-    requisManquants.push('Contrat de gestion ou bail')
-  }
-  if ((form.statutExploitation === 'EN_CONSTRUCTION' || form.statutExploitation === 'NEUF')
-      && !cats.has('PERMIS_CONSTRUIRE')) {
-    requisManquants.push('Permis de construire')
-  }
+  // V2 H.5 (06/06/2026) : calcul dynamique des obligations via
+  // regleObligation des categories admin-configurables (avec fallback
+  // hardcode pour les 6 codes historiques si API indispo).
+  const requisManquants = computeRequisManquants(
+    form.documents,
+    form.statutExploitation,
+    serverDocuments,
+    catsApi,
+  )
 
   return (
     <>

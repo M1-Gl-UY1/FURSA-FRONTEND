@@ -1,6 +1,6 @@
 /**
  * V2 G.5 (05/06/2026) : page admin de gestion des settings application
- * (limites fichiers, age KYC, fenetre declaration, etc.).
+ * (limites fichiers, age verification d'identite, fenetre declaration, etc.).
  *
  * Les cles sont definies par les seeds des migrations. L'admin ne peut pas
  * en creer ni supprimer, seulement modifier la valeur. Le service backend
@@ -34,7 +34,7 @@ export function AdminSettingsPage() {
         </h1>
         <p className="font-body text-earth-600 text-sm max-w-2xl">
           Réglages applicatifs modifiables sans redéploiement : limites
-          d'upload, contraintes KYC, fenêtres de déclaration, seuils escrow.
+          d'upload, contraintes de vérification d'identité, fenêtres de déclaration, seuils escrow.
           Les changements prennent effet immédiatement sur les nouvelles
           requêtes (cache invalidé à chaque sauvegarde).
         </p>
