@@ -462,12 +462,13 @@ export function ProposerBienPage() {
         form.dateLivraisonPrevue.length > 0),
     // 3 — Finance.
     // V2 BB (08/06/2026) : prix unitaire d'une part DOIT >= 100 USD (ticket d'entree investisseur).
+    // V2 GG (08/06/2026) : rentabilite previsionnelle DOIT >= 5% (seuil PO).
     form.prixVenteTotal > 0 &&
       !!form.deviseLocale &&
       form.fractionVenduePct >= 1 &&
       form.fractionVenduePct <= 100 &&
       form.nombreTotalPart >= 1 &&
-      form.rentabilitePrevue >= 0 &&
+      form.rentabilitePrevue >= 5 &&
       prixUnitaire >= 100,
     // 4 — Photos : façade + salon obligatoires (combine local + serveur)
     (form.photos.some((p) => p.section === 'FACADE')
@@ -1513,11 +1514,23 @@ function Step3Finance({
             <Input
               id="rentab"
               type="number"
-              min={0}
+              min={5}
               step={0.1}
               value={form.rentabilitePrevue || ''}
               onChange={(e) => update('rentabilitePrevue', parseFloat(e.target.value) || 0)}
+              placeholder="Ex : 8"
             />
+            {/* V2 GG (08/06/2026) : minimum 5%/an exige par le PO. */}
+            <p className={cn(
+              'text-xs font-body',
+              form.rentabilitePrevue > 0 && form.rentabilitePrevue < 5
+                ? 'text-error font-semibold'
+                : 'text-earth-500'
+            )}>
+              {form.rentabilitePrevue > 0 && form.rentabilitePrevue < 5
+                ? '⚠ Minimum 5%/an exigé pour publier le bien.'
+                : 'Minimum 5%/an. Conseillé : 8-12% selon le marché local.'}
+            </p>
           </div>
         </div>
 
