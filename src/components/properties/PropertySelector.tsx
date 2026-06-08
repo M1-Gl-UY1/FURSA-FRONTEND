@@ -28,12 +28,16 @@ export function PropertySelector({ options, selectedId, onSelect }: PropertySele
 
   return (
     <ul role="radiogroup" className="space-y-3">
-      {options.map((opt) => {
-        const isSelected = opt.id === selectedId
+      {options.map((opt, idx) => {
+        // V2 BB (08/06/2026) : fix "tout se selectionne en meme temps".
+        // Si opt.id est null/undefined (cas legacy avec ancien DTO), l'ancien
+        // test `opt.id === selectedId` retournait true pour tous quand
+        // selectedId === null → toutes les cartes apparaissaient cochees.
+        const isSelected = opt.id != null && opt.id === selectedId
         const noPartsDispo = opt.partsDisponiblesAVente <= 0
 
         return (
-          <li key={opt.id}>
+          <li key={opt.id ?? `idx-${idx}`}>
             <button
               type="button"
               role="radio"

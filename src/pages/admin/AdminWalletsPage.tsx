@@ -4,10 +4,7 @@ import {
   ArrowUpRight,
   Coins,
   Eye,
-  MinusCircle,
-  PlusCircle,
   Search,
-  Settings2,
   TrendingUp,
   Users,
   Wallet as WalletIcon,
@@ -34,19 +31,14 @@ import { Skeleton } from '@/components/ui/skeleton'
 import {
   useAdminWallets,
   useAdminWalletTransactions,
-  useAjusterWallet,
   WALLET_TX_DISPLAY,
 } from '@/lib/api/wallet'
-import { extractApiError } from '@/lib/api/errors'
 import type { WalletResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
-import { formatMoney } from '@/lib/format'
 
 export function AdminWalletsPage() {
   const { data, isLoading } = useAdminWallets()
-  const ajuster = useAjusterWallet()
   const [search, setSearch] = useState('')
-  const [ajustementTarget, setAjustementTarget] = useState<WalletResponse | null>(null)
   const [detailTarget, setDetailTarget] = useState<WalletResponse | null>(null)
 
   const wallets = data ?? []
@@ -138,14 +130,9 @@ export function AdminWalletsPage() {
           >
             <Eye className="w-4 h-4" strokeWidth={1.75} />
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setAjustementTarget(w)}
-          >
-            <Settings2 className="w-4 h-4 mr-1" strokeWidth={1.75} />
-            Ajuster
-          </Button>
+          {/* V2 BB (08/06/2026) : bouton "Ajuster" retire — l'admin n'a pas
+              le droit de crediter/debiter manuellement un wallet. Source de
+              verite : recharges via PSP et workflow metier (achat/vente/dividende). */}
         </div>
       ),
     },
@@ -244,29 +231,7 @@ export function AdminWalletsPage() {
         />
       )}
 
-      {/* Modal ajustement */}
-      <AjustementModal
-        target={ajustementTarget}
-        onClose={() => setAjustementTarget(null)}
-        isPending={ajuster.isPending}
-        onSubmit={(montant, motif) => {
-          if (!ajustementTarget?.userId) return
-          ajuster.mutate(
-            { userId: ajustementTarget.userId, payload: { montant, motif } },
-            {
-              onSuccess: () => {
-                toast.success(
-                  montant > 0
-                    ? `Wallet crédité de ${formatMoney(montant, { currency: 'USD' })}.`
-                    : `Wallet débité de ${formatMoney(Math.abs(montant), { currency: 'USD' })}.`
-                )
-                setAjustementTarget(null)
-              },
-              onError: (e) => toast.error(extractApiError(e, 'Ajustement impossible.')),
-            }
-          )
-        }}
-      />
+      {/* V2 BB (08/06/2026) : Modal Ajustement retiree (admin n'a plus le droit). */}
 
       {/* Modal détail historique */}
       <DetailModal target={detailTarget} onClose={() => setDetailTarget(null)} />
@@ -278,156 +243,10 @@ export function AdminWalletsPage() {
 // Modal Ajustement
 // =============================================================================
 
-function AjustementModal({
-  target,
-  onClose,
-  onSubmit,
-  isPending,
-}: {
-  target: WalletResponse | null
-  onClose: () => void
-  onSubmit: (montant: number, motif: string) => void
-  isPending: boolean
-}) {
-  const [sens, setSens] = useState<'credit' | 'debit'>('credit')
-  const [montant, setMontant] = useState('')
-  const [motif, setMotif] = useState('')
-
-  const montantNum = parseFloat(montant || '0')
-  const montantSigne = sens === 'credit' ? montantNum : -montantNum
-  const valid = montantNum > 0 && motif.trim().length >= 5
-  const newSolde = target ? target.solde + montantSigne : 0
-  const wouldGoNegative = sens === 'debit' && newSolde < 0
-
-  return (
-    <Dialog open={target !== null} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-earth">
-            <Settings2 className="w-5 h-5" strokeWidth={1.75} />
-            Ajustement manuel wallet
-          </DialogTitle>
-          <DialogDescription className="pt-2">
-            <span className="block">
-              <strong>{target?.userPrenom} {target?.userNom}</strong>
-              <br />
-              <span className="font-mono text-xs">{target?.userEmail}</span>
-            </span>
-            <span className="block mt-3 font-body text-earth-700 text-sm">
-              Solde actuel :{' '}
-              <strong>
-                <Money amount={target?.solde ?? 0} mono={false} />
-              </strong>
-            </span>
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          {/* Sens */}
-          <div>
-            <Label className="mb-2 block">Type d'ajustement</Label>
-            <div className="grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setSens('credit')}
-                className={cn(
-                  'flex items-center justify-center gap-2 h-11 rounded-md border-[1.5px] font-body text-sm font-semibold transition-colors',
-                  sens === 'credit'
-                    ? 'border-success bg-success/10 text-success'
-                    : 'border-sand-400 text-earth-600 hover:border-success/40'
-                )}
-              >
-                <PlusCircle className="w-4 h-4" strokeWidth={1.75} /> Créditer
-              </button>
-              <button
-                type="button"
-                onClick={() => setSens('debit')}
-                className={cn(
-                  'flex items-center justify-center gap-2 h-11 rounded-md border-[1.5px] font-body text-sm font-semibold transition-colors',
-                  sens === 'debit'
-                    ? 'border-warning bg-warning/10 text-warning'
-                    : 'border-sand-400 text-earth-600 hover:border-warning/40'
-                )}
-              >
-                <MinusCircle className="w-4 h-4" strokeWidth={1.75} /> Débiter
-              </button>
-            </div>
-          </div>
-
-          {/* Montant */}
-          <div>
-            <Label htmlFor="montant-ajust">Montant (USD)</Label>
-            <Input
-              id="montant-ajust"
-              type="number"
-              min="0.01"
-              step="0.01"
-              value={montant}
-              onChange={(e) => setMontant(e.target.value)}
-              placeholder="Ex: 50.00"
-              className="font-mono"
-              disabled={isPending}
-            />
-            {montant && montantNum > 0 && (
-              <p className="font-body text-xs text-earth-500 mt-1">
-                Nouveau solde après ajustement :{' '}
-                <strong className={wouldGoNegative ? 'text-error' : 'text-earth'}>
-                  <Money amount={newSolde} mono={false} />
-                </strong>
-                {wouldGoNegative && (
-                  <span className="text-error ml-2">⚠ Solde négatif interdit</span>
-                )}
-              </p>
-            )}
-          </div>
-
-          {/* Motif */}
-          <div>
-            <Label htmlFor="motif-ajust">
-              Motif <span className="text-error">*</span>
-              <span className="font-body text-earth-500 text-xs font-normal ml-1">
-                (min 5 caractères, audit trail)
-              </span>
-            </Label>
-            <textarea
-              id="motif-ajust"
-              rows={3}
-              value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              placeholder="Ex: Geste commercial suite à incident #123, ou Correction erreur de saisie..."
-              disabled={isPending}
-              className={cn(
-                'w-full rounded-md border-[1.5px] border-sand-400 bg-white px-3 py-2 text-sm font-body text-earth',
-                'focus:outline-none focus:border-ocean focus:ring-2 focus:ring-ocean/15 resize-y'
-              )}
-            />
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
-            Annuler
-          </Button>
-          <Button
-            disabled={!valid || wouldGoNegative || isPending}
-            onClick={() => onSubmit(montantSigne, motif.trim())}
-            className={
-              sens === 'credit'
-                ? 'bg-success hover:bg-success/90 text-white'
-                : 'bg-warning hover:bg-warning/90 text-white'
-            }
-          >
-            {isPending
-              ? 'Enregistrement...'
-              : sens === 'credit'
-                ? `Créditer ${montantNum > 0 ? formatMoney(montantNum, { currency: 'USD' }) : 'USD'}`
-                : `Débiter ${montantNum > 0 ? formatMoney(montantNum, { currency: 'USD' }) : 'USD'}`}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
+// V2 BB (08/06/2026) : AjustementModal entierement retire — l'admin n'a plus
+// le droit d'ajuster manuellement un wallet (decision PO). Tous les mouvements
+// de wallet passent desormais uniquement par les flows metier (achat de parts,
+// distribution dividende, recharge PSP, retrait valide).
 
 // =============================================================================
 // Modal Détail historique

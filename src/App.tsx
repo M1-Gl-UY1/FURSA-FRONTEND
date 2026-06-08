@@ -23,7 +23,6 @@ import { AdminDistributionPage } from '@/pages/admin/AdminDistributionPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
 import { AdminKycPage } from '@/pages/admin/AdminKycPage'
 import { AdminAuditOnchainPage } from '@/pages/admin/AdminAuditOnchainPage'
-import { AdminPaiementSessionsPage } from '@/pages/admin/AdminPaiementSessionsPage'
 import { AdminPrixPartPage } from '@/pages/admin/AdminPrixPartPage'
 import { AdminPrixPartExplicationPage } from '@/pages/admin/AdminPrixPartExplicationPage'
 import { AdminProprieteDetailPage } from '@/pages/admin/AdminProprieteDetailPage'
@@ -173,7 +172,6 @@ function AdminRoutes() {
           <Route path="/admin/wallets" element={<AdminWalletsPage />} />
           <Route path="/admin/kyc" element={<AdminKycPage />} />
           <Route path="/admin/transactions" element={<AdminTransactionsPage />} />
-          <Route path="/admin/paiements" element={<AdminPaiementSessionsPage />} />
           <Route path="/admin/devise-rate" element={<AdminDeviseRatesPage />} />
           <Route path="/admin/equipements" element={<AdminEquipementsPage />} />
           <Route path="/admin/types-bien" element={<AdminTypesBienPage />} />

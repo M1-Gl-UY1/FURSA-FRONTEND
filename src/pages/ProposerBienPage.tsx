@@ -441,6 +441,13 @@ export function ProposerBienPage() {
   const serverImages = serverDocs.filter((d) => d.type === 'IMAGE')
   const serverPdfs = serverDocs.filter((d) => d.type === 'PDF')
 
+  // ---- Calculs dérivés ----
+  const prixUnitaire = useMemo(() => {
+    if (form.nombreTotalPart <= 0) return 0
+    const cible = (form.prixVenteTotal * form.fractionVenduePct) / 100
+    return cible / form.nombreTotalPart
+  }, [form.prixVenteTotal, form.fractionVenduePct, form.nombreTotalPart])
+
   // ---- Validation par étape ----
   const stepValid: boolean[] = [
     // 0 — Localisation
@@ -453,13 +460,15 @@ export function ProposerBienPage() {
         (form.revenuMensuelActuel > 0 && form.sourceRevenu !== '')) &&
       (form.statutExploitation !== 'EN_CONSTRUCTION' ||
         form.dateLivraisonPrevue.length > 0),
-    // 3 — Finance
+    // 3 — Finance.
+    // V2 BB (08/06/2026) : prix unitaire d'une part DOIT >= 100 USD (ticket d'entree investisseur).
     form.prixVenteTotal > 0 &&
       !!form.deviseLocale &&
       form.fractionVenduePct >= 1 &&
       form.fractionVenduePct <= 100 &&
       form.nombreTotalPart >= 1 &&
-      form.rentabilitePrevue >= 0,
+      form.rentabilitePrevue >= 0 &&
+      prixUnitaire >= 100,
     // 4 — Photos : façade + salon obligatoires (combine local + serveur)
     (form.photos.some((p) => p.section === 'FACADE')
       || serverImages.some((d) => d.sectionPhoto === 'FACADE'))
@@ -472,13 +481,6 @@ export function ProposerBienPage() {
     // 7 — Récap
     form.cguAccepted && form.certified,
   ]
-
-  // ---- Calculs dérivés ----
-  const prixUnitaire = useMemo(() => {
-    if (form.nombreTotalPart <= 0) return 0
-    const cible = (form.prixVenteTotal * form.fractionVenduePct) / 100
-    return cible / form.nombreTotalPart
-  }, [form.prixVenteTotal, form.fractionVenduePct, form.nombreTotalPart])
 
   // Liste unique des devises disponibles, derivee des pays FURSA + USD/EUR
   // toujours acceptes (devise de base de la plateforme + devise de l'UE).
@@ -1531,8 +1533,16 @@ function Step3Finance({
               {form.deviseLocale}
             </span>
             <span className="text-earth-600">Prix par part</span>
-            <span className="text-right font-mono font-semibold text-earth">
+            <span className={cn(
+              'text-right font-mono font-semibold',
+              prixUnitaire > 0 && prixUnitaire < 100 ? 'text-error' : 'text-earth'
+            )}>
               {prixUnitaire.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {form.deviseLocale}
+              {prixUnitaire > 0 && prixUnitaire < 100 && (
+                <span className="block text-xs font-body text-error mt-1">
+                  ⚠ Minimum 100 USD/part requis. Augmente le prix de vente ou réduis le nombre de parts.
+                </span>
+              )}
             </span>
             <span className="text-earth-600">Conservé par vous</span>
             <span className="text-right font-mono font-semibold text-success">
