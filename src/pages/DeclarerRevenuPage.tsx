@@ -11,6 +11,7 @@ import {
   Edit,
   FileText,
   Info,
+  Lock,
   Upload,
   X,
 } from 'lucide-react'
@@ -25,8 +26,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { extractApiError } from '@/lib/api/errors'
-import { useDeclarerRevenuMultipart, useStatutDeclaration } from '@/lib/api/revenus'
+import {
+  usePeriodesTrimestres,
+  useDeclarerRevenuMultipart,
+  useStatutDeclaration,
+} from '@/lib/api/revenus'
 import { useMaProprieteProposee } from '@/lib/api/submissions'
+import { useMyWallet } from '@/lib/api/wallet'
+import type { PeriodeTrimestrielleResponse } from '@/lib/api/types'
+import { Wallet as WalletIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const STEPS = ['Période & montant', 'Justificatif', 'Récap']
@@ -36,20 +44,12 @@ const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp
 
 type FormState = {
   montantTotal: number
+  /** V2 L : code trimestre choisi ("2026-Q1"). */
+  trimestreCode: string
   periodeDebut: string
   periodeFin: string
   justificatif: File | null
   certified: boolean
-}
-
-function defaultPeriode() {
-  const today = new Date()
-  const debut = new Date(today.getFullYear(), today.getMonth() - 1, 1)
-  const fin = new Date(today.getFullYear(), today.getMonth(), 0)
-  return {
-    debut: debut.toISOString().slice(0, 10),
-    fin: fin.toISOString().slice(0, 10),
-  }
 }
 
 export function DeclarerRevenuPage() {
@@ -61,17 +61,32 @@ export function DeclarerRevenuPage() {
   const navigate = useNavigate()
   const { data: propriete, isLoading, isError } = useMaProprieteProposee(id)
   const { data: statut } = useStatutDeclaration(Number.isNaN(id) ? null : id)
+  const { data: periodes, isLoading: periodesLoading } = usePeriodesTrimestres(
+    Number.isNaN(id) ? null : id
+  )
+  // V2 Z (07/06/2026) : le wallet du proprio est débité du montant déclaré.
+  // On affiche son solde et on bloque la soumission si insuffisant.
+  const { data: wallet } = useMyWallet()
   const declarer = useDeclarerRevenuMultipart()
 
-  const initialPeriode = defaultPeriode()
   const [step, setStep] = useState<0 | 1 | 2>(0)
   const [form, setForm] = useState<FormState>({
     montantTotal: 0,
-    periodeDebut: initialPeriode.debut,
-    periodeFin: initialPeriode.fin,
+    trimestreCode: '',
+    periodeDebut: '',
+    periodeFin: '',
     justificatif: null,
     certified: false,
   })
+
+  function selectTrimestre(p: PeriodeTrimestrielleResponse) {
+    setForm((s) => ({
+      ...s,
+      trimestreCode: p.code,
+      periodeDebut: p.dateDebut,
+      periodeFin: p.dateFin,
+    }))
+  }
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((s) => ({ ...s, [key]: value }))
@@ -133,8 +148,14 @@ export function DeclarerRevenuPage() {
     )
   }
 
+  // V2 Z : solde wallet courant et check suffisance.
+  const soldeWallet = wallet?.solde ?? 0
+  const soldeInsuffisant =
+    form.montantTotal > 0 && soldeWallet < form.montantTotal
+  const manqueWallet = Math.max(0, form.montantTotal - soldeWallet)
+
   function step1Valid() {
-    return form.montantTotal > 0 && form.periodeDebut && form.periodeFin
+    return form.montantTotal > 0 && !!form.trimestreCode && !soldeInsuffisant
   }
   function step3Valid() {
     return form.certified
@@ -186,57 +207,22 @@ export function DeclarerRevenuPage() {
         )}
       </header>
 
-      {/* Banniere window 1-5 : etat de la fenetre de declaration */}
+      {/* V2 W (07/06/2026) : banniere d'info neutre. Plus aucune notion
+          de fenetre fermee / retard / penalite. */}
       {statut && statut.statut !== 'DECLARE' && (
-        <div
-          className={cn(
-            'mb-8 rounded-xl border-[1.5px] p-4 sm:p-5 flex items-start gap-3',
-            statut.dansFenetre
-              ? 'border-success/40 bg-success/5'
-              : 'border-error/40 bg-error/5'
-          )}
-        >
-          <div
-            className={cn(
-              'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0',
-              statut.dansFenetre ? 'bg-success/15' : 'bg-error/15'
-            )}
-          >
-            {statut.dansFenetre ? (
-              <Clock className="w-5 h-5 text-success" strokeWidth={1.75} />
-            ) : (
-              <AlertTriangle className="w-5 h-5 text-error" strokeWidth={1.75} />
-            )}
+        <div className="mb-8 rounded-xl border-[1.5px] border-warning/40 bg-warning/5 p-4 sm:p-5 flex items-start gap-3">
+          <div className="w-10 h-10 rounded-full bg-warning/15 flex items-center justify-center flex-shrink-0">
+            <Clock className="w-5 h-5 text-warning" strokeWidth={1.75} />
           </div>
           <div className="flex-1">
-            {statut.dansFenetre ? (
-              <>
-                <p className="font-body font-semibold text-earth text-sm">
-                  Fenêtre de déclaration trimestrielle ouverte
-                </p>
-                <p className="font-body text-earth-600 text-xs mt-1">
-                  Vous avez <strong>{statut.joursRestants} jour{statut.joursRestants > 1 ? 's' : ''}</strong>{' '}
-                  pour déclarer les revenus du{' '}
-                  <strong>{formatMonthLong(statut.moisADeclarer)}</strong> sans
-                  pénalité. Au-delà du 15, une pénalité de{' '}
-                  <strong>300 USD</strong> sera retenue sur le montant déclaré.
-                </p>
-              </>
-            ) : (
-              <>
-                <p className="font-body font-semibold text-error text-sm">
-                  Fenêtre fermée — pénalité retard applicable
-                </p>
-                <p className="font-body text-earth-700 text-xs mt-1">
-                  La période normale de déclaration trimestrielle (1<sup>er</sup> au 15 du 1er
-                  mois du trimestre suivant) est dépassée. Vous pouvez toujours déclarer les
-                  revenus du{' '}
-                  <strong>{formatMonthLong(statut.moisADeclarer)}</strong>, mais{' '}
-                  <strong>300 USD seront retenus</strong> sur le montant déclaré et
-                  reversés au compte central FURSA.
-                </p>
-              </>
-            )}
+            <p className="font-body font-semibold text-earth text-sm">
+              Déclaration trimestrielle à faire
+            </p>
+            <p className="font-body text-earth-600 text-xs mt-1">
+              Déclarez les revenus du{' '}
+              <strong>{formatMonthLong(statut.moisADeclarer)}</strong> pour permettre
+              la distribution aux investisseurs.
+            </p>
           </div>
         </div>
       )}
@@ -248,13 +234,45 @@ export function DeclarerRevenuPage() {
       {step === 0 && (
         <div className="bg-sand-100 rounded-xl border border-earth/5 p-6 sm:p-8">
           <h2 className="font-display font-bold text-earth text-xl mb-1">
-            Période et montant
+            Trimestre et montant
           </h2>
           <p className="font-body text-earth-600 text-sm mb-6">
-            Quelle période couvre ce revenu et quel est son montant <strong>net</strong> ?
+            La déclaration est <strong>trimestrielle</strong>. Choisissez le trimestre
+            concerné et indiquez le montant <strong>net</strong> perçu sur la période.
           </p>
 
-          <div className="space-y-5">
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label>Trimestre à déclarer</Label>
+              {periodesLoading || !periodes ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <Skeleton key={i} className="h-16 rounded-lg" />
+                  ))}
+                </div>
+              ) : periodes.filter((p) => p.statut !== 'A_VENIR').length === 0 ? (
+                <div className="text-xs font-body text-earth-500 bg-white rounded-md border border-earth/8 p-4">
+                  Aucun trimestre n'est encore disponible à la déclaration.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {periodes.map((p) => (
+                    <TrimestreCard
+                      key={p.code}
+                      periode={p}
+                      selected={form.trimestreCode === p.code}
+                      onSelect={() => selectTrimestre(p)}
+                    />
+                  ))}
+                </div>
+              )}
+              <p className="text-xs font-body text-earth-500 inline-flex items-center gap-1 mt-1">
+                <Info className="w-3 h-3" strokeWidth={2} />
+                Les trimestres déjà déclarés sont verrouillés. Ceux à venir s'ouvriront
+                au fur et à mesure.
+              </p>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="montant">Montant total net perçu (USD)</Label>
               <div className="relative">
@@ -281,38 +299,42 @@ export function DeclarerRevenuPage() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="debut">Période — début</Label>
-                <div className="relative">
-                  <CalendarDays
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none"
-                    strokeWidth={1.75}
-                  />
-                  <Input
-                    id="debut"
-                    type="date"
-                    value={form.periodeDebut}
-                    onChange={(e) => update('periodeDebut', e.target.value)}
-                    className="pl-11"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="fin">Période — fin</Label>
-                <div className="relative">
-                  <CalendarDays
-                    className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none"
-                    strokeWidth={1.75}
-                  />
-                  <Input
-                    id="fin"
-                    type="date"
-                    value={form.periodeFin}
-                    onChange={(e) => update('periodeFin', e.target.value)}
-                    className="pl-11"
-                  />
-                </div>
+            {/* V2 Z (07/06/2026) : informer du paiement immédiat depuis le wallet */}
+            <div className={cn(
+              'rounded-lg border-[1.5px] p-4 flex items-start gap-3',
+              soldeInsuffisant
+                ? 'border-error/40 bg-error/5'
+                : 'border-ocean/20 bg-ocean/5'
+            )}>
+              <WalletIcon
+                className={cn(
+                  'w-5 h-5 flex-shrink-0 mt-0.5',
+                  soldeInsuffisant ? 'text-error' : 'text-ocean'
+                )}
+                strokeWidth={1.75}
+              />
+              <div className="flex-1 min-w-0">
+                <p className={cn(
+                  'font-body font-semibold text-sm',
+                  soldeInsuffisant ? 'text-error' : 'text-earth'
+                )}>
+                  {soldeInsuffisant
+                    ? 'Solde wallet insuffisant'
+                    : 'Paiement immédiat depuis votre wallet'}
+                </p>
+                <p className="font-body text-earth-600 text-xs mt-1">
+                  À la soumission, <strong><Money amount={form.montantTotal || 0} mono={false} /></strong>
+                  {' '}seront débités de votre wallet et placés en séquestre FURSA.
+                  Solde actuel : <strong><Money amount={soldeWallet} mono={false} /></strong>.
+                </p>
+                {soldeInsuffisant && (
+                  <Link
+                    to="/wallet?onglet=recharger"
+                    className="inline-flex items-center gap-1 mt-2 text-error text-xs font-body font-semibold hover:underline"
+                  >
+                    Charger <Money amount={manqueWallet} mono={false} /> supplémentaires →
+                  </Link>
+                )}
               </div>
             </div>
           </div>
@@ -422,6 +444,11 @@ export function DeclarerRevenuPage() {
             <Row label="Propriété">
               <span className="font-body font-semibold text-earth">{propriete.nom}</span>
             </Row>
+            <Row label="Trimestre">
+              <span className="font-body font-semibold text-earth text-sm">
+                {libelleTrimestreFromCode(form.trimestreCode)}
+              </span>
+            </Row>
             <Row label="Période">
               <span className="font-mono text-earth text-sm">
                 {formatDate(form.periodeDebut)} — {formatDate(form.periodeFin)}
@@ -447,27 +474,6 @@ export function DeclarerRevenuPage() {
                   className="font-mono font-bold text-earth text-lg"
                 />
               </Row>
-              {statut && !statut.dansFenetre && form.montantTotal > 0 && (
-                <>
-                  <Row label="Pénalité retard">
-                    <span className="font-mono font-semibold text-error">
-                      −<Money
-                        amount={Math.min(300, form.montantTotal)}
-                        mono={false}
-                      />
-                    </span>
-                  </Row>
-                  <div className="pt-2 mt-2 border-t border-error/20">
-                    <Row label="Distribuable aux investisseurs">
-                      <Money
-                        amount={Math.max(0, form.montantTotal - Math.min(300, form.montantTotal))}
-                        mono={false}
-                        className="font-mono font-bold text-success text-lg"
-                      />
-                    </Row>
-                  </div>
-                </>
-              )}
             </div>
           </div>
 
@@ -543,6 +549,85 @@ function formatDate(iso: string): string {
     month: 'short',
     year: 'numeric',
   }).format(new Date(iso))
+}
+
+function libelleTrimestreFromCode(code: string): string {
+  const m = /^(\d{4})-Q([1-4])$/.exec(code)
+  if (!m) return code || '—'
+  const year = m[1]
+  const q = m[2]
+  const noms: Record<string, string> = {
+    '1': '1er trimestre',
+    '2': '2e trimestre',
+    '3': '3e trimestre',
+    '4': '4e trimestre',
+  }
+  return `${noms[q]} ${year}`
+}
+
+function TrimestreCard({
+  periode,
+  selected,
+  onSelect,
+}: {
+  periode: PeriodeTrimestrielleResponse
+  selected: boolean
+  onSelect: () => void
+}) {
+  const isDeclare = periode.statut === 'DEJA_DECLARE'
+  const isAvenir = periode.statut === 'A_VENIR'
+  const disabled = isDeclare || isAvenir
+  return (
+    <button
+      type="button"
+      onClick={disabled ? undefined : onSelect}
+      disabled={disabled}
+      className={cn(
+        'group text-left w-full rounded-lg border-[1.5px] p-3 transition-all',
+        selected
+          ? 'border-ocean bg-ocean/5'
+          : 'border-earth/10 bg-white hover:border-ocean/40',
+        disabled && 'cursor-not-allowed opacity-70 hover:border-earth/10'
+      )}
+      aria-pressed={selected ? 'true' : 'false'}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <p className="font-body font-semibold text-earth text-sm">
+            {libelleTrimestreFromCode(periode.code)}
+          </p>
+          <p className="font-body text-earth-500 text-[11px] mt-0.5">
+            {periode.libelle.replace(/^[^()]+/, '').replace(/[()]/g, '').trim()}
+          </p>
+        </div>
+        {isDeclare && (
+          <span className="inline-flex items-center gap-1 text-success text-[10px] font-semibold whitespace-nowrap">
+            <Lock className="w-3 h-3" strokeWidth={2} />
+            Déjà déclaré
+          </span>
+        )}
+        {isAvenir && (
+          <span className="inline-flex items-center gap-1 text-earth-400 text-[10px] font-semibold whitespace-nowrap">
+            <CalendarDays className="w-3 h-3" strokeWidth={2} />
+            À venir
+          </span>
+        )}
+        {!disabled && (
+          <span className="inline-flex items-center gap-1 text-ocean text-[10px] font-semibold whitespace-nowrap">
+            <Clock className="w-3 h-3" strokeWidth={2} />
+            Disponible
+          </span>
+        )}
+      </div>
+      {isDeclare && periode.montantDeclare != null && (
+        <p className="font-mono text-earth-500 text-[11px] mt-1">
+          Montant déclaré : <span className="font-semibold text-earth">
+            <Money amount={periode.montantDeclare} mono={false} />
+          </span>
+        </p>
+      )}
+    </button>
+  )
 }
 
 function formatMonthLong(value: string): string {

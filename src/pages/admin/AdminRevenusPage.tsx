@@ -37,16 +37,16 @@ import {
 } from '@/lib/api/admin'
 import { extractApiError } from '@/lib/api/errors'
 import type { RevenuResponse } from '@/lib/api/types'
-import { cn } from '@/lib/utils'
+import { cn, resolveFileUrl } from '@/lib/utils'
+import { DeclarationsStatutsPanel } from '@/pages/admin/AdminDeclarationsStatutPage'
 
-function resolveFileUrl(url: string | null | undefined): string | null {
-  if (!url) return null
-  if (url.startsWith('http')) return url
-  const base = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
-  return base ? `${base}${url.startsWith('/') ? '' : '/'}${url}` : url
-}
+// V2 K (06/06/2026) : bugfix justificatif 404. La version locale lisait
+// VITE_API_BASE_URL alors que la vraie variable est VITE_API_BASE -> base=""
+// -> URL relative au domaine frontend (https://fursa.seed-innov.com/api/...)
+// au lieu de l'API (https://api.fursa.seed-innov.com/api/...). On delegue
+// au helper officiel lib/utils.ts qui gere aussi le cas "nom de fichier seul".
 
-type Tab = 'a-valider' | 'valides' | 'distribues' | 'retards' | 'tous'
+type Tab = 'a-valider' | 'valides' | 'distribues' | 'tous' | 'statuts'
 
 export function AdminRevenusPage() {
   const { data, isLoading } = useAdminRevenus()
@@ -70,13 +70,11 @@ export function AdminRevenusPage() {
   const aValider = revenus.filter((r) => r.statut === 'EN_REVIEW')
   const valides = revenus.filter((r) => r.statut === 'VALIDE')
   const distribues = revenus.filter((r) => r.statut === 'DISTRIBUE')
-  const retards = revenus.filter((r) => (r.penaliteRetard ?? 0) > 0)
 
   const filtered = (() => {
     if (tab === 'a-valider') return aValider
     if (tab === 'valides') return valides
     if (tab === 'distribues') return distribues
-    if (tab === 'retards') return retards
     return revenus
   })()
 
@@ -158,34 +156,10 @@ export function AdminRevenusPage() {
       label: 'Montant',
       align: 'right',
       render: (r) => (
-        <div className="flex flex-col items-end leading-tight">
-          <Money amount={r.montantTotal} mono={false} className="font-bold" />
-          {!!r.penaliteRetard && r.penaliteRetard > 0 && (
-            <span className="font-mono text-[10px] text-error">
-              −{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(r.penaliteRetard)} pénalité
-            </span>
-          )}
-        </div>
+        <Money amount={r.montantTotal} mono={false} className="font-bold" />
       ),
     },
-    {
-      key: 'penaliteRetard',
-      label: 'Pénalité',
-      align: 'right',
-      hideOnMobile: true,
-      sortAccessor: (r) => r.penaliteRetard ?? 0,
-      render: (r) =>
-        r.penaliteRetard && r.penaliteRetard > 0 ? (
-          <span
-            className="inline-flex items-center gap-1 text-error text-xs font-semibold"
-            title="Pénalité retard appliquée (déclaration hors fenêtre 1-5)"
-          >
-            ⚠ <Money amount={r.penaliteRetard} mono={false} />
-          </span>
-        ) : (
-          <span className="text-earth-300 text-xs">—</span>
-        ),
-    },
+    // V2 K (06/06/2026) : colonne "Penalite" retiree. Penalite de retard supprimee.
     {
       key: 'statut',
       label: 'Statut',
@@ -315,10 +289,10 @@ export function AdminRevenusPage() {
     <div className="space-y-6">
       <header>
         <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
-          Revenus
+          Revenus & déclarations
         </h1>
         <p className="font-body text-earth-600 text-sm">
-          Valider les déclarations propriétaires + déclencher les distributions de dividendes.
+          Valider les déclarations trimestrielles, distribuer les dividendes, et suivre l'état de déclaration de chaque bien.
         </p>
       </header>
 
@@ -333,20 +307,19 @@ export function AdminRevenusPage() {
         <TabButton active={tab === 'distribues'} onClick={() => changeTab('distribues')} count={distribues.length}>
           Distribués
         </TabButton>
-        <TabButton
-          active={tab === 'retards'}
-          onClick={() => changeTab('retards')}
-          count={retards.length}
-          highlight={retards.length > 0}
-        >
-          Retards (300€)
-        </TabButton>
         <TabButton active={tab === 'tous'} onClick={() => changeTab('tous')} count={revenus.length}>
           Tous
         </TabButton>
+        {/* V2 K (06/06/2026) : onglet "Statut par bien" reprend le contenu de
+            l'ancienne page /admin/declarations (fusion des 2 vues). */}
+        <TabButton active={tab === 'statuts'} onClick={() => changeTab('statuts')}>
+          Statut par bien
+        </TabButton>
       </div>
 
-      {isLoading ? (
+      {tab === 'statuts' ? (
+        <DeclarationsStatutsPanel />
+      ) : isLoading ? (
         <Skeleton className="h-64 rounded-xl" />
       ) : (
         <DataTable
@@ -416,13 +389,13 @@ export function AdminRevenusPage() {
 function TabButton({
   active,
   onClick,
-  count,
+  count = 0,
   highlight = false,
   children,
 }: {
   active: boolean
   onClick: () => void
-  count: number
+  count?: number
   highlight?: boolean
   children: React.ReactNode
 }) {

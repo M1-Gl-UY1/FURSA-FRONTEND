@@ -240,6 +240,91 @@ export type HistoriquePrixPartResponse = {
   createdAt: string
 }
 
+// V2 R (07/06/2026) — queue de sync blockchain
+export type TypeSyncBlockchain =
+  | 'SYNC_PRIX'
+  | 'SET_STATUT'
+  | 'ENREGISTRER_REVENU'
+  | 'ENREGISTRER_DISTRIBUTION'
+
+export type StatutSyncBlockchain = 'PENDING' | 'SUCCESS' | 'FAILED'
+
+export type BlockchainSyncTaskResponse = {
+  id: number
+  type: TypeSyncBlockchain
+  refId: number | null
+  payload: string
+  status: StatutSyncBlockchain
+  attempts: number
+  nextAttemptAt: string | null
+  lastAttemptAt: string | null
+  lastError: string | null
+  txHash: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export type SyncQueueStats = {
+  pending: number
+  success: number
+  failed: number
+}
+
+// V2 Q + T (07/06/2026) — audit on-chain : RevenueLedger + KycRegistry
+export type LedgerEventType =
+  | 'REVENU_ENREGISTRE'
+  | 'DIVIDENDE_DISTRIBUE'
+  | 'KYC_ENREGISTRE'
+  | 'KYC_REVOQUE'
+
+export type LedgerEventResponse = {
+  type: LedgerEventType
+  txHash: string
+  blockNumber: string  // serialise comme string en JSON depuis BigInteger
+  proprieteToken: string | null
+  trimestre: number | null
+  montantUsd: string | null  // BigInteger -> string
+  hashJustificatif: string | null
+  dateValidation: number | null
+  investisseur: string | null
+  revenuIdBackend: string | null
+  kycExpireLe: number | null
+  motif: string | null
+}
+
+// V2 M (07/06/2026) — diagnostic prix dynamique cote admin
+export type ConstantesFormulePrix = {
+  lissageRentabilite: number
+  capContributionTrimestrielle: number
+  capBonusRentabiliteTotal: number
+  coefDemande: number
+  capBonusDemande: number
+  plancherPrixPct: number
+  plafondPrixPct: number
+}
+
+export type PrixPartDiagnosticResponse = {
+  proprieteId: number
+  proprieteNom: string
+  /** V2 O : "V1" (immuable) | "V2" (prix sync on-chain) | null si pas tokenise. */
+  contratVersion: string | null
+  adresseContrat: string | null
+  transactionHash: string | null
+  prixInitial: number
+  prixCourant: number
+  variationPct: number
+  bonusRentabiliteTotal: number
+  bonusDemande: number
+  plancher: number
+  plafond: number
+  rentabilitePrevue: number | null
+  prixVenteTotal: number | null
+  fractionVenduePct: number | null
+  valeurMisEnVente: number
+  constantes: ConstantesFormulePrix
+  historique: HistoriquePrixPartResponse[]
+}
+
 // P2 (Hugh 22/05/2026)
 export type StatutListeAttente = 'EN_ATTENTE' | 'NOTIFIE' | 'SERVI' | 'ANNULE'
 
@@ -366,7 +451,8 @@ export type AchatResponse = {
   hashTransaction: string
   statut: string
   nombreParts: number
-  montant: number
+  /** Backend : "montantTotal" (BigDecimal cote Java, number en JSON). */
+  montantTotal: number
   proprieteNom: string
   dateTransaction: string
 }
@@ -691,6 +777,24 @@ export type SubmissionRevenuRequest = {
   montantTotal: number
   periodeDebut?: string
   periodeFin?: string
+}
+
+// --- V2 L (06/06/2026) : catalogue des trimestres declarables ---
+
+export type StatutPeriodeTrimestrielle = 'DECLARABLE' | 'DEJA_DECLARE' | 'A_VENIR'
+
+export type PeriodeTrimestrielleResponse = {
+  /** "2026-Q1" */
+  code: string
+  /** "1er trimestre 2026 (jan-fev-mar)" */
+  libelle: string
+  dateDebut: string
+  dateFin: string
+  statut: StatutPeriodeTrimestrielle
+  revenuId?: number | null
+  statutRevenu?: StatutRevenu | null
+  montantDeclare?: number | null
+  dateDeclaration?: string | null
 }
 
 export type RefusRevenuRequest = {

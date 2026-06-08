@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { PasswordInput } from '@/components/ui/password-input'
 import { Label } from '@/components/ui/label'
 import { extractApiError, extractFieldErrors } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/AuthContext'
@@ -157,29 +158,19 @@ export function RegisterPage() {
 
         {/* Password + Confirm */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <FieldText
+          <PasswordField
             id="password"
             label="Mot de passe"
-            placeholder="••••••••"
-            icon={<Lock className="w-4 h-4" strokeWidth={1.75} />}
             error={form.formState.errors.password?.message}
-            inputProps={{
-              type: 'password',
-              autoComplete: 'new-password',
-              ...form.register('password'),
-            }}
+            register={form.register('password')}
+            autoComplete="new-password"
           />
-          <FieldText
+          <PasswordField
             id="confirmPassword"
             label="Confirmer"
-            placeholder="••••••••"
-            icon={<Lock className="w-4 h-4" strokeWidth={1.75} />}
             error={form.formState.errors.confirmPassword?.message}
-            inputProps={{
-              type: 'password',
-              autoComplete: 'new-password',
-              ...form.register('confirmPassword'),
-            }}
+            register={form.register('confirmPassword')}
+            autoComplete="new-password"
           />
         </div>
 
@@ -235,6 +226,44 @@ function FieldText({ id, label, placeholder, icon, error, inputProps }: FieldTex
           aria-invalid={!!error}
           className="pl-11"
           {...inputProps}
+        />
+      </div>
+      {error && (
+        <p className="text-error text-xs font-body flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" strokeWidth={2} />
+          {error}
+        </p>
+      )}
+    </div>
+  )
+}
+
+// --- V2 X (07/06/2026) : champ mot de passe avec toggle oeil ---
+
+type PasswordFieldProps = {
+  id: string
+  label: string
+  error?: string
+  register: ReturnType<ReturnType<typeof import('react-hook-form').useForm>['register']>
+  autoComplete?: string
+}
+
+function PasswordField({ id, label, error, register, autoComplete }: PasswordFieldProps) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <div className="relative">
+        <Lock
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none z-10"
+          strokeWidth={1.75}
+        />
+        <PasswordInput
+          id={id}
+          autoComplete={autoComplete}
+          placeholder="••••••••"
+          aria-invalid={!!error}
+          className="pl-11"
+          {...register}
         />
       </div>
       {error && (

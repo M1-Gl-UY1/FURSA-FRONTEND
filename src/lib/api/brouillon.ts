@@ -98,10 +98,15 @@ export function useAjouterPhotosBrouillon() {
         fd.append('photos', p.file)
         fd.append('sections', p.section)
       })
+      // V2 AA : timeout long pour upload multipart (plusieurs photos peuvent
+      // depasser 50MB cumules) — defaut axios 15s trop court.
       const { data } = await api.post<ProprieteResponse>(
         `/api/proprietes/brouillon/${id}/photos`,
         fd,
-        { headers: { 'Content-Type': undefined as unknown as string } }
+        {
+          headers: { 'Content-Type': undefined as unknown as string },
+          timeout: 600_000,
+        }
       )
       return data
     },
@@ -124,14 +129,25 @@ export function useSetVideoBrouillon() {
     }) => {
       const fd = new FormData()
       fd.append('video', video)
+      // V2 AA (08/06/2026) : timeout long (10 min) pour upload video qui peut
+      // depasser largement les 15s de timeout par defaut sur connexion moyenne.
+      // Throttle onProgress : 1 update tous les 5% (au lieu de chaque %) pour
+      // limiter les re-renders du composant parent ProposerBienPage (qui est gros).
+      let lastReportedPct = -10
       const { data } = await api.post<ProprieteResponse>(
         `/api/proprietes/brouillon/${id}/video`,
         fd,
         {
           headers: { 'Content-Type': undefined as unknown as string },
+          timeout: 600_000,
           onUploadProgress: (evt) => {
-            if (onProgress && evt.total) {
-              onProgress(Math.round((evt.loaded / evt.total) * 100))
+            if (!onProgress || !evt.total) return
+            const pct = Math.round((evt.loaded / evt.total) * 100)
+            // Throttle : on n'appelle onProgress que si pct a avance d'au moins 5%
+            // OU si on atteint 100% (pour fermer la barre proprement).
+            if (pct >= lastReportedPct + 5 || pct === 100) {
+              lastReportedPct = pct
+              onProgress(pct)
             }
           },
         }
@@ -156,10 +172,14 @@ export function useAjouterDocsBrouillon() {
         fd.append('documents', d.file)
         fd.append('categories', d.categorie)
       })
+      // V2 AA : timeout long pour upload multipart.
       const { data } = await api.post<ProprieteResponse>(
         `/api/proprietes/brouillon/${id}/documents`,
         fd,
-        { headers: { 'Content-Type': undefined as unknown as string } }
+        {
+          headers: { 'Content-Type': undefined as unknown as string },
+          timeout: 600_000,
+        }
       )
       return data
     },

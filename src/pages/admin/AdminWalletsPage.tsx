@@ -40,6 +40,7 @@ import {
 import { extractApiError } from '@/lib/api/errors'
 import type { WalletResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
+import { formatMoney } from '@/lib/format'
 
 export function AdminWalletsPage() {
   const { data, isLoading } = useAdminWallets()
@@ -256,8 +257,8 @@ export function AdminWalletsPage() {
               onSuccess: () => {
                 toast.success(
                   montant > 0
-                    ? `Wallet crédité de ${montant.toFixed(2)} USD.`
-                    : `Wallet débité de ${Math.abs(montant).toFixed(2)} USD.`
+                    ? `Wallet crédité de ${formatMoney(montant, { currency: 'USD' })}.`
+                    : `Wallet débité de ${formatMoney(Math.abs(montant), { currency: 'USD' })}.`
                 )
                 setAjustementTarget(null)
               },
@@ -419,8 +420,8 @@ function AjustementModal({
             {isPending
               ? 'Enregistrement...'
               : sens === 'credit'
-                ? `Créditer ${montantNum > 0 ? montantNum.toFixed(2) : ''} USD`
-                : `Débiter ${montantNum > 0 ? montantNum.toFixed(2) : ''} USD`}
+                ? `Créditer ${montantNum > 0 ? formatMoney(montantNum, { currency: 'USD' }) : 'USD'}`
+                : `Débiter ${montantNum > 0 ? formatMoney(montantNum, { currency: 'USD' }) : 'USD'}`}
           </Button>
         </DialogFooter>
       </DialogContent>

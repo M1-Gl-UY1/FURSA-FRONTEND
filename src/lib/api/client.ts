@@ -23,6 +23,16 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  // V2 AA (08/06/2026) : timeout 10 min pour les uploads multipart (videos,
+  // photos, justificatifs). Defaut 15s trop court pour des fichiers > 5 MB
+  // sur connexion moyenne. Seuls les callers qui ont deja override explicitement
+  // (config.timeout deja set) ne sont pas touches.
+  const body: unknown = config.data
+  const isMultipart =
+    typeof FormData !== 'undefined' && body instanceof FormData
+  if (isMultipart && (config.timeout === undefined || config.timeout === 15_000)) {
+    config.timeout = 600_000
+  }
   return config
 })
 

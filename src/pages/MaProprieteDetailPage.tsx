@@ -30,13 +30,21 @@ import { StatCard } from '@/components/shared/StatCard'
 import { StatusBadge } from '@/components/shared/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useMesRevenus, useStatutDeclaration } from '@/lib/api/revenus'
+import {
+  useMesRevenus,
+  usePeriodesTrimestres,
+  useStatutDeclaration,
+} from '@/lib/api/revenus'
 import { useMaProprieteProposee } from '@/lib/api/submissions'
 import { useEquipements } from '@/lib/api/equipements'
 import { getEquipementsMetaList } from '@/lib/equipementsMeta'
 import { StatutDeclarationBadge } from '@/components/shared/StatutDeclarationBadge'
 import { extractApiError } from '@/lib/api/errors'
-import type { ProprieteResponse } from '@/lib/api/types'
+import type {
+  PeriodeTrimestrielleResponse,
+  ProprieteResponse,
+} from '@/lib/api/types'
+import { CheckCircle2, Lock } from 'lucide-react'
 import { cn, resolveFileUrl } from '@/lib/utils'
 
 export function MaProprieteDetailPage() {
@@ -149,7 +157,7 @@ export function MaProprieteDetailPage() {
             label="Fonds levés"
             value={<Money amount={valeurLevee} mono={false} />}
             trend={pourcentage}
-            trendLabel={`sur ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(valeurTotale)}`}
+            trendLabel={`sur ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(valeurTotale)}`}
           />
           <StatCard
             label="Parts vendues"
@@ -384,6 +392,8 @@ export function MaProprieteDetailPage() {
             </Button>
           </header>
 
+          <FriseTrimestres proprieteId={id} />
+
           <RevenusList proprieteId={id} mesRevenus={mesRevenus ?? []} />
         </section>
       )}
@@ -550,6 +560,100 @@ function DeclarationBadgeForPropriete({ proprieteId }: { proprieteId: number }) 
   const { data } = useStatutDeclaration(proprieteId)
   if (!data) return null
   return <StatutDeclarationBadge statut={data} />
+}
+
+/**
+ * V2 L (06/06/2026) : frise annuelle des trimestres de la propriete.
+ * Affiche Q4 N-1 + Q1..Q4 N avec leur statut (DECLARABLE / DEJA_DECLARE / A_VENIR)
+ * pour que le proprio voie en un coup d'oeil ce qui a ete fait et ce qui reste.
+ */
+function FriseTrimestres({ proprieteId }: { proprieteId: number }) {
+  const { data, isLoading } = usePeriodesTrimestres(proprieteId)
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-5">
+        {[0, 1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-20 rounded-lg" />
+        ))}
+      </div>
+    )
+  }
+  if (!data || data.length === 0) return null
+  return (
+    <div className="mb-5">
+      <p className="font-body text-xs uppercase tracking-wider text-earth-500 font-semibold mb-2">
+        Suivi annuel
+      </p>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+        {data.map((p) => (
+          <FriseCard key={p.code} periode={p} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FriseCard({ periode }: { periode: PeriodeTrimestrielleResponse }) {
+  const config = friseConfig(periode)
+  const Icon = config.icon
+  return (
+    <div
+      className={cn(
+        'rounded-lg border-[1.5px] p-3 flex flex-col gap-1',
+        config.className
+      )}
+    >
+      <div className="flex items-center justify-between gap-1">
+        <span className="font-mono font-bold text-earth text-xs">{periode.code}</span>
+        <Icon className={cn('w-3.5 h-3.5', config.iconClass)} strokeWidth={2} />
+      </div>
+      <p className="font-body text-[10px] text-earth-500 leading-tight">
+        {periode.libelle.replace(/^[^()]+/, '').replace(/[()]/g, '').trim()}
+      </p>
+      <p className={cn('font-body text-[10px] font-semibold', config.labelClass)}>
+        {config.label}
+      </p>
+      {periode.montantDeclare != null && (
+        <p className="font-mono text-[10px] text-earth font-semibold mt-0.5">
+          <Money amount={periode.montantDeclare} mono={false} />
+        </p>
+      )}
+    </div>
+  )
+}
+
+function friseConfig(p: PeriodeTrimestrielleResponse) {
+  switch (p.statut) {
+    case 'DEJA_DECLARE':
+      return {
+        icon: CheckCircle2,
+        iconClass: 'text-success',
+        className: 'border-success/40 bg-success/5',
+        labelClass: 'text-success',
+        label: p.statutRevenu === 'VALIDE'
+          ? 'Validé'
+          : p.statutRevenu === 'EN_REVIEW'
+          ? 'En revue'
+          : 'Déclaré',
+      }
+    case 'A_VENIR':
+      return {
+        icon: Lock,
+        iconClass: 'text-earth-400',
+        className: 'border-earth/10 bg-sand-200/50',
+        labelClass: 'text-earth-500',
+        label: 'À venir',
+      }
+    case 'DECLARABLE':
+    default:
+      return {
+        icon: Clock,
+        iconClass: 'text-warning',
+        className: 'border-warning/40 bg-warning/5',
+        labelClass: 'text-warning',
+        label: 'À déclarer',
+      }
+  }
 }
 
 

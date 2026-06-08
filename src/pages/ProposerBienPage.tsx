@@ -221,7 +221,11 @@ const INITIAL: FormState = {
   revenuMensuelActuel: 0,
   sourceRevenu: '',
   prixVenteTotal: 100000,
-  deviseLocale: '',
+  // V2 AA (08/06/2026) : USD est la devise par defaut (decision Hugh 22/05/2026).
+  // L'auto-set depuis le pays choisi reste actif (useEffect) si l'user n'a pas
+  // explicitement modifie : `if (found && !form.deviseLocale)` ne se declenche
+  // plus puisque c'est preset, donc USD reste sauf changement manuel.
+  deviseLocale: 'USD',
   fractionVenduePct: 100,
   nombreTotalPart: 100,
   rentabilitePrevue: 8,
@@ -1528,7 +1532,7 @@ function Step3Finance({
             </span>
             <span className="text-earth-600">Prix par part</span>
             <span className="text-right font-mono font-semibold text-earth">
-              {prixUnitaire.toFixed(2)} {form.deviseLocale}
+              {prixUnitaire.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {form.deviseLocale}
             </span>
             <span className="text-earth-600">Conservé par vous</span>
             <span className="text-right font-mono font-semibold text-success">
@@ -2236,7 +2240,7 @@ function Step7Recap({
           </Row>
           <Row label="Fraction vendue">{form.fractionVenduePct}%</Row>
           <Row label="Parts">{form.nombreTotalPart}</Row>
-          <Row label="Prix par part">{prixUnitaire.toFixed(2)} {form.deviseLocale}</Row>
+          <Row label="Prix par part">{prixUnitaire.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {form.deviseLocale}</Row>
           <Row label="Rentabilité prévue">{form.rentabilitePrevue}%/an</Row>
         </RecapSection>
 

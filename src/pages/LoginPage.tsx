@@ -11,6 +11,7 @@ import { AuthLayout } from '@/components/layout/AuthLayout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordInput } from '@/components/ui/password-input'
 import { extractApiError } from '@/lib/api/errors'
 import { useAuth } from '@/lib/auth/AuthContext'
 import { isAdminHost } from '@/lib/hosts'
@@ -115,12 +116,11 @@ export function LoginPage() {
           <Label htmlFor="password">Mot de passe</Label>
           <div className="relative">
             <Lock
-              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none"
+              className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-400 pointer-events-none z-10"
               strokeWidth={1.75}
             />
-            <Input
+            <PasswordInput
               id="password"
-              type="password"
               autoComplete="current-password"
               placeholder="••••••••"
               aria-invalid={!!form.formState.errors.password}

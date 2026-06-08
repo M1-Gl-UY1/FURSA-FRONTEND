@@ -89,6 +89,11 @@ export function OpportuniteDetailPage() {
   const isPubliee = propriete?.statut === 'PUBLIEE'
   const { data: escrow } = useEscrowPropriete(isPubliee && propriete ? propriete.id : null)
   const { data: historiquePrix } = useHistoriquePrix(id)
+  // V2 X (07/06/2026) Fix React #310 : ce hook DOIT etre appele AVANT les
+  // early returns ci-dessous, sinon le nombre de hooks change entre 2 renders
+  // (1er render isLoading=true → early return avant hook ; 2e render propriete
+  // chargee → hook appele → "Rendered more hooks than during previous render").
+  const equipements = useEquipementsForDisplay(propriete?.equipementsCodes ?? null)
 
   // === Early returns (APRES tous les hooks) ===
   if (id === undefined) {
@@ -120,8 +125,7 @@ export function OpportuniteDetailPage() {
   const sansParts = (propriete.partsDisponibles ?? 0) <= 0
   const sparklineValues = (historiquePrix ?? []).map((h) => h.prixUnitaire)
 
-  // V2 G.1 : source unique = equipementsCodes (resolu via le helper meta).
-  const equipements = useEquipementsForDisplay(propriete.equipementsCodes ?? null)
+  // V2 G.1 : source unique = equipementsCodes. Hook deja appele plus haut (fix #310).
   const caracteristiques = collectCaracteristiques(propriete)
   // V2 I (06/06/2026) : phase Certification supprimee. Le badge "Certifié Fursa"
   // est maintenant base sur statut === PUBLIEE (= bien valide par l'admin).

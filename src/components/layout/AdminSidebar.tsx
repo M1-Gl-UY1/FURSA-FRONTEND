@@ -2,7 +2,6 @@ import { Link, NavLink } from 'react-router-dom'
 import {
   ArrowLeftRight,
   ArrowUpFromLine,
-  CalendarClock,
   Coins,
   CreditCard,
   DollarSign,
@@ -16,7 +15,9 @@ import {
   Users,
   Banknote,
   Camera,
+  Radio,
   Settings,
+  TrendingUp,
   WalletCards,
   Wrench,
 } from 'lucide-react'
@@ -49,7 +50,6 @@ const groups: NavGroup[] = [
     items: [
       { label: 'Propriétés', to: '/admin/proprietes', icon: Building2 },
       { label: 'Revenus', to: '/admin/revenus', icon: Banknote },
-      { label: 'Déclarations mensuelles', to: '/admin/declarations', icon: CalendarClock },
       { label: 'Utilisateurs', to: '/admin/utilisateurs', icon: Users },
       { label: 'Wallets', to: '/admin/wallets', icon: WalletCards },
       { label: 'Vérifications identité', to: '/admin/kyc', icon: IdCard },
@@ -65,11 +65,13 @@ const groups: NavGroup[] = [
       { label: 'Taux change', to: '/admin/devise-rate', icon: DollarSign },
       { label: 'Distribution', to: '/admin/distribution', icon: HandCoins },
       { label: 'Dividendes', to: '/admin/dividendes', icon: Coins },
+      { label: 'Audit on-chain', to: '/admin/audit-onchain', icon: Radio },
     ],
   },
   {
     label: 'Configuration',
     items: [
+      { label: 'Modèle de prix', to: '/admin/prix-parts/explication', icon: TrendingUp },
       { label: 'Types de bien', to: '/admin/types-bien', icon: Building2 },
       { label: 'Équipements', to: '/admin/equipements', icon: Wrench },
       { label: 'Catégories doc.', to: '/admin/categories-document', icon: FileText },

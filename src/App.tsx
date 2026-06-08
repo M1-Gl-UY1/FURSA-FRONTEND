@@ -11,7 +11,6 @@ import { RequireAuth } from '@/lib/auth/RequireAuth'
 import { adminOrigin, investisseurOrigin, isAdminHost } from '@/lib/hosts'
 import { queryClient } from '@/lib/queryClient'
 import { AdminDashboardPage } from '@/pages/admin/AdminDashboardPage'
-import { AdminDeclarationsStatutPage } from '@/pages/admin/AdminDeclarationsStatutPage'
 import { AdminEscrowsPage } from '@/pages/admin/AdminEscrowsPage'
 import { AdminRetraitsPage } from '@/pages/admin/AdminRetraitsPage'
 import { AdminDeviseRatesPage } from '@/pages/admin/AdminDeviseRatesPage'
@@ -23,7 +22,10 @@ import { AdminSettingsPage } from '@/pages/admin/AdminSettingsPage'
 import { AdminDistributionPage } from '@/pages/admin/AdminDistributionPage'
 import { AdminDividendesPage } from '@/pages/admin/AdminDividendesPage'
 import { AdminKycPage } from '@/pages/admin/AdminKycPage'
+import { AdminAuditOnchainPage } from '@/pages/admin/AdminAuditOnchainPage'
 import { AdminPaiementSessionsPage } from '@/pages/admin/AdminPaiementSessionsPage'
+import { AdminPrixPartPage } from '@/pages/admin/AdminPrixPartPage'
+import { AdminPrixPartExplicationPage } from '@/pages/admin/AdminPrixPartExplicationPage'
 import { AdminProprieteDetailPage } from '@/pages/admin/AdminProprieteDetailPage'
 import { AdminProprietesPage } from '@/pages/admin/AdminProprietesPage'
 import { AdminRevenusPage } from '@/pages/admin/AdminRevenusPage'
@@ -157,7 +159,13 @@ function AdminRoutes() {
           <Route path="/admin/proprietes" element={<AdminProprietesPage />} />
           <Route path="/admin/proprietes/:id" element={<AdminProprieteDetailPage />} />
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
-          <Route path="/admin/declarations" element={<AdminDeclarationsStatutPage />} />
+          {/* V2 M (07/06/2026) : prix dynamique */}
+          <Route path="/admin/prix-parts/explication" element={<AdminPrixPartExplicationPage />} />
+          <Route path="/admin/prix-parts/:id" element={<AdminPrixPartPage />} />
+          {/* V2 Q (07/06/2026) : audit on-chain RevenueLedger */}
+          <Route path="/admin/audit-onchain" element={<AdminAuditOnchainPage />} />
+          {/* V2 K (06/06/2026) : /admin/declarations supprime, fusionne dans /admin/revenus (onglet "Statut par bien") */}
+          <Route path="/admin/declarations" element={<Navigate to="/admin/revenus?onglet=statuts" replace />} />
           <Route path="/admin/escrows" element={<AdminEscrowsPage />} />
           <Route path="/admin/retraits" element={<AdminRetraitsPage />} />
           <Route path="/admin/utilisateurs" element={<AdminUtilisateursPage />} />

@@ -146,7 +146,7 @@ export function WalletPage() {
             />
             <KpiStatic
               label="Devise"
-              value={wallet?.devise ?? 'EUR'}
+              value={wallet?.devise ?? 'USD'}
               icon={WalletIcon}
               iconBg="bg-gold/15"
               iconColor="text-gold-600"
@@ -424,7 +424,7 @@ function RechargerTab() {
 
         {/* Montant */}
         <div className="space-y-2">
-          <Label htmlFor="montant-recharge">Montant (EUR)</Label>
+          <Label htmlFor="montant-recharge">Montant (USD)</Label>
           <Input
             id="montant-recharge"
             type="number"
@@ -454,7 +454,7 @@ function RechargerTab() {
           </div>
           {montant !== '' && !valid && (
             <p className="font-body text-xs text-error">
-              Le montant doit être d'au moins 1 €.
+              Le montant doit être d'au moins 1 $.
             </p>
           )}
         </div>
@@ -468,7 +468,7 @@ function RechargerTab() {
           ) : (
             <>
               <CheckCircle2 strokeWidth={2} />
-              Recharger {valid ? `${montantNum.toLocaleString('fr-FR')} €` : ''}
+              Recharger {valid ? `${montantNum.toLocaleString('fr-FR')} $` : ''}
             </>
           )}
         </Button>

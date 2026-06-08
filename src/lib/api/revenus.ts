@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { api } from './client'
 import type {
+  PeriodeTrimestrielleResponse,
   RevenuResponse,
   StatutDeclarationResponse,
   SubmissionRevenuRequest,
@@ -99,6 +100,23 @@ export function useMesStatutsDeclaration() {
     queryKey: ['revenus', 'me', 'statuts'],
     queryFn: async () => {
       const { data } = await api.get<StatutDeclarationResponse[]>('/api/revenus/me/statuts')
+      return data
+    },
+  })
+}
+
+/**
+ * V2 L (06/06/2026) : catalogue des trimestres declarables pour une propriete.
+ * Utilise par le wizard de declaration (selecteur) et par la frise annuelle.
+ */
+export function usePeriodesTrimestres(proprieteId: number | null | undefined) {
+  return useQuery({
+    queryKey: ['revenus', 'periodes-trimestres', proprieteId],
+    enabled: proprieteId != null,
+    queryFn: async () => {
+      const { data } = await api.get<PeriodeTrimestrielleResponse[]>(
+        `/api/revenus/propriete/${proprieteId}/periodes-trimestres`
+      )
       return data
     },
   })

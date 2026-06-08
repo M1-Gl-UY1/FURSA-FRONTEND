@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  AlertTriangle,
   Building2,
   CalendarClock,
   CheckCircle2,
@@ -21,13 +20,15 @@ import { useAdminStatutsDeclaration } from '@/lib/api/revenus'
 import type { StatutDeclarationResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
 
-type Filter = 'all' | 'DECLARE' | 'DANS_FENETRE' | 'EN_RETARD'
+// V2 W (07/06/2026) : 2 etats backend (DANS_FENETRE + EN_RETARD) fusionnes
+// cote UI en 'A_DECLARER'. Plus aucune notion de retard / fenetre / penalite.
+type Filter = 'all' | 'DECLARE' | 'A_DECLARER'
 
 /**
- * Phase 10b : tableau de bord admin du statut de declaration mensuel.
- * Vue globale "qui a déclaré ce trimestre, qui est en retard, qui est dans la fenêtre".
+ * V2 W (07/06/2026) : panneau "Statut de declaration par bien".
+ * Vue globale "qui a declare ce trimestre, qui reste a declarer".
  */
-export function AdminDeclarationsStatutPage() {
+export function DeclarationsStatutsPanel() {
   const { data, isLoading } = useAdminStatutsDeclaration()
   const [filter, setFilter] = useState<Filter>('all')
   const [search, setSearch] = useState('')
@@ -38,15 +39,16 @@ export function AdminDeclarationsStatutPage() {
     return {
       total: statuts.length,
       declares: statuts.filter((s) => s.statut === 'DECLARE').length,
-      dansFenetre: statuts.filter((s) => s.statut === 'DANS_FENETRE').length,
-      enRetard: statuts.filter((s) => s.statut === 'EN_RETARD').length,
+      aDeclarer: statuts.filter((s) => s.statut !== 'DECLARE').length,
     }
   }, [statuts])
 
   const filtered = useMemo(() => {
     let result = statuts
-    if (filter !== 'all') {
-      result = result.filter((s) => s.statut === filter)
+    if (filter === 'DECLARE') {
+      result = result.filter((s) => s.statut === 'DECLARE')
+    } else if (filter === 'A_DECLARER') {
+      result = result.filter((s) => s.statut !== 'DECLARE')
     }
     if (search.trim()) {
       const q = search.toLowerCase().trim()
@@ -86,7 +88,7 @@ export function AdminDeclarationsStatutPage() {
     },
     {
       key: 'joursRestants',
-      label: 'Jours restants',
+      label: 'Statut',
       hideOnMobile: true,
       align: 'right',
       sortAccessor: (s) => s.joursRestants,
@@ -94,16 +96,10 @@ export function AdminDeclarationsStatutPage() {
         if (s.statut === 'DECLARE') {
           return <span className="text-earth-300 text-xs">—</span>
         }
-        if (s.joursRestants < 0) {
-          return (
-            <span className="font-mono text-error text-xs font-semibold">
-              +{Math.abs(s.joursRestants)} jour{Math.abs(s.joursRestants) > 1 ? 's' : ''} de retard
-            </span>
-          )
-        }
+        // V2 W : aucune notion de retard / jours / urgence cote UI.
         return (
-          <span className="font-mono text-warning text-xs font-semibold">
-            J−{s.joursRestants}
+          <span className="font-body text-warning text-xs font-semibold">
+            À déclarer
           </span>
         )
       },
@@ -142,27 +138,26 @@ export function AdminDeclarationsStatutPage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="font-display font-bold text-earth text-2xl sm:text-3xl mb-1">
-          Statut des déclarations
-        </h1>
-        <p className="font-body text-earth-600 text-sm">
-          Vue d'ensemble du cycle mensuel de déclaration des revenus. Fenêtre normale du
-          1<sup>er</sup> au 15 du mois suivant la fin du trimestre — au-delà, pénalité de 300 USD retenue au compte
-          central FURSA.
+      {/* Sous-en-tete du panneau (l'en-tete principale "Revenus" est dans AdminRevenusPage). */}
+      <div>
+        <h2 className="font-display font-bold text-earth text-lg mb-1">
+          Statut de déclaration par bien
+        </h2>
+        <p className="font-body text-earth-600 text-xs">
+          Vue d'ensemble du cycle trimestriel. Fenêtre normale du 1<sup>er</sup> au 15 du mois suivant la fin du trimestre.
           {moisADeclarer && (
-            <span className="block mt-1 inline-flex items-center gap-1.5 text-earth-500 text-xs">
+            <span className="block mt-1 inline-flex items-center gap-1.5 text-earth-500">
               <CalendarClock className="w-3.5 h-3.5" strokeWidth={1.75} />
               Trimestre à déclarer : <strong>{formatMonthLong(moisADeclarer)}</strong>
             </span>
           )}
         </p>
-      </header>
+      </div>
 
-      {/* KPIs */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* KPIs — V2 W : 3 cartes au lieu de 4, aucune notion de retard */}
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
+          Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl " />
           ))
         ) : (
@@ -182,18 +177,11 @@ export function AdminDeclarationsStatutPage() {
               iconColor="text-success"
             />
             <StatCard
-              label="Dans la fenêtre"
-              value={stats.dansFenetre}
+              label="À déclarer"
+              value={stats.aDeclarer}
               icon={Clock}
               iconBg="bg-warning/15"
               iconColor="text-warning"
-            />
-            <StatCard
-              label="En retard"
-              value={stats.enRetard}
-              icon={AlertTriangle}
-              iconBg="bg-error/10"
-              iconColor="text-error"
             />
           </>
         )}
@@ -217,20 +205,12 @@ export function AdminDeclarationsStatutPage() {
           Déclarées
         </FilterChip>
         <FilterChip
-          active={filter === 'DANS_FENETRE'}
-          onClick={() => setFilter('DANS_FENETRE')}
-          count={stats.dansFenetre}
+          active={filter === 'A_DECLARER'}
+          onClick={() => setFilter('A_DECLARER')}
+          count={stats.aDeclarer}
           color="warning"
         >
-          Dans la fenêtre
-        </FilterChip>
-        <FilterChip
-          active={filter === 'EN_RETARD'}
-          onClick={() => setFilter('EN_RETARD')}
-          count={stats.enRetard}
-          color="error"
-        >
-          En retard
+          À déclarer
         </FilterChip>
 
         <div className="flex-1 max-w-xs ml-auto relative">

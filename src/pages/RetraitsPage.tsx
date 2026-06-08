@@ -34,6 +34,7 @@ import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDemanderRetrait, useMesRetraits } from '@/lib/api/retraits'
 import { useMyWallet } from '@/lib/api/wallet'
+import { formatMoney } from '@/lib/format'
 import { extractApiError } from '@/lib/api/errors'
 import type {
   DemandeRetraitResponse,
@@ -287,7 +288,7 @@ function DemandeModal({
       },
       {
         onSuccess: () => {
-          toast.success(`Demande de retrait de ${montantNum} USD créée. Validation admin en attente.`)
+          toast.success(`Demande de retrait de ${formatMoney(montantNum, { currency: 'USD' })} créée. Validation admin en attente.`)
           reset()
           onClose()
         },

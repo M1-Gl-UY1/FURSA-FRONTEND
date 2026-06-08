@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { Building2, Eye } from 'lucide-react'
+import { Building2, Eye, TrendingUp } from 'lucide-react'
 
 import { DataTable, type Column } from '@/components/shared/DataTable'
 import { EmptyState } from '@/components/shared/EmptyState'
@@ -92,11 +92,18 @@ export function AdminProprietesPage() {
       noSort: true,
       align: 'right',
       render: (p) => (
-        <Button asChild variant="ghost" size="icon-sm" aria-label="Voir détail">
-          <Link to={`/admin/proprietes/${p.id}`}>
-            <Eye strokeWidth={1.75} />
-          </Link>
-        </Button>
+        <div className="inline-flex items-center gap-1">
+          <Button asChild variant="ghost" size="icon-sm" aria-label="Diagnostic prix dynamique">
+            <Link to={`/admin/prix-parts/${p.id}`}>
+              <TrendingUp strokeWidth={1.75} />
+            </Link>
+          </Button>
+          <Button asChild variant="ghost" size="icon-sm" aria-label="Voir détail">
+            <Link to={`/admin/proprietes/${p.id}`}>
+              <Eye strokeWidth={1.75} />
+            </Link>
+          </Button>
+        </div>
       ),
     },
   ]

@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Clock } from 'lucide-react'
+import { CheckCircle2, Clock } from 'lucide-react'
 
 import type { StatutDeclarationResponse } from '@/lib/api/types'
 import { cn } from '@/lib/utils'
@@ -10,10 +10,13 @@ type Props = {
 }
 
 /**
- * Phase 10b : badge synthetique du statut de declaration mensuelle d'une propriete.
- * - DECLARE   : vert "✓ Déclaré pour {mois}"
- * - DANS_FENETRE : ocre "À déclarer (J-X)"
- * - EN_RETARD : rouge "En retard — pénalité {300} USD"
+ * V2 W (07/06/2026) : badge synthetique du statut de declaration trimestrielle.
+ * Toute notion de retard / penalite / urgence a ete supprimee a la demande PO.
+ * Deux etats visibles uniquement :
+ *
+ *   - DECLARE                  : vert "✓ Déclaré pour {trimestre}"
+ *   - DANS_FENETRE / EN_RETARD : ocre "À déclarer" (aucune difference visuelle,
+ *                                 aucun decompte de jours, aucune alerte rouge)
  */
 export function StatutDeclarationBadge({ statut, size = 'md', showMonth = true }: Props) {
   const config = configFor(statut)
@@ -50,22 +53,15 @@ function configFor(s: StatutDeclarationResponse) {
         className: 'bg-success/15 text-success',
         title: `Revenus déclarés pour ${formatMonthLong(s.moisADeclarer)}`,
       }
-    case 'DANS_FENETRE': {
-      const j = s.joursRestants
-      return {
-        icon: Clock,
-        label:
-          j === 0 ? 'À déclarer (dernier jour)' : `À déclarer (J-${j})`,
-        className: 'bg-warning/15 text-warning',
-        title: `Période ouverte jusqu'au 5 inclus. Aucune pénalité.`,
-      }
-    }
+    // V2 W : DANS_FENETRE et EN_RETARD sont fusionnés visuellement.
+    // Aucune notion de retard / pénalité / urgence n'est exposée à l'utilisateur.
+    case 'DANS_FENETRE':
     case 'EN_RETARD':
       return {
-        icon: AlertTriangle,
-        label: `En retard · pénalité ${formatEur(s.penaliteSiDeclarationMaintenant)}`,
-        className: 'bg-error/15 text-error',
-        title: `Période normale fermée. ${formatEur(s.penaliteSiDeclarationMaintenant)} seront retenus si vous déclarez maintenant.`,
+        icon: Clock,
+        label: 'À déclarer',
+        className: 'bg-warning/15 text-warning',
+        title: `Revenus du trimestre ${formatMonthLong(s.moisADeclarer)} à déclarer.`,
       }
   }
 }
@@ -101,10 +97,3 @@ function formatMonthLong(value: string): string {
   return new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(d)
 }
 
-function formatEur(n: number): string {
-  return new Intl.NumberFormat('fr-FR', {
-    style: 'currency',
-    currency: 'EUR',
-    maximumFractionDigits: 0,
-  }).format(n)
-}

@@ -511,7 +511,7 @@ function Step2Confirmation({
           </li>
           <li>
             • À ce seuil, vos parts deviennent actives et vous commencez à recevoir
-            des dividendes mensuels.
+            des dividendes trimestriels.
           </li>
           <li>
             • Si la collecte est annulée par FURSA, vous serez intégralement remboursé
@@ -609,7 +609,7 @@ function Step3Success({
 
       <div className="bg-white rounded-lg border border-earth/8 p-5 mb-6 space-y-2 text-left">
         <Row label="Montant débité">
-          <Money amount={result.montant} mono={false} className="font-bold text-error" />
+          <Money amount={result.montantTotal} mono={false} className="font-bold text-error" />
         </Row>
         <Row label="Date">
           <span className="font-mono text-xs text-earth-600">
@@ -657,7 +657,7 @@ function Step3Success({
           </h3>
           <p className="font-body text-earth-700 text-xs">
             La propriété est déjà financée. Vos parts sont actives, vous percevrez
-            les dividendes dès la prochaine distribution mensuelle.
+            les dividendes dès la prochaine distribution trimestrielle.
           </p>
         </div>
       )}
