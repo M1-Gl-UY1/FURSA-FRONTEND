@@ -30,18 +30,28 @@ const REDIRECT_HINTS: Record<string, string> = {
 export function LoginPage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { login, isAuthenticated } = useAuth()
+  const { login, isAuthenticated, user } = useAuth()
 
-  // Sur admin.fursa.seed-innov.com, on redirige par défaut vers /admin/dashboard
+  // V2 EE (08/06/2026) : destination selon le ROLE du user (apres login), pas
+  // seulement le hostname. Un admin qui se connecte sur fursa.seed-innov.com
+  // doit etre redirige vers /admin/dashboard (et pas /dashboard investisseur).
+  // Si l'URL contient ?redirect=, on respecte la cible — sauf pour un admin
+  // qui force /admin/dashboard (les routes investisseur ne lui sont pas utiles).
+  const explicitRedirect = searchParams.get('redirect')
   const defaultDest = isAdminHost() ? '/admin/dashboard' : '/dashboard'
-  const redirect = searchParams.get('redirect') ?? defaultDest
   const expired = searchParams.get('expired') === 'true'
   const justRegistered = searchParams.get('registered') === 'true'
 
+  function destinationApresLogin(): string {
+    if (user?.role === 'ADMIN') return '/admin/dashboard'
+    return explicitRedirect ?? defaultDest
+  }
+
   // Si déjà connecté, on évite la page login
   useEffect(() => {
-    if (isAuthenticated) navigate(redirect, { replace: true })
-  }, [isAuthenticated, redirect, navigate])
+    if (isAuthenticated) navigate(destinationApresLogin(), { replace: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user, navigate, explicitRedirect])
 
   useEffect(() => {
     if (justRegistered) toast.success('Compte créé. Connectez-vous pour continuer.')
@@ -57,17 +67,21 @@ export function LoginPage() {
     mutationFn: (data: LoginForm) => login(data),
     onSuccess: () => {
       toast.success('Bienvenue !')
-      navigate(redirect, { replace: true })
+      // V2 EE : la redirection finale est faite par le useEffect ci-dessus
+      // qui ecoute `user` (mis a jour par fetchMe apres login). Pas besoin
+      // d'appeler navigate ici (ferait double-redirect ou redirige avant
+      // que user.role soit connu).
     },
     onError: (error) => {
       toast.error(extractApiError(error, 'Connexion impossible.'))
     },
   })
 
-  const banner = REDIRECT_HINTS[redirect] ? (
+  const bannerKey = explicitRedirect ?? defaultDest
+  const banner = REDIRECT_HINTS[bannerKey] ? (
     <div className="bg-ocean/95 backdrop-blur-sm text-white text-sm font-body rounded-md px-4 py-3 flex items-center gap-2 shadow-card">
       <Info className="w-4 h-4 shrink-0" strokeWidth={2} />
-      <span>{REDIRECT_HINTS[redirect]}</span>
+      <span>{REDIRECT_HINTS[bannerKey]}</span>
     </div>
   ) : null
 
@@ -152,7 +166,7 @@ export function LoginPage() {
         <div className="mt-6 text-center text-sm font-body text-earth-600">
           Pas encore de compte ?{' '}
           <Link
-            to={`/register${redirect !== '/dashboard' ? `?redirect=${encodeURIComponent(redirect)}` : ''}`}
+            to={`/register${explicitRedirect ? `?redirect=${encodeURIComponent(explicitRedirect)}` : ''}`}
             className="text-ocean font-semibold hover:underline"
           >
             Créer un compte
