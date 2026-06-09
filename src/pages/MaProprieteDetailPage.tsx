@@ -384,12 +384,28 @@ export function MaProprieteDetailPage() {
                 Déclarez les loyers / revenus perçus pour distribution aux investisseurs.
               </p>
             </div>
-            <Button asChild size="sm">
-              <Link to={`/mes-proprietes/${id}/declarer-revenu`}>
-                <Plus strokeWidth={2} />
-                Déclarer un revenu
-              </Link>
-            </Button>
+            {/* V2 HH (09/06/2026) : bouton desactive si le bien n'a pas atteint
+                100% de collecte. La declaration de revenu necessite que toutes
+                les parts soient vendues (sinon les ratios de distribution sont
+                fausses). Backend bloque aussi avec un IllegalStateException. */}
+            {dispo > 0 ? (
+              <div className="text-right">
+                <Button size="sm" disabled className="cursor-not-allowed">
+                  <Plus strokeWidth={2} />
+                  Déclarer un revenu
+                </Button>
+                <p className="font-body text-xs text-warning mt-1 max-w-xs">
+                  Disponible quand 100% des parts seront vendues ({dispo} parts restantes).
+                </p>
+              </div>
+            ) : (
+              <Button asChild size="sm">
+                <Link to={`/mes-proprietes/${id}/declarer-revenu`}>
+                  <Plus strokeWidth={2} />
+                  Déclarer un revenu
+                </Link>
+              </Button>
+            )}
           </header>
 
           <FriseTrimestres proprieteId={id} />
