@@ -213,4 +213,32 @@ export const WALLET_TX_DISPLAY: Record<TypeWalletTransaction, WalletTxDisplay> =
     color: 'text-earth-600',
     direction: 'neutral',
   },
+  // V2 Z (07/06/2026) : workflow wallet-to-escrow declaration revenus.
+  // Cote proprio : debit a la declaration, credit en cas de refus admin.
+  // Cote master FURSA : credit a la declaration, debit lors de la distribution
+  // aux investisseurs.
+  DEBIT_DECLARATION_REVENU: {
+    label: 'Déclaration revenu',
+    description: 'Fonds réservés pour distribution aux investisseurs',
+    color: 'text-warning',
+    direction: 'debit',
+  },
+  CREDIT_DECLARATION_REVENU: {
+    label: 'Réception revenu',
+    description: 'Revenu reçu pour mise en distribution (compte FURSA)',
+    color: 'text-success',
+    direction: 'credit',
+  },
+  CREDIT_REFUND_DECLARATION: {
+    label: 'Remboursement déclaration',
+    description: 'Remboursement suite au refus admin de la déclaration',
+    color: 'text-ocean',
+    direction: 'credit',
+  },
+  DEBIT_DISTRIBUTION_REVENU: {
+    label: 'Distribution',
+    description: 'Versement de la quote-part aux investisseurs',
+    color: 'text-warning',
+    direction: 'debit',
+  },
 }

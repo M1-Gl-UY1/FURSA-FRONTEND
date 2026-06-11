@@ -853,6 +853,11 @@ export type TypeWalletTransaction =
   | 'CREDIT_REFUND_ACHAT'
   | 'DEBIT_WITHDRAW'
   | 'AJUSTEMENT_ADMIN'
+  // V2 Z (07/06/2026) : workflow wallet-to-escrow pour declaration revenus
+  | 'DEBIT_DECLARATION_REVENU'
+  | 'CREDIT_DECLARATION_REVENU'
+  | 'CREDIT_REFUND_DECLARATION'
+  | 'DEBIT_DISTRIBUTION_REVENU'
 
 export type WalletResponse = {
   id: number
