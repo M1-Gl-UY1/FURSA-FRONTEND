@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import {
   ArrowLeftRight,
   ArrowUpFromLine,
+  Bell,
   Coins,
   DollarSign,
   FileText,
@@ -11,6 +12,8 @@ import {
   LogOut,
   Building2,
   Lock,
+  ShoppingCart,
+  Sparkles,
   Users,
   Banknote,
   Camera,
@@ -42,6 +45,17 @@ const groups: NavGroup[] = [
     label: 'Vue d\'ensemble',
     items: [
       { label: 'Dashboard', to: '/admin/dashboard', icon: LayoutDashboard, end: true },
+    ],
+  },
+  {
+    // V2 KK (12/06/2026) : nouveau bloc — pages investisseur en lecture seule
+    // (catalogue public). Les boutons d'action sont caches dans ces pages
+    // quand le user est admin.
+    label: 'Vue catalogue',
+    items: [
+      { label: 'Opportunités', to: '/opportunites', icon: Sparkles },
+      { label: 'Marché secondaire', to: '/marche/secondaire', icon: ShoppingCart },
+      { label: 'Notifications', to: '/notifications', icon: Bell },
     ],
   },
   {

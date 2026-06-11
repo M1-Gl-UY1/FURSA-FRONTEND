@@ -155,6 +155,18 @@ function AdminRoutes() {
         <Route element={<AdminLayout />}>
           <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+
+          {/* V2 KK (12/06/2026) : "Vue catalogue" — pages investisseur en
+              lecture seule, integrees dans l'espace admin pour permettre a
+              l'admin de naviguer comme un investisseur sans changer de sous-domaine.
+              Les boutons d'action (acheter, mettre en vente) sont caches via
+              useAuth().isAdmin dans chaque page. */}
+          <Route path="/opportunites" element={<OpportunitesPage />} />
+          <Route path="/opportunites/:id" element={<OpportuniteDetailPage />} />
+          <Route path="/marche/secondaire" element={<MarcheSecondairePage />} />
+          <Route path="/marche/secondaire/:id" element={<AnnonceDetailPage />} />
+          <Route path="/notifications" element={<NotificationsPage />} />
+
           <Route path="/admin/proprietes" element={<AdminProprietesPage />} />
           <Route path="/admin/proprietes/:id" element={<AdminProprieteDetailPage />} />
           <Route path="/admin/revenus" element={<AdminRevenusPage />} />
@@ -183,19 +195,21 @@ function AdminRoutes() {
         </Route>
       </Route>
 
-      {/* Toute route investisseur (/dashboard, /opportunites, etc.) sur le hostname admin
-          redirige vers le hostname principal. */}
+      {/* Routes investisseur PERSONNELLES : restent sur le hostname principal
+          (l'admin n'a pas a y acceder, il a deja ses equivalents /admin/*). */}
       <Route path="/dashboard" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
-      <Route path="/opportunites/*" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/opportunites/:id/acheter" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/compte" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/compte/*" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/portefeuille" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/transactions" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/dividendes" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/retraits" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/wallet" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
-      <Route path="/notifications" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
-      <Route path="/marche/*" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/marche/mes-annonces" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/marche/nouvelle-annonce" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/proposer-un-bien" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
+      <Route path="/proposer-un-bien/:id" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
       <Route path="/mes-proprietes/*" element={<RedirectToHost targetOrigin={investisseurOrigin()} />} />
 
       {/* 404 */}

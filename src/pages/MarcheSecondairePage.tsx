@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAnnonces } from '@/lib/api/annonces'
 import { useProprietes } from '@/lib/api/proprietes'
+import { useAuth } from '@/lib/auth/AuthContext'
 import { useCountUp } from '@/lib/hooks/useCountUp'
 import type { AnnonceResponse, ProprieteResponse } from '@/lib/api/types'
 import { cn, resolveFileUrl } from '@/lib/utils'
@@ -39,6 +40,7 @@ const SORT_TO_SPRING: Record<SortOption, string> = {
 }
 
 export function MarcheSecondairePage() {
+  const { isAdmin } = useAuth()
   const [page, setPage] = useState(0)
   const [sort, setSort] = useState<SortOption>('recent')
   const { data, isLoading, isError } = useAnnonces({
@@ -93,17 +95,21 @@ export function MarcheSecondairePage() {
               fluctue selon l'offre, la demande et la rentabilité réelle du bien.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="secondary" className="bg-white text-terra hover:bg-sand-50">
-              <Link to="/marche/nouvelle-annonce">
-                <Plus strokeWidth={2} />
-                Vendre des parts
-              </Link>
-            </Button>
-            <Button asChild variant="ghost" className="text-white hover:bg-white/10">
-              <Link to="/marche/mes-annonces">Mes annonces</Link>
-            </Button>
-          </div>
+          {/* V2 KK (12/06/2026) : boutons d'action investisseur caches pour l'admin
+              (l'admin navigue ce marche en lecture seule). */}
+          {!isAdmin && (
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="secondary" className="bg-white text-terra hover:bg-sand-50">
+                <Link to="/marche/nouvelle-annonce">
+                  <Plus strokeWidth={2} />
+                  Vendre des parts
+                </Link>
+              </Button>
+              <Button asChild variant="ghost" className="text-white hover:bg-white/10">
+                <Link to="/marche/mes-annonces">Mes annonces</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </header>
 
